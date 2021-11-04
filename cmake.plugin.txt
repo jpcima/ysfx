@@ -1,0 +1,79 @@
+# -*- cmake -*-
+# Copyright 2021 Jean Pierre Cimalando
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+include(FetchContent)
+
+FetchContent_Declare(juce
+    URL "https://github.com/juce-framework/JUCE/archive/refs/tags/6.1.2.tar.gz"
+    URL_HASH "SHA512=0427be40e9cea3b215358f0661e9dabcbc4f1be7aba7d0f44e35f8426dd49ba31da99d0f18a6ee28b3dce50114a1647157802e6231d9b912269f179191ebccc1")
+
+FetchContent_GetProperties(juce)
+if(NOT juce_POPULATED)
+  FetchContent_Populate(juce)
+  add_subdirectory("${juce_SOURCE_DIR}" "${juce_BINARY_DIR}")
+endif()
+
+juce_add_plugin(ysfx_plugin
+  PLUGIN_CODE "ysfx"
+  PLUGIN_MANUFACTURER_CODE "ysfx"
+  PRODUCT_NAME "ysfx"
+  COMPANY_NAME "ysfx developers"
+  FORMATS VST3
+  NEEDS_MIDI_INPUT TRUE
+  NEEDS_MIDI_OUTPUT TRUE
+  NEEDS_CURL FALSE
+  NEEDS_WEB_BROWSER FALSE
+  COPY_PLUGIN_AFTER_BUILD TRUE)
+
+target_sources(ysfx_plugin
+    PRIVATE
+        "plugin/processor.cpp"
+        "plugin/processor.h"
+        "plugin/editor.cpp"
+        "plugin/editor.h"
+        "plugin/parameter.cpp"
+        "plugin/parameter.h"
+        "plugin/info.cpp"
+        "plugin/info.h"
+        "plugin/components/parameters_panel.cpp"
+        "plugin/components/parameters_panel.h"
+        "plugin/utility/functional_timer.h"
+        "plugin/utility/rt_semaphore.cpp"
+        "plugin/utility/rt_semaphore.h")
+
+target_compile_definitions(ysfx_plugin
+  PUBLIC
+      "JUCE_WEB_BROWSER=0"
+      "JUCE_USE_CURL=0"
+      "JUCE_VST3_CAN_REPLACE_VST2=0"
+      "JUCE_DISPLAY_SPLASH_SCREEN=0")
+
+target_include_directories(ysfx_plugin
+    PRIVATE
+        "plugin")
+
+target_link_libraries(ysfx_plugin
+  PRIVATE
+      ysfx::ysfx
+      juce::juce_audio_processors
+      juce::juce_gui_basics
+      juce::juce_gui_extra
+      juce::juce_opengl
+      juce::juce_recommended_config_flags
+      juce::juce_recommended_lto_flags
+      juce::juce_recommended_warning_flags)

@@ -1,0 +1,112 @@
+# -*- cmake -*-
+# Copyright 2021 Jean Pierre Cimalando
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+include(EmptyStaticLibrary)
+
+###
+find_program(RE2C_PROGRAM "re2c")
+if(NOT RE2C_PROGRAM)
+    message(STATUS "re2c is missing, files will not regenerate (it's fine)")
+endif()
+
+# ysfx::dr_libs
+# ------------------------------------------------------------------------------
+add_library(dr_libs INTERFACE)
+target_include_directories(dr_libs INTERFACE "thirdparty/dr_libs")
+add_library(ysfx::dr_libs ALIAS dr_libs)
+
+# ysfx::ysfx-private
+#    A ysfx target which gives access to the internals.
+#    This target is adequate for unit-testing.
+# ------------------------------------------------------------------------------
+add_library(ysfx-private
+    STATIC
+        "sources/ysfx.cpp"
+        "sources/ysfx.hpp"
+        "sources/ysfx_config.cpp"
+        "sources/ysfx_config.hpp"
+        "sources/ysfx_midi.cpp"
+        "sources/ysfx_midi.hpp"
+        "sources/ysfx_reader.cpp"
+        "sources/ysfx_reader.hpp"
+        "sources/ysfx_parse.cpp"
+        "sources/ysfx_parse.hpp"
+        "sources/ysfx_parse_slider.cpp"
+        "sources/ysfx_parse_filename.cpp"
+        "sources/ysfx_audio_wav.cpp"
+        "sources/ysfx_audio_wav.hpp"
+        "sources/ysfx_audio_flac.cpp"
+        "sources/ysfx_audio_flac.hpp"
+        "sources/ysfx_utils.cpp"
+        "sources/ysfx_utils.hpp"
+        "sources/ysfx_api_eel.cpp"
+        "sources/ysfx_api_eel.hpp"
+        "sources/ysfx_api_reaper.cpp"
+        "sources/ysfx_api_reaper.hpp"
+        "sources/ysfx_api_file.cpp"
+        "sources/ysfx_api_file.hpp"
+        "sources/ysfx_eel_utils.cpp"
+        "sources/ysfx_eel_utils.hpp")
+target_compile_definitions(ysfx-private
+    PRIVATE
+        "_FILE_OFFSET_BITS=64")
+if(MSVC)
+    target_compile_definitions(ysfx-private
+        PRIVATE
+            "_CRT_NONSTDC_NO_WARNINGS")
+endif()
+target_include_directories(ysfx-private
+    PUBLIC
+        "include"
+        "sources")
+target_link_libraries(ysfx-private
+    PUBLIC
+        ysfx::eel2
+        ysfx::dr_libs)
+add_library(ysfx::ysfx-private ALIAS ysfx-private)
+
+function(ysfx_re2c_file INPUT OUTPUT)
+    if(RE2C_PROGRAM)
+        get_filename_component(_in "${INPUT}" ABSOLUTE BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+        get_filename_component(_out "${OUTPUT}" ABSOLUTE BASE_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+        add_custom_command(
+            OUTPUT "${_out}"
+            COMMAND "${RE2C_PROGRAM}" "${_in}" "-o" "${_out}"
+            DEPENDS "${_in}")
+    endif()
+endfunction()
+
+ysfx_re2c_file(
+    "sources/ysfx_parse_slider.cpp.re"
+    "${CMAKE_CURRENT_SOURCE_DIR}/sources/ysfx_parse_slider.cpp")
+ysfx_re2c_file(
+    "sources/ysfx_parse_filename.cpp.re"
+    "${CMAKE_CURRENT_SOURCE_DIR}/sources/ysfx_parse_filename.cpp")
+
+# ysfx::ysfx
+#    A ysfx target which gives access to the public interface.
+#    This target is adequate for normal use.
+# ------------------------------------------------------------------------------
+add_empty_static_library(ysfx)
+target_include_directories(ysfx
+    PUBLIC
+        "include")
+target_link_libraries(ysfx
+    PRIVATE
+        ysfx::ysfx-private)
+add_library(ysfx::ysfx ALIAS ysfx)
