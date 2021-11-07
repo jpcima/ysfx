@@ -69,6 +69,12 @@ FILE *g_eel_dump_fp, *g_eel_dump_fp2;
   #define COMPUTABLE_EXTRA_SPACE 16 // safety buffer, if EEL_VALIDATE_WORKTABLE_USE set, used for magic-value-checking
 #endif
 
+#ifdef NSEEL_ATOF
+  double NSEEL_ATOF(const char *);
+#else
+  #define NSEEL_ATOF atof
+#endif
+
 
 /*
   P1 is rightmost parameter
@@ -5866,7 +5872,7 @@ opcodeRec *nseel_translate(compileContext *ctx, const char *tmp, size_t tmplen) 
       return nseel_createCompiledValue(ctx,ctx->onNamedString(ctx->caller_this,buf+1));
     }
   }
-  return nseel_createCompiledValue(ctx,(EEL_F)atof(tmp));
+  return nseel_createCompiledValue(ctx,(EEL_F)NSEEL_ATOF(tmp));
 }
 
 void NSEEL_VM_set_var_resolver(NSEEL_VMCTX _ctx, EEL_F *(*res)(void *userctx, const char *name), void *userctx)
