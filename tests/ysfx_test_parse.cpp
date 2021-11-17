@@ -324,7 +324,7 @@ TEST_CASE("slider parsing", "[parse]")
         REQUIRE(slider.def == 0);
         REQUIRE(slider.min == 0);
         REQUIRE(slider.max == 2);
-        REQUIRE(slider.inc == 0);
+        REQUIRE(slider.inc == 1);
         REQUIRE(slider.is_enum);
         REQUIRE(slider.enum_names.size() == 3);
         REQUIRE(slider.enum_names[0] == "LP");
