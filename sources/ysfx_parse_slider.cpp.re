@@ -85,7 +85,7 @@ bool ysfx_parse_slider(const char *line, ysfx_slider_t &slider)
         sp* @def1 num? @def2
         sp* (","|("<"
           sp* (@min1 num? @min2 sp* ("," sp* @max1 num? @max2 sp* ("," sp* @inc1 num? @inc2 sp*)?)?)?
-          sp* (">"|("{" @nam1 [^}\x00]* @nam2 "}"? sp* ">")) sp* ","?
+          sp* (">"|([^>]* "{" @nam1 [^}\x00]* @nam2 "}"? sp* ">")) sp* ","?
         ))
         {
             slider.def = ysfx::dot_atof(std::string(def1, def2).c_str());

@@ -294,6 +294,44 @@ TEST_CASE("slider parsing", "[parse]")
         REQUIRE(slider.path == "/titi");
         REQUIRE(slider.desc == "Cui cui");
     }
+
+    SECTION("enum syntax")
+    {
+        const char *line = "slider5:0<0,2,1{LP,BP,HP}>Type";
+        ysfx_slider_t slider;
+        REQUIRE(ysfx_parse_slider(line, slider));
+        REQUIRE(slider.id == 4);
+        REQUIRE(slider.var == "slider5");
+        REQUIRE(slider.def == 0);
+        REQUIRE(slider.min == 0);
+        REQUIRE(slider.max == 2);
+        REQUIRE(slider.inc == 1);
+        REQUIRE(slider.is_enum);
+        REQUIRE(slider.enum_names.size() == 3);
+        REQUIRE(slider.enum_names[0] == "LP");
+        REQUIRE(slider.enum_names[1] == "BP");
+        REQUIRE(slider.enum_names[2] == "HP");
+        REQUIRE(slider.desc == "Type");
+    }
+
+    SECTION("enum syntax, permissive")
+    {
+        const char *line = "slider5:0<0,2,1<{LP,BP,HP}>Type";
+        ysfx_slider_t slider;
+        REQUIRE(ysfx_parse_slider(line, slider));
+        REQUIRE(slider.id == 4);
+        REQUIRE(slider.var == "slider5");
+        REQUIRE(slider.def == 0);
+        REQUIRE(slider.min == 0);
+        REQUIRE(slider.max == 2);
+        REQUIRE(slider.inc == 0);
+        REQUIRE(slider.is_enum);
+        REQUIRE(slider.enum_names.size() == 3);
+        REQUIRE(slider.enum_names[0] == "LP");
+        REQUIRE(slider.enum_names[1] == "BP");
+        REQUIRE(slider.enum_names[2] == "HP");
+        REQUIRE(slider.desc == "Type");
+    }
 }
 
 TEST_CASE("header parsing", "[parse]")
