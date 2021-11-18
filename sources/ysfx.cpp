@@ -184,8 +184,8 @@ bool ysfx_load_file(ysfx_t *fx, const char *filepath, uint32_t loadopts)
 
         // validity check
         if (main->header.desc.empty()) {
-            ysfx_logf(*fx->config, ysfx_log_error, "%s: the required `desc` field is missing", ysfx::path_file_name(filepath).c_str());
-            return false;
+            ysfx_logf(*fx->config, ysfx_log_warning, "%s: the required `desc` field is missing", ysfx::path_file_name(filepath).c_str());
+            main->header.desc = ysfx::path_file_name(filepath);
         }
 
         if (loadopts & ysfx_load_ignoring_imports)
