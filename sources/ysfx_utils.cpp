@@ -18,6 +18,7 @@
 #include "ysfx_utils.hpp"
 #include <system_error>
 #include <algorithm>
+#include <deque>
 #include <clocale>
 #include <cstring>
 #if !defined(_WIN32)
