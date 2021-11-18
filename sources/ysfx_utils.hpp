@@ -135,7 +135,7 @@ bool path_is_relative(const char *path);
 //------------------------------------------------------------------------------
 
 // visit the root and subdirectories in depth-first order
-void visit_directories(const char *rootpath, bool (*visit)(const char *, void *), void *data);
+void visit_directories(const char *rootpath, bool (*visit)(const std::string &, void *), void *data);
 
 //------------------------------------------------------------------------------
 

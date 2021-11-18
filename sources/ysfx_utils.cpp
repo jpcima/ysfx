@@ -439,7 +439,7 @@ bool path_is_relative(const char *path)
 //------------------------------------------------------------------------------
 
 #if !defined(_WIN32)
-void visit_directories(const char *rootpath, bool (*visit)(const char *, void *), void *data)
+void visit_directories(const char *rootpath, bool (*visit)(const std::string &, void *), void *data)
 {
     char *argv[] = {(char *)rootpath, nullptr};
 
@@ -459,13 +459,13 @@ void visit_directories(const char *rootpath, bool (*visit)(const char *, void *)
         if (ent->fts_info == FTS_D) {
             pathbuf.assign(ent->fts_path);
             pathbuf.push_back('/');
-            if (!visit(pathbuf.c_str(), data))
+            if (!visit(pathbuf, data))
                 return;
         }
     }
 }
 #else
-void visit_directories(const char *rootpath, bool (*visit)(const char *, void *), void *data)
+void visit_directories(const char *rootpath, bool (*visit)(const std::string &, void *), void *data)
 {
     std::deque<std::wstring> dirs;
     dirs.push_back(widen(path_ensure_final_separator(rootpath)));
@@ -480,7 +480,7 @@ void visit_directories(const char *rootpath, bool (*visit)(const char *, void *)
         std::wstring dir = std::move(dirs.front());
         dirs.pop_front();
 
-        if (!visit(narrow(dir).c_str(), data))
+        if (!visit(narrow(dir), data))
             return;
 
         pathbuf.assign(dir);
