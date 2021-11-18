@@ -134,6 +134,11 @@ bool path_is_relative(const char *path);
 
 //------------------------------------------------------------------------------
 
+// visit the root and subdirectories in depth-first order
+void visit_directories(const char *rootpath, bool (*visit)(const char *, void *), void *data);
+
+//------------------------------------------------------------------------------
+
 #if defined(_WIN32)
 std::wstring widen(const std::string &u8str);
 std::wstring widen(const char *u8data, size_t u8len = ~(size_t)0);

@@ -17,12 +17,14 @@
 
 #include "ysfx_utils.hpp"
 #include <system_error>
+#include <algorithm>
 #include <clocale>
 #include <cstring>
 #if !defined(_WIN32)
 #   include <sys/stat.h>
 #   include <unistd.h>
 #   include <fcntl.h>
+#   include <fts.h>
 #else
 #   include <windows.h>
 #   include <io.h>
@@ -433,6 +435,86 @@ bool path_is_relative(const char *path)
     return !is_path_separator(split_path(path).dir.c_str()[0]);
 #endif
 }
+
+//------------------------------------------------------------------------------
+
+#if !defined(_WIN32)
+void visit_directories(const char *rootpath, bool (*visit)(const char *, void *), void *data)
+{
+    char *argv[] = {(char *)rootpath, nullptr};
+
+    auto compar = [](const FTSENT **a, const FTSENT **b) -> int {
+        return strcmp((*a)->fts_name, (*b)->fts_name);
+    };
+
+    FTS *fts = fts_open(argv, FTS_NOCHDIR|FTS_PHYSICAL, +compar);
+    if (!fts)
+        return;
+    auto fts_cleanup = defer([fts]() { fts_close(fts); });
+
+    std::string pathbuf;
+    pathbuf.reserve(1024);
+
+    while (FTSENT *ent = fts_read(fts)) {
+        if (ent->fts_info == FTS_D) {
+            pathbuf.assign(ent->fts_path);
+            pathbuf.push_back('/');
+            if (!visit(pathbuf.c_str(), data))
+                return;
+        }
+    }
+}
+#else
+void visit_directories(const char *rootpath, bool (*visit)(const char *, void *), void *data)
+{
+    std::deque<std::wstring> dirs;
+    dirs.push_back(widen(path_ensure_final_separator(rootpath)));
+
+    std::wstring pathbuf;
+    pathbuf.reserve(1024);
+
+    std::vector<std::wstring> entries;
+    entries.reserve(256);
+
+    while (!dirs.empty()) {
+        std::wstring dir = std::move(dirs.front());
+        dirs.pop_front();
+
+        if (!visit(narrow(dir).c_str(), data))
+            return;
+
+        pathbuf.assign(dir);
+        pathbuf.append(L"\\*");
+
+        WIN32_FIND_DATAW fd;
+        HANDLE handle = FindFirstFileW(pathbuf.c_str(), &fd);
+        if (handle == INVALID_HANDLE_VALUE)
+            continue;
+        auto handle_cleanup = defer([handle]() { FindClose(handle); });
+
+        entries.clear();
+        do {
+            if (fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
+                continue;
+            if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+                const wchar_t *name = fd.cFileName;
+                if (!wcscmp(name, L".") || !wcscmp(name, L".."))
+                    continue;
+                pathbuf.assign(dir);
+                pathbuf.append(name);
+                pathbuf.push_back(L'\\');
+                entries.push_back(pathbuf);
+            }
+        } while (FindNextFileW(handle, &fd));
+
+        std::sort(entries.begin(), entries.end());
+        for (size_t n = entries.size(); n-- > 0; )
+            dirs.push_front(std::move(entries[n]));
+    }
+}
+#endif
+
+//------------------------------------------------------------------------------
 
 #if defined(_WIN32)
 std::wstring widen(const std::string &u8str)
