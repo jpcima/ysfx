@@ -726,19 +726,49 @@ void ysfx_slider_set_value(ysfx_t *fx, uint32_t index, ysfx_real value)
 
 std::string ysfx_resolve_import_path(ysfx_t *fx, const std::string &name, const std::string &origin)
 {
-    struct stat st;
+    std::vector<std::string> dirs;
 
-    if (!origin.empty()) {
-        std::string resolved = ysfx::path_directory(origin.c_str()) + name;
+    // create the list of search directories
+    {
+        dirs.reserve(2);
+
+        if (!origin.empty())
+            dirs.push_back(ysfx::path_directory(origin.c_str()));
+
+        const std::string &import_root = fx->config->import_root;
+        if (!import_root.empty() && dirs[0] != import_root)
+            dirs.push_back(import_root);
+    }
+
+    // search for the file in these directories directly
+    for (const std::string &dir : dirs) {
+        std::string resolved = dir + name;
+        struct stat st;
         if (statUTF8(resolved.c_str(), &st) == 0)
             return resolved;
     }
 
-    const std::string &root = fx->config->import_root;
-    if (!root.empty()) {
-        std::string resolved = root.c_str() + name;
-        if (statUTF8(resolved.c_str(), &st) == 0)
-            return resolved;
+    // search for the file recursively
+    for (const std::string &dir : dirs) {
+        struct visit_data {
+            const std::string *name = nullptr;
+            std::string resolved;
+        };
+        visit_data vd;
+        vd.name = &name;
+        auto visit = [](const std::string &dir, void *data) -> bool {
+            visit_data &vd = *(visit_data *)data;
+            std::string resolved = dir + *vd.name;
+            struct stat st;
+            if (statUTF8(resolved.c_str(), &st) == 0) {
+                vd.resolved = std::move(resolved);
+                return false;
+            }
+            return true;
+        };
+        ysfx::visit_directories(dir.c_str(), +visit, &vd);
+        if (!vd.resolved.empty())
+            return vd.resolved;
     }
 
     return std::string{};
