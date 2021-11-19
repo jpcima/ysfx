@@ -26,6 +26,7 @@ plugin, by entering commands as follows:
 ```
 git clone https://github.com/jpcima/ysfx.git
 cd ysfx
+git submodule update --init --recursive
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
