@@ -59,6 +59,7 @@ ysfx_api_initializer::ysfx_api_initializer()
     ysfx_api_init_eel();
     ysfx_api_init_reaper();
     ysfx_api_init_file();
+    ysfx_api_init_gfx();
 }
 
 ysfx_api_initializer::~ysfx_api_initializer()

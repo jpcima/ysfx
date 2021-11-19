@@ -22,6 +22,7 @@
 #include "ysfx_api_eel.hpp"
 #include "ysfx_api_reaper.hpp"
 #include "ysfx_api_file.hpp"
+#include "ysfx_api_gfx.hpp"
 #include "ysfx_utils.hpp"
 #include "WDL/eel2/ns-eel.h"
 #include "WDL/eel2/ns-eel-int.h"
