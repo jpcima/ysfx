@@ -15,8 +15,9 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-#include "ysfx.h"
+#include "ysfx.hpp"
 #include "ysfx_parse.hpp"
+#include "ysfx_test_utils.hpp"
 #include <catch.hpp>
 
 TEST_CASE("section splitting", "[parse]")
@@ -417,6 +418,46 @@ TEST_CASE("header parsing", "[parse]")
         REQUIRE(header.out_pins.size() == 2);
         REQUIRE(header.out_pins[0] == "Output");
         REQUIRE(header.out_pins[1] == "none");
+    }
+
+    SECTION("unspecified pins with @sample", "[parse]")
+    {
+        const char *text =
+            "desc:Example" "\n"
+            "@sample" "\n"
+            "donothing();" "\n";
+
+        scoped_new_dir dir_fx("${root}/Effects");
+        scoped_new_txt file_main("${root}/Effects/example.jsfx", text);
+
+        ysfx_config_u config{ysfx_config_new()};
+        ysfx_u fx{ysfx_new(config.get())};
+
+        REQUIRE(ysfx_load_file(fx.get(), file_main.m_path.c_str(), 0));
+
+        ysfx_header_t &header = fx->source.main->header;
+        REQUIRE(header.in_pins.size() == 2);
+        REQUIRE(header.out_pins.size() == 2);
+    }
+
+    SECTION("unspecified pins without @sample", "[parse]")
+    {
+        const char *text =
+            "desc:Example" "\n"
+            "@block" "\n"
+            "donothing();" "\n";
+
+        scoped_new_dir dir_fx("${root}/Effects");
+        scoped_new_txt file_main("${root}/Effects/example.jsfx", text);
+
+        ysfx_config_u config{ysfx_config_new()};
+        ysfx_u fx{ysfx_new(config.get())};
+
+        REQUIRE(ysfx_load_file(fx.get(), file_main.m_path.c_str(), 0));
+
+        ysfx_header_t &header = fx->source.main->header;
+        REQUIRE(header.in_pins.size() == 0);
+        REQUIRE(header.out_pins.size() == 0);
     }
 
     SECTION("filenames", "[parse]")

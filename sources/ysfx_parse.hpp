@@ -83,6 +83,7 @@ struct ysfx_header_t {
     ysfx::string_list imports;
     ysfx::string_list in_pins;
     ysfx::string_list out_pins;
+    bool explicit_pins = false;
     ysfx::string_list filenames;
     ysfx_options_t options;
     ysfx_slider_t sliders[ysfx_max_sliders];

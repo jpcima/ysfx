@@ -112,10 +112,14 @@ void ysfx_parse_header(ysfx_section_t *section, ysfx_header_t &header)
             for (const std::string &tag : ysfx::split_strings_noempty(linep + 7, &ysfx::ascii_isspace))
                 header.tags.push_back(tag);
         }
-        else if (!strncmp(linep, "in_pin:", 7))
+        else if (!strncmp(linep, "in_pin:", 7)) {
+            header.explicit_pins = true;
             header.in_pins.push_back(ysfx::trim(linep + 7, &ysfx::ascii_isspace));
-        else if (!strncmp(linep, "out_pin:", 8))
+        }
+        else if (!strncmp(linep, "out_pin:", 8)) {
+            header.explicit_pins = true;
             header.out_pins.push_back(ysfx::trim(linep + 8, &ysfx::ascii_isspace));
+        }
         else if (!strncmp(linep, "options:", 8)) {
             for (const std::string &opt : ysfx::split_strings_noempty(linep + 8, &ysfx::ascii_isspace)) {
                 size_t pos = opt.find('=');

@@ -191,6 +191,14 @@ bool ysfx_load_file(ysfx_t *fx, const char *filepath, uint32_t loadopts)
         if (loadopts & ysfx_load_ignoring_imports)
             main->header.imports.clear();
 
+        // if no pins are specified and we have @sample, the default is stereo
+        if (main->toplevel.sample && !main->header.explicit_pins &&
+            main->header.in_pins.empty() && main->header.out_pins.empty())
+        {
+            main->header.in_pins = {"JS input 1", "JS input 2"};
+            main->header.out_pins = {"JS output 1", "JS output 2"};
+        }
+
         // register variables aliased to sliders
         for (uint32_t i = 0; i < ysfx_max_sliders; ++i) {
             if (main->header.sliders[i].exists) {
