@@ -935,11 +935,11 @@ uint32_t ysfx_get_slider_change_type(ysfx_t *fx, uint32_t index)
 
     uint32_t type = 0;
     if (fx->slider.automate_mask & ((uint64_t)1 << index))
-        type |= slider_change_display|slider_change_automation;
+        type |= ysfx_slider_change_display|ysfx_slider_change_automation;
     if (fx->slider.change_mask & ((uint64_t)1 << index))
-        type |= slider_change_display;
+        type |= ysfx_slider_change_display;
     if ((fx->slider.visible_mask ^ fx->slider.old_visible_mask) & ((uint64_t)1 << index))
-        type |= slider_change_visibility;
+        type |= ysfx_slider_change_visibility;
     return type;
 }
 

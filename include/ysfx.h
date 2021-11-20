@@ -253,16 +253,16 @@ YSFX_API bool ysfx_receive_midi_from_bus(ysfx_t *fx, uint32_t bus, ysfx_midi_eve
 // send a trigger, it will be processed during the cycle
 YSFX_API bool ysfx_send_trigger(ysfx_t *fx, uint32_t index);
 
-typedef enum slider_change_type_e {
+typedef enum ysfx_slider_change_type_e {
     // nothing changed
-    slider_change_none = 0,
+    ysfx_slider_change_none = 0,
     // slider should have its display updated
-    slider_change_display = 1 << 0,
+    ysfx_slider_change_display = 1 << 0,
     // slider should have its parameter automated, and display updated
-    slider_change_automation = 1 << 1,
+    ysfx_slider_change_automation = 1 << 1,
     // slider had its visible state modified
-    slider_change_visibility = 1 << 2,
-} slider_change_type_t;
+    ysfx_slider_change_visibility = 1 << 2,
+} ysfx_slider_change_type_t;
 
 // check whether any slider changed, after having processing the cycle
 YSFX_API bool ysfx_have_slider_changes(ysfx_t *fx);

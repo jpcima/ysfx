@@ -99,13 +99,13 @@ TEST_CASE("slider manipulation", "[sliders]")
         ysfx_process_float(fx.get(), nullptr, nullptr, 0, 0, 1);
 
         REQUIRE(ysfx_have_slider_changes(fx.get()));
-        REQUIRE(ysfx_get_slider_change_type(fx.get(), 0) == slider_change_visibility);
-        REQUIRE(ysfx_get_slider_change_type(fx.get(), 1) == slider_change_none);
-        REQUIRE(ysfx_get_slider_change_type(fx.get(), 2) == slider_change_visibility);
-        REQUIRE(ysfx_get_slider_change_type(fx.get(), 3) == slider_change_none);
-        REQUIRE(ysfx_get_slider_change_type(fx.get(), 4) == slider_change_visibility);
-        REQUIRE(ysfx_get_slider_change_type(fx.get(), 5) == slider_change_visibility);
-        REQUIRE(ysfx_get_slider_change_type(fx.get(), 6) == slider_change_none);
+        REQUIRE(ysfx_get_slider_change_type(fx.get(), 0) == ysfx_slider_change_visibility);
+        REQUIRE(ysfx_get_slider_change_type(fx.get(), 1) == ysfx_slider_change_none);
+        REQUIRE(ysfx_get_slider_change_type(fx.get(), 2) == ysfx_slider_change_visibility);
+        REQUIRE(ysfx_get_slider_change_type(fx.get(), 3) == ysfx_slider_change_none);
+        REQUIRE(ysfx_get_slider_change_type(fx.get(), 4) == ysfx_slider_change_visibility);
+        REQUIRE(ysfx_get_slider_change_type(fx.get(), 5) == ysfx_slider_change_visibility);
+        REQUIRE(ysfx_get_slider_change_type(fx.get(), 6) == ysfx_slider_change_none);
 
         REQUIRE(!ysfx_slider_is_visible(fx.get(), 0));
         REQUIRE(ysfx_slider_is_visible(fx.get(), 1));

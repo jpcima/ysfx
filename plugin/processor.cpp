@@ -399,8 +399,10 @@ void YsfxProcessor::Impl::processSliderChanges()
 
     for (int i = 0; i < ysfx_max_sliders; ++i) {
         uint32_t type = ysfx_get_slider_change_type(fx, (uint32_t)i);
-        if (type & (slider_change_display|slider_change_automation))
+        if (type & (ysfx_slider_change_display|ysfx_slider_change_automation))
             syncSliderToParameter(i);
+        if (type & ysfx_slider_change_visibility)
+            ; //TODO: visibility change
     }
 }
 
