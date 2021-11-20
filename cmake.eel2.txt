@@ -67,8 +67,12 @@ target_compile_definitions(eel2
         "EELSCRIPT_NO_LICE"
         "WDL_FFT_REALSIZE=8"
     PRIVATE
-        "NSEEL_ATOF=nseel_atof"
-        "_FILE_OFFSET_BITS=64")
+        "NSEEL_ATOF=nseel_atof")
+if(NOT WIN32)
+    target_compile_definitions(eel2
+        PRIVATE
+            "_FILE_OFFSET_BITS=64")
+endif()
 if(MSVC)
     target_compile_definitions(eel2
         PRIVATE
