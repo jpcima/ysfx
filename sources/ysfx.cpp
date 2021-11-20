@@ -18,10 +18,6 @@
 #include "ysfx.hpp"
 #include "ysfx_config.hpp"
 #include "ysfx_eel_utils.hpp"
-#include "WDL/win32_utf8.h"
-#if !defined(_WIN32)
-#   include <sys/stat.h>
-#endif
 #include <type_traits>
 #include <algorithm>
 #include <functional>
@@ -165,7 +161,7 @@ bool ysfx_load_file(ysfx_t *fx, const char *filepath, uint32_t loadopts)
     {
         ysfx_source_unit_u main{new ysfx_source_unit_t};
 
-        ysfx::FILE_u stream{fopenUTF8(filepath, "rb")};
+        ysfx::FILE_u stream{ysfx::fopen_utf8(filepath, "rb")};
         if (!stream || !ysfx::get_stream_file_uid(stream.get(), main_uid)) {
             ysfx_logf(*fx->config, ysfx_log_error, "%s: cannot open file for reading", ysfx::path_file_name(filepath).c_str());
             return false;
@@ -239,7 +235,7 @@ bool ysfx_load_file(ysfx_t *fx, const char *filepath, uint32_t loadopts)
             }
 
             ysfx::file_uid imported_uid;
-            ysfx::FILE_u stream{fopenUTF8(imported_path.c_str(), "rb")};
+            ysfx::FILE_u stream{ysfx::fopen_utf8(imported_path.c_str(), "rb")};
             if (!stream || !ysfx::get_stream_file_uid(stream.get(), imported_uid)) {
                 ysfx_logf(*fx->config, ysfx_log_error, "%s: cannot open file for reading", ysfx::path_file_name(imported_path.c_str()).c_str());
                 return false;
@@ -739,8 +735,7 @@ std::string ysfx_resolve_import_path(ysfx_t *fx, const std::string &name, const 
     // search for the file in these directories directly
     for (const std::string &dir : dirs) {
         std::string resolved = dir + name;
-        struct stat st;
-        if (statUTF8(resolved.c_str(), &st) == 0)
+        if (ysfx::exists(resolved.c_str()))
             return resolved;
     }
 
@@ -755,8 +750,7 @@ std::string ysfx_resolve_import_path(ysfx_t *fx, const std::string &name, const 
         auto visit = [](const std::string &dir, void *data) -> bool {
             visit_data &vd = *(visit_data *)data;
             std::string resolved = dir + *vd.name;
-            struct stat st;
-            if (statUTF8(resolved.c_str(), &st) == 0) {
+            if (ysfx::exists(resolved.c_str())) {
                 vd.resolved = std::move(resolved);
                 return false;
             }

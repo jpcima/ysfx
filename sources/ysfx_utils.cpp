@@ -39,6 +39,15 @@ namespace ysfx {
 static_assert(sizeof(off_t) == 8, "64-bit large file support is not enabled");
 #endif
 
+FILE *fopen_utf8(const char *path, const char *mode)
+{
+#if defined(_WIN32)
+    return _wfopen(widen(path).c_str(), widen(mode).c_str());
+#else
+    return fopen(path, mode);
+#endif
+}
+
 int64_t fseek_lfs(FILE *stream, int64_t off, int whence)
 {
 #if defined(_WIN32)
@@ -442,6 +451,11 @@ bool path_is_relative(const char *path)
 //------------------------------------------------------------------------------
 
 #if !defined(_WIN32)
+bool exists(const char *path)
+{
+    return access(path, F_OK) == 0;
+}
+
 string_list list_directory(const char *path)
 {
     string_list list;
@@ -498,6 +512,11 @@ void visit_directories(const char *rootpath, bool (*visit)(const std::string &, 
     }
 }
 #else
+bool exists(const char *path)
+{
+    return _waccess(widen(path).c_str(), 0) == 0;
+}
+
 string_list list_directory(const char *path)
 {
     string_list list;

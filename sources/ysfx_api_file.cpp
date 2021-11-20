@@ -19,15 +19,13 @@
 #include "ysfx_config.hpp"
 #include "ysfx_api_file.hpp"
 #include "ysfx_eel_utils.hpp"
-#include "WDL/win32_utf8.h"
-#include <sys/stat.h>
 #include <cstring>
 #include <cstdio>
 #include <cassert>
 
 ysfx_raw_file_t::ysfx_raw_file_t(NSEEL_VMCTX vm, const char *filename)
     : m_vm(vm),
-      m_stream(fopenUTF8(filename, "rb"))
+      m_stream(ysfx::fopen_utf8(filename, "rb"))
 {
 }
 
@@ -123,7 +121,7 @@ uint32_t ysfx_raw_file_t::string(std::string &str)
 //------------------------------------------------------------------------------
 ysfx_text_file_t::ysfx_text_file_t(NSEEL_VMCTX vm, const char *filename)
     : m_vm(vm),
-      m_stream(fopenUTF8(filename, "rb"))
+      m_stream(ysfx::fopen_utf8(filename, "rb"))
 {
     m_buf.reserve(256);
 }
@@ -418,8 +416,7 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_file_open(void *opaque, EEL_F *file)
     for (const std::string &filepath : filecandidates) {
         void *fmtobj = nullptr;
 
-        struct stat st;
-        if (statUTF8(filepath.c_str(), &st) != 0)
+        if (!ysfx::exists(filepath.c_str()))
             continue;
 
         ysfx_file_type_t ftype = ysfx_detect_file_type(fx, filepath.c_str(), &fmtobj);

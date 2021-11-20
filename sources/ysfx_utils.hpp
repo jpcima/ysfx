@@ -40,6 +40,7 @@ namespace ysfx {
 
 YSFX_DEFINE_AUTO_PTR(FILE_u, FILE, fclose);
 
+FILE *fopen_utf8(const char *path, const char *mode);
 int64_t fseek_lfs(FILE *stream, int64_t off, int whence);
 int64_t ftell_lfs(FILE *stream);
 
@@ -134,9 +135,10 @@ bool path_is_relative(const char *path);
 
 //------------------------------------------------------------------------------
 
+// check whether a file exists on disk
+bool exists(const char *path);
 // list the elements of a directory; directories are distinguished with a final '/'
 string_list list_directory(const char *path);
-
 // visit the root and subdirectories in depth-first order
 void visit_directories(const char *rootpath, bool (*visit)(const std::string &, void *), void *data);
 

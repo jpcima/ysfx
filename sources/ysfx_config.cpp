@@ -19,8 +19,6 @@
 #include "ysfx_utils.hpp"
 #include "ysfx_audio_wav.hpp"
 #include "ysfx_audio_flac.hpp"
-#include "WDL/win32_utf8.h"
-#include <sys/stat.h>
 #include <cassert>
 
 ysfx_config_t *ysfx_config_new()
@@ -71,10 +69,9 @@ void ysfx_guess_file_roots(ysfx_config_t *config, const char *sourcepath)
             stop = true;
 
         while (!stop) {
-            struct stat st;
             bool match =
-                statUTF8((cur_dir + "Effects/").c_str(), &st) == 0 &&
-                statUTF8((cur_dir + "Data/").c_str(), &st) == 0;
+                ysfx::exists((cur_dir + "Effects/").c_str()) &&
+                ysfx::exists((cur_dir + "Data/").c_str());
             if (match) {
                 stop = true;
                 config->import_root = cur_dir + "Effects/";
@@ -91,8 +88,7 @@ void ysfx_guess_file_roots(ysfx_config_t *config, const char *sourcepath)
     if (config->data_root.empty() && !config->import_root.empty()) {
         const std::string datadir = config->import_root + "../Data/";
 
-        struct stat st;
-        bool match = statUTF8(datadir.c_str(), &st) == 0;
+        bool match = ysfx::exists(datadir.c_str());
         if (match)
             config->data_root = datadir;
     }
