@@ -21,9 +21,6 @@
 #include "WDL/win32_utf8.h"
 #if !defined(_WIN32)
 #   include <sys/stat.h>
-#   include <dirent.h>
-#else
-#   include <windows.h>
 #endif
 #include <type_traits>
 #include <algorithm>
@@ -441,27 +438,12 @@ void ysfx_fill_file_enums(ysfx_t *fx)
             continue;
 
         std::string dirpath = ysfx::path_ensure_final_separator((fx->config->data_root + slider.path).c_str());
+        ysfx::string_list entries = ysfx::list_directory(dirpath.c_str());
 
-#if !defined(_WIN32)
-        DIR *dir = opendir(dirpath.c_str());
-        if (!dir) continue;
-        auto dir_cleanup = ysfx::defer([dir]() { closedir(dir); });
-#else
-        WIN32_FIND_DATAW ent;
-        HANDLE hfind = FindFirstFileW((ysfx::widen(dirpath) + L"\\*").c_str(), &ent);
-        if (hfind == INVALID_HANDLE_VALUE) continue;
-        auto find_cleanup = ysfx::defer([hfind]() { FindClose(hfind); });
-#endif
+        for (const std::string &filename : entries) {
+            if (!filename.empty() && ysfx::is_path_separator(filename.back()))
+                continue;
 
-        for (;;) {
-#if !defined(_WIN32)
-            dirent *ent = readdir(dir);
-            if (!ent) break;
-            if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")) continue;
-            std::string filename = std::string(&ent->d_name[0]);
-#else
-            std::string filename = ysfx::narrow(&ent.cFileName[0]);
-#endif
             std::string filepath = dirpath + filename;
 
             ysfx_file_type_t ftype = ysfx_detect_file_type(fx, filepath.c_str(), nullptr);
@@ -469,16 +451,10 @@ void ysfx_fill_file_enums(ysfx_t *fx)
                 continue;
 
             slider.enum_names.push_back(std::move(filename));
-
-#if defined(_WIN32)
-            if (!FindNextFileW(hfind, &ent)) break;
-#endif
         }
 
-        if (!slider.enum_names.empty()) {
-            std::sort(slider.enum_names.begin(), slider.enum_names.end());
+        if (!slider.enum_names.empty())
             slider.max = (EEL_F)(slider.enum_names.size() - 1);
-        }
     }
 }
 
