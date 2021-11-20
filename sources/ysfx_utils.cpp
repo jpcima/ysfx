@@ -23,7 +23,9 @@
 #include <cstring>
 #if !defined(_WIN32)
 #   include <sys/stat.h>
+#   include <sys/types.h>
 #   include <unistd.h>
+#   include <dirent.h>
 #   include <fcntl.h>
 #   include <fts.h>
 #else
@@ -440,6 +442,36 @@ bool path_is_relative(const char *path)
 //------------------------------------------------------------------------------
 
 #if !defined(_WIN32)
+string_list list_directory(const char *path)
+{
+    string_list list;
+
+    DIR *dir = opendir(path);
+    if (!dir)
+        return list;
+    auto dir_cleanup = defer([dir]() { closedir(dir); });
+
+    list.reserve(256);
+
+    std::string pathbuf;
+    pathbuf.reserve(1024);
+
+    while (dirent *ent = readdir(dir)) {
+        const char *name = ent->d_name;
+        if (!strcmp(name, ".") || !strcmp(name, ".."))
+            continue;
+
+        pathbuf.assign(name);
+        if (ent->d_type == DT_DIR)
+            pathbuf.push_back('/');
+
+        list.push_back(pathbuf);
+    }
+
+    std::sort(list.begin(), list.end());
+    return list;
+}
+
 void visit_directories(const char *rootpath, bool (*visit)(const std::string &, void *), void *data)
 {
     char *argv[] = {(char *)rootpath, nullptr};
@@ -466,6 +498,36 @@ void visit_directories(const char *rootpath, bool (*visit)(const std::string &, 
     }
 }
 #else
+string_list list_directory(const char *path)
+{
+    string_list list;
+
+    std::wstring pattern = widen(path) + L"\\*";
+
+    WIN32_FIND_DATAW fd;
+    HANDLE handle = FindFirstFileW(pattern.c_str(), &fd);
+    if (handle == INVALID_HANDLE_VALUE)
+        return list;
+    auto handle_cleanup = defer([handle]() { FindClose(handle); });
+
+    list.reserve(256);
+
+    do {
+        const wchar_t *name = fd.cFileName;
+        if (!wcscmp(name, L".") || !wcscmp(name, L".."))
+            continue;
+
+        std::string entry = narrow(name);
+        if ((fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && !(fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT))
+            entry.push_back('/');
+
+        list.push_back(std::move(entry));
+    } while (FindNextFileW(handle, &fd));
+
+    std::sort(list.begin(), list.end());
+    return list;
+}
+
 void visit_directories(const char *rootpath, bool (*visit)(const std::string &, void *), void *data)
 {
     std::deque<std::wstring> dirs;

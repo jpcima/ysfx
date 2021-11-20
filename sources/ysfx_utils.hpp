@@ -134,6 +134,9 @@ bool path_is_relative(const char *path);
 
 //------------------------------------------------------------------------------
 
+// list the elements of a directory; directories are distinguished with a final '/'
+string_list list_directory(const char *path);
+
 // visit the root and subdirectories in depth-first order
 void visit_directories(const char *rootpath, bool (*visit)(const std::string &, void *), void *data);
 
