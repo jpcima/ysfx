@@ -12,7 +12,7 @@ This contains a hosting library, providing a JSFX compiler and runtime.
 In addition, there is an audio plugin which can act as a JSFX host in a digital
 audio workstation.
 
-Please not that this project is not the work of Cockos, Inc; however, it is based
+Please note that this project is not the work of Cockos, Inc; however, it is based
 on several free and open source components from the WDL. Originally, this project
 was based on jsusfx by Pascal Gauthier, but then it became an entire rewrite made
 from scratch.
