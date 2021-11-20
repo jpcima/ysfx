@@ -178,6 +178,8 @@ YSFX_API bool ysfx_slider_is_path(ysfx_t *fx, uint32_t index);
 YSFX_API ysfx_real ysfx_slider_get_value(ysfx_t *fx, uint32_t index);
 // set the value of the slider, and call @slider later if value has changed
 YSFX_API void ysfx_slider_set_value(ysfx_t *fx, uint32_t index, ysfx_real value);
+// get the whether the slider is currently visible
+YSFX_API bool ysfx_slider_is_visible(ysfx_t *fx, uint32_t index);
 
 typedef enum ysfx_compile_option_e {
     // skip compiling the @serialize section
@@ -258,6 +260,8 @@ typedef enum slider_change_type_e {
     slider_change_display = 1 << 0,
     // slider should have its parameter automated, and display updated
     slider_change_automation = 1 << 1,
+    // slider had its visible state modified
+    slider_change_visibility = 1 << 2,
 } slider_change_type_t;
 
 // check whether any slider changed, after having processing the cycle

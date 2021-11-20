@@ -112,6 +112,8 @@ struct ysfx_s {
     struct {
         uint64_t automate_mask = 0;
         uint64_t change_mask = 0;
+        uint64_t visible_mask = 0;
+        uint64_t old_visible_mask = 0;
     } slider;
 
     // Triggers
@@ -126,6 +128,7 @@ struct ysfx_s {
 
 void ysfx_unload_source(ysfx_t *fx);
 void ysfx_unload_code(ysfx_t *fx);
+void ysfx_first_init(ysfx_t *fx);
 void ysfx_fill_file_enums(ysfx_t *fx);
 void ysfx_fix_invalid_enums(ysfx_t *fx);
 ysfx_section_t *ysfx_search_section(ysfx_t *fx, uint32_t type);

@@ -95,13 +95,33 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_sliderchange(void *opaque, EEL_F *mask_or_
     return 0;
 }
 
-static EEL_F NSEEL_CGEN_CALL ysfx_api_slider_show(void *opaque, INT_PTR np, EEL_F **parms)
+static EEL_F NSEEL_CGEN_CALL ysfx_api_slider_show(void *opaque, EEL_F *mask_or_slider_, EEL_F *value_)
 {
-    //TODO implement me
-    (void)opaque;
-    (void)np;
-    (void)parms;
-    return 0;
+    ysfx_t *fx = REAPER_GET_INTERFACE(opaque);
+    uint32_t slider = ysfx_get_slider_of_var(fx, mask_or_slider_);
+
+    uint64_t mask;
+    if (slider < ysfx_max_sliders)
+        mask = (uint64_t)1 << slider;
+    else
+        mask = ysfx_eel_round<uint64_t>(std::fabs(*mask_or_slider_));
+
+    if (*value_ >= (EEL_F)+0.5) {
+        // show
+        fx->slider.visible_mask |= mask;
+    }
+    else if (*value_ >= (EEL_F)-0.5) {
+        // hide
+        mask = ~mask;
+        fx->slider.visible_mask &= mask;
+    }
+    else {
+        // toggle
+        mask ^= fx->slider.visible_mask;
+        fx->slider.visible_mask = mask;
+    }
+
+    return (EEL_F)mask;
 }
 
 static EEL_F NSEEL_CGEN_CALL ysfx_api_midisend(void *opaque, INT_PTR np, EEL_F **parms)
@@ -375,7 +395,7 @@ void ysfx_api_init_reaper()
     NSEEL_addfunc_retval("slider_next_chg", 2, NSEEL_PProc_THIS, &ysfx_api_slider_next_chg);
     NSEEL_addfunc_retval("slider_automate", 1, NSEEL_PProc_THIS, &ysfx_api_slider_automate);
     NSEEL_addfunc_retval("sliderchange", 1, NSEEL_PProc_THIS, &ysfx_api_sliderchange);
-    NSEEL_addfunc_varparm("slider_show", 1, NSEEL_PProc_THIS, &ysfx_api_slider_show);
+    NSEEL_addfunc_retval("slider_show", 2, NSEEL_PProc_THIS, &ysfx_api_slider_show);
 
     NSEEL_addfunc_exparms("midisend", 3, NSEEL_PProc_THIS, &ysfx_api_midisend);
     NSEEL_addfunc_exparms("midisend", 4, NSEEL_PProc_THIS, &ysfx_api_midisend);

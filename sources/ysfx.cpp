@@ -387,7 +387,6 @@ bool ysfx_compile(ysfx_t *fx, uint32_t compileopts)
     fx->code.compiled = true;
     fx->is_freshly_compiled = true;
     fx->must_compute_init = true;
-    ysfx_clear_files(fx);
 
     ///
     ysfx_eel_string_context_update_named_vars(fx->string_ctx.get(), vm);
@@ -733,6 +732,18 @@ void ysfx_slider_set_value(ysfx_t *fx, uint32_t index, ysfx_real value)
     }
 }
 
+bool ysfx_slider_is_visible(ysfx_t *fx, uint32_t index)
+{
+    if (index >= ysfx_max_sliders || !fx->source.main)
+        return false;
+
+    ysfx_slider_t &slider = fx->source.main->header.sliders[index];
+    if (!slider.exists)
+        return false;
+
+    return (fx->slider.visible_mask & ((uint64_t)1 << index)) != 0;
+}
+
 std::string ysfx_resolve_import_path(ysfx_t *fx, const std::string &name, const std::string &origin)
 {
     std::vector<std::string> dirs;
@@ -822,8 +833,7 @@ void ysfx_init(ysfx_t *fx)
         return;
 
     if (fx->is_freshly_compiled) {
-        *fx->var.samplesblock = (EEL_F)fx->block_size;
-        *fx->var.srate = fx->sample_rate;
+        ysfx_first_init(fx);
         fx->is_freshly_compiled = false;
     }
 
@@ -834,6 +844,24 @@ void ysfx_init(ysfx_t *fx)
 
     fx->must_compute_init = false;
     fx->must_compute_slider = true;
+}
+
+void ysfx_first_init(ysfx_t *fx)
+{
+    assert(fx->code.compiled);
+    assert(fx->is_freshly_compiled);
+
+    *fx->var.samplesblock = (EEL_F)fx->block_size;
+    *fx->var.srate = fx->sample_rate;
+
+    ysfx_clear_files(fx);
+
+    fx->slider.visible_mask = 0;
+    for (uint32_t i = 0; i < ysfx_max_sliders; ++i) {
+        ysfx_slider_t &slider = fx->source.main->header.sliders[i];
+        fx->slider.visible_mask |= (uint64_t)slider.initially_visible << i;
+    }
+    fx->slider.old_visible_mask = fx->slider.visible_mask;
 }
 
 void ysfx_set_time_info(ysfx_t *fx, const ysfx_time_info_t *info)
@@ -893,7 +921,11 @@ bool ysfx_send_trigger(ysfx_t *fx, uint32_t index)
 
 bool ysfx_have_slider_changes(ysfx_t *fx)
 {
-    return (fx->slider.automate_mask|fx->slider.change_mask) != 0;
+    uint64_t mask = 0;
+    mask |= fx->slider.automate_mask;
+    mask |= fx->slider.change_mask;
+    mask |= fx->slider.visible_mask ^ fx->slider.old_visible_mask;
+    return mask != 0;
 }
 
 uint32_t ysfx_get_slider_change_type(ysfx_t *fx, uint32_t index)
@@ -906,6 +938,8 @@ uint32_t ysfx_get_slider_change_type(ysfx_t *fx, uint32_t index)
         type |= slider_change_display|slider_change_automation;
     if (fx->slider.change_mask & ((uint64_t)1 << index))
         type |= slider_change_display;
+    if ((fx->slider.visible_mask ^ fx->slider.old_visible_mask) & ((uint64_t)1 << index))
+        type |= slider_change_visibility;
     return type;
 }
 
@@ -919,6 +953,7 @@ void ysfx_process_generic(ysfx_t *fx, const Real *const *ins, Real *const *outs,
     // prepare slider change masks
     fx->slider.automate_mask = 0;
     fx->slider.change_mask = 0;
+    fx->slider.old_visible_mask = fx->slider.visible_mask;
 
     // prepare triggers
     *fx->var.trigger = (EEL_F)fx->triggers;

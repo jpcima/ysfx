@@ -139,6 +139,15 @@ end_range: ;
     //--------------------------------------------------------------------------
     // Parse Description
 
+    while (ysfx::ascii_isspace(YYCURSOR[0]))
+        ++YYCURSOR;
+
+    slider.initially_visible = true;
+    if (YYCURSOR[0] == '-') {
+        ++YYCURSOR;
+        slider.initially_visible = false;
+    }
+
     slider.desc = ysfx::trim(YYCURSOR, &ysfx::ascii_isspace);
     if (slider.desc.empty())
         return false;
