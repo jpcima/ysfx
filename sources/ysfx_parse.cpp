@@ -93,35 +93,51 @@ void ysfx_parse_header(ysfx_section_t *section, ysfx_header_t &header)
 
     line.reserve(256);
 
+    ///
+    auto unprefix = [](const char *text, const char **restp, const char *prefix) -> bool {
+        size_t len = strlen(prefix);
+        if (strncmp(text, prefix, len))
+            return false;
+        if (restp)
+            *restp = text + len;
+        return true;
+    };
+
+    //--------------------------------------------------------------------------
+    // pass 1: regular metadata
+
     while (reader.read_next_line(line)) {
         const char *linep = line.c_str();
+        const char *rest = nullptr;
 
         ysfx_slider_t slider;
         ysfx_parsed_filename_t filename;
 
         ///
-        if (!strncmp(linep, "desc:", 5)) {
+        if (unprefix(linep, &rest, "desc:")) {
             if (header.desc.empty())
-                header.desc = ysfx::trim(linep + 5, &ysfx::ascii_isspace);
+                header.desc = ysfx::trim(rest, &ysfx::ascii_isspace);
         }
-        if (!strncmp(linep, "//author:", 9)) {
+        else if (unprefix(linep, &rest, "author:")) {
             if (header.author.empty())
-                header.author = ysfx::trim(linep + 9, &ysfx::ascii_isspace);
+                header.author = ysfx::trim(rest, &ysfx::ascii_isspace);
         }
-        if (!strncmp(linep, "//tags:", 7)) {
-            for (const std::string &tag : ysfx::split_strings_noempty(linep + 7, &ysfx::ascii_isspace))
-                header.tags.push_back(tag);
+        else if (unprefix(linep, &rest, "tags:")) {
+            if (header.tags.empty()) {
+                for (const std::string &tag : ysfx::split_strings_noempty(rest, &ysfx::ascii_isspace))
+                    header.tags.push_back(tag);
+            }
         }
-        else if (!strncmp(linep, "in_pin:", 7)) {
+        else if (unprefix(linep, &rest, "in_pin:")) {
             header.explicit_pins = true;
-            header.in_pins.push_back(ysfx::trim(linep + 7, &ysfx::ascii_isspace));
+            header.in_pins.push_back(ysfx::trim(rest, &ysfx::ascii_isspace));
         }
-        else if (!strncmp(linep, "out_pin:", 8)) {
+        else if (unprefix(linep, &rest, "out_pin:")) {
             header.explicit_pins = true;
-            header.out_pins.push_back(ysfx::trim(linep + 8, &ysfx::ascii_isspace));
+            header.out_pins.push_back(ysfx::trim(rest, &ysfx::ascii_isspace));
         }
-        else if (!strncmp(linep, "options:", 8)) {
-            for (const std::string &opt : ysfx::split_strings_noempty(linep + 8, &ysfx::ascii_isspace)) {
+        else if (unprefix(linep, &rest, "options:")) {
+            for (const std::string &opt : ysfx::split_strings_noempty(rest, &ysfx::ascii_isspace)) {
                 size_t pos = opt.find('=');
                 std::string name = (pos == opt.npos) ? opt : opt.substr(0, pos);
                 std::string value = (pos == opt.npos) ? std::string{} : opt.substr(pos + 1);
@@ -137,8 +153,8 @@ void ysfx_parse_header(ysfx_section_t *section, ysfx_header_t &header)
                     header.options.no_meter = true;
             }
         }
-        else if (!strncmp(linep, "import", 6) && ysfx::ascii_isspace(linep[6]))
-            header.imports.push_back(ysfx::trim(linep + 7, &ysfx::ascii_isspace));
+        else if (unprefix(linep, &rest, "import") && ysfx::ascii_isspace(rest[0]))
+            header.imports.push_back(ysfx::trim(rest + 1, &ysfx::ascii_isspace));
         else if (ysfx_parse_slider(linep, slider)) {
             if (slider.id >= ysfx_max_sliders)
                 continue;
@@ -154,6 +170,31 @@ void ysfx_parse_header(ysfx_section_t *section, ysfx_header_t &header)
         //++lineno;
     }
 
+    //--------------------------------------------------------------------------
+    // pass 2: comments
+
+    reader = ysfx::string_text_reader{section->text.c_str()};
+
+    while (reader.read_next_line(line)) {
+        const char *linep = line.c_str();
+        const char *rest = nullptr;
+
+        // some files contain metadata in the form of comments
+        // this is not part of spec, but we'll take this info regardless
+
+        if (unprefix(linep, &rest, "//author:")) {
+            if (header.author.empty())
+                header.author = ysfx::trim(rest, &ysfx::ascii_isspace);
+        }
+        else if (unprefix(linep, &rest, "//tags:")) {
+            if (header.tags.empty()) {
+                for (const std::string &tag : ysfx::split_strings_noempty(rest, &ysfx::ascii_isspace))
+                    header.tags.push_back(tag);
+            }
+        }
+    }
+
+    //--------------------------------------------------------------------------
     if (header.in_pins.size() == 1 && !ysfx::ascii_strcmp(header.in_pins.front().c_str(), "none"))
         header.in_pins.clear();
     if (header.out_pins.size() == 1 && !ysfx::ascii_strcmp(header.out_pins.front().c_str(), "none"))
