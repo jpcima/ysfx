@@ -72,6 +72,12 @@ target_link_libraries(ysfx-private
         ysfx::dr_libs)
 add_library(ysfx::ysfx-private ALIAS ysfx-private)
 
+if(YSFX_GFX)
+    target_link_libraries(ysfx-private PUBLIC ysfx::lice)
+else()
+    target_compile_definitions(ysfx-private PUBLIC "YSFX_NO_GFX")
+endif()
+
 function(ysfx_re2c_file INPUT OUTPUT)
     if(RE2C_PROGRAM)
         get_filename_component(_in "${INPUT}" ABSOLUTE BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
