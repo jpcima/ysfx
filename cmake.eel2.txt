@@ -16,12 +16,9 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-find_package(Threads REQUIRED)
-
 if(NOT YSFX_PORTABLE AND MSVC AND MSVC_C_ARCHITECTURE_ID STREQUAL "x64")
-    find_program(NASM_PROGRAM "nasm")
     if(NOT NASM_PROGRAM)
-        message(FATAL_ERROR "Cannot find nasm")
+        message(FATAL_ERROR "Cannot find nasm, required in a MSVC x64 configuration")
     endif()
 endif()
 
@@ -40,6 +37,84 @@ if(MSVC)
 endif()
 target_include_directories(wdl-base PUBLIC "thirdparty/WDL/source")
 add_library(ysfx::wdl-base ALIAS wdl-base)
+
+# ysfx::swell
+# ------------------------------------------------------------------------------
+if(YSFX_GFX)
+    if(WIN32)
+        add_empty_static_library(swell)
+    else()
+        add_library(swell
+            STATIC
+                "thirdparty/WDL/source/WDL/swell/swell-ini.cpp"
+                "thirdparty/WDL/source/WDL/swell/swell.cpp")
+        if(NOT APPLE)
+            target_sources(swell
+                PRIVATE
+                    "thirdparty/WDL/source/WDL/swell/swell-appstub-generic.cpp"
+                    "thirdparty/WDL/source/WDL/swell/swell-dlg-generic.cpp"
+                    "thirdparty/WDL/source/WDL/swell/swell-gdi-generic.cpp"
+                    "thirdparty/WDL/source/WDL/swell/swell-gdi-lice.cpp"
+                    "thirdparty/WDL/source/WDL/swell/swell-generic-gdk.cpp"
+                    "thirdparty/WDL/source/WDL/swell/swell-generic-headless.cpp"
+                    "thirdparty/WDL/source/WDL/swell/swell-kb-generic.cpp"
+                    "thirdparty/WDL/source/WDL/swell/swell-menu-generic.cpp"
+                    "thirdparty/WDL/source/WDL/swell/swell-misc-generic.cpp"
+                    "thirdparty/WDL/source/WDL/swell/swell-miscdlg-generic.cpp"
+                    "thirdparty/WDL/source/WDL/swell/swell-modstub-generic.cpp"
+                    "thirdparty/WDL/source/WDL/swell/swell-wnd-generic.cpp")
+                target_compile_definitions(swell PUBLIC "SWELL_LICE_GDI")
+        else()
+            target_sources(swell
+                PRIVATE
+                    "thirdparty/WDL/source/WDL/swell/swell-appstub.mm"
+                    "thirdparty/WDL/source/WDL/swell/swell-dlg.mm"
+                    "thirdparty/WDL/source/WDL/swell/swell-gdi.mm"
+                    "thirdparty/WDL/source/WDL/swell/swell-kb.mm"
+                    "thirdparty/WDL/source/WDL/swell/swell-menu.mm"
+                    "thirdparty/WDL/source/WDL/swell/swell-misc.mm"
+                    "thirdparty/WDL/source/WDL/swell/swell-miscdlg.mm"
+                    "thirdparty/WDL/source/WDL/swell/swell-modstub.mm"
+                    "thirdparty/WDL/source/WDL/swell/swell-wnd.mm"
+                    "thirdparty/WDL/source/WDL/swell/swellappmain.mm")
+            target_link_libraries(swell
+                PRIVATE
+                    Apple::Cocoa
+                    Apple::Carbon
+                    Apple::Foundation
+                    Apple::Metal)
+        endif()
+    endif()
+    target_link_libraries(swell
+        PUBLIC
+            ysfx::wdl-base
+        PRIVATE
+            ysfx::dl
+            Threads::Threads)
+    add_library(ysfx::swell ALIAS swell)
+endif()
+
+# ysfx::lice
+# ------------------------------------------------------------------------------
+if(YSFX_GFX)
+    add_library(lice
+        STATIC
+            "thirdparty/WDL/source/WDL/lice/lice.cpp"
+            "thirdparty/WDL/source/WDL/lice/lice_arc.cpp"
+            "thirdparty/WDL/source/WDL/lice/lice_colorspace.cpp"
+            "thirdparty/WDL/source/WDL/lice/lice_image.cpp"
+            "thirdparty/WDL/source/WDL/lice/lice_line.cpp"
+            "thirdparty/WDL/source/WDL/lice/lice_palette.cpp"
+            "thirdparty/WDL/source/WDL/lice/lice_texgen.cpp"
+            "thirdparty/WDL/source/WDL/lice/lice_text.cpp"
+            "thirdparty/WDL/source/WDL/lice/lice_textnew.cpp")
+    target_link_libraries(lice PUBLIC ysfx::swell)
+    add_library(ysfx::lice ALIAS lice)
+
+    # lice and swell codependence
+    target_link_libraries(lice PUBLIC ysfx::swell)
+    target_link_libraries(swell PUBLIC ysfx::lice)
+endif()
 
 # ysfx::eel2
 # ------------------------------------------------------------------------------

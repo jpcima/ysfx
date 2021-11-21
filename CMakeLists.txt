@@ -26,6 +26,7 @@ else()
 endif()
 
 option(YSFX_PORTABLE "Disable architecture-dependent code" OFF)
+option(YSFX_GFX "Build graphics support" ON)
 option(YSFX_PLUGIN "Build audio plugin" "${YSFX_BUILD_FROM_HERE}")
 option(YSFX_TESTS "Build unit tests" OFF)
 option(YSFX_TOOLS "Build tools" OFF)
@@ -33,6 +34,7 @@ option(YSFX_SKIP_CHECKSUM "Skip the checksum" OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 include(BuildType)
+include(EmptyStaticLibrary)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -50,6 +52,7 @@ if(MSVC)
 endif()
 
 ###
+include("cmake.deps.txt")
 include("cmake.eel2.txt")
 include("cmake.ysfx.txt")
 if(YSFX_TESTS)

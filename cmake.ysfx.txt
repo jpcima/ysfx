@@ -16,19 +16,9 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-include(EmptyStaticLibrary)
-
-###
-find_program(RE2C_PROGRAM "re2c")
 if(NOT RE2C_PROGRAM)
     message(STATUS "re2c is missing, files will not regenerate (it's fine)")
 endif()
-
-# ysfx::dr_libs
-# ------------------------------------------------------------------------------
-add_library(dr_libs INTERFACE)
-target_include_directories(dr_libs INTERFACE "thirdparty/dr_libs")
-add_library(ysfx::dr_libs ALIAS dr_libs)
 
 # ysfx::ysfx-private
 #    A ysfx target which gives access to the internals.
