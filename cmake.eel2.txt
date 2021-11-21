@@ -25,6 +25,22 @@ if(NOT YSFX_PORTABLE AND MSVC AND MSVC_C_ARCHITECTURE_ID STREQUAL "x64")
     endif()
 endif()
 
+# ysfx::wdl-base
+# ------------------------------------------------------------------------------
+add_library(wdl-base STATIC "thirdparty/WDL/source/WDL/fft.c")
+if(WIN32)
+    target_sources(wdl-base PRIVATE "thirdparty/WDL/source/WDL/win32_utf8.c")
+endif()
+target_compile_definitions(wdl-base PUBLIC "WDL_FFT_REALSIZE=8")
+if(NOT WIN32)
+    target_compile_definitions(wdl-base PRIVATE "_FILE_OFFSET_BITS=64")
+endif()
+if(MSVC)
+    target_compile_definitions(wdl-base PRIVATE "_CRT_NONSTDC_NO_WARNINGS")
+endif()
+target_include_directories(wdl-base PUBLIC "thirdparty/WDL/source")
+add_library(ysfx::wdl-base ALIAS wdl-base)
+
 # ysfx::eel2
 # ------------------------------------------------------------------------------
 add_library(eel2
@@ -35,26 +51,14 @@ add_library(eel2
         "thirdparty/WDL/source/WDL/eel2/nseel-eval.c"
         "thirdparty/WDL/source/WDL/eel2/nseel-lextab.c"
         "thirdparty/WDL/source/WDL/eel2/nseel-ram.c"
-        "thirdparty/WDL/source/WDL/eel2/nseel-yylex.c"
-        "thirdparty/WDL/source/WDL/fft.c")
-if(WIN32)
-    target_sources(eel2
-        PRIVATE
-            "thirdparty/WDL/source/WDL/win32_utf8.c")
-endif()
+        "thirdparty/WDL/source/WDL/eel2/nseel-yylex.c")
 if(YSFX_PORTABLE)
-    target_compile_definitions(eel2
-        PUBLIC
-            "EEL_TARGET_PORTABLE")
+    target_compile_definitions(eel2 PUBLIC "EEL_TARGET_PORTABLE")
 else()
     if(NOT MSVC)
-        target_sources(eel2
-            PRIVATE
-                "sources/eel2-gas/sources/asm-nseel-x64-sse.S")
+        target_sources(eel2 PRIVATE "sources/eel2-gas/sources/asm-nseel-x64-sse.S")
     elseif(MSVC_C_ARCHITECTURE_ID STREQUAL "x64")
-        target_sources(eel2
-            PRIVATE
-                "asm-nseel-x64-sse.obj")
+        target_sources(eel2 PRIVATE "asm-nseel-x64-sse.obj")
         add_custom_command(
             OUTPUT "asm-nseel-x64-sse.obj"
             COMMAND "${NASM_PROGRAM}" "-f" "win64" "-o" "${CMAKE_CURRENT_BINARY_DIR}/asm-nseel-x64-sse.obj" "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/WDL/source/WDL/eel2/asm-nseel-x64-sse.asm"
@@ -65,23 +69,17 @@ target_compile_definitions(eel2
     PUBLIC
         "EELSCRIPT_NO_NET"
         "EELSCRIPT_NO_LICE"
-        "WDL_FFT_REALSIZE=8"
     PRIVATE
         "NSEEL_ATOF=nseel_atof")
 if(NOT WIN32)
-    target_compile_definitions(eel2
-        PRIVATE
-            "_FILE_OFFSET_BITS=64")
+    target_compile_definitions(eel2 PRIVATE "_FILE_OFFSET_BITS=64")
 endif()
 if(MSVC)
-    target_compile_definitions(eel2
-        PRIVATE
-            "_CRT_NONSTDC_NO_WARNINGS")
+    target_compile_definitions(eel2 PRIVATE "_CRT_NONSTDC_NO_WARNINGS")
 endif()
-target_include_directories(eel2
-    PUBLIC
-        "thirdparty/WDL/source")
 target_link_libraries(eel2
+    PUBLIC
+        ysfx::wdl-base
     PRIVATE
         Threads::Threads)
 add_library(ysfx::eel2 ALIAS eel2)
