@@ -96,6 +96,7 @@ if(NOT YSFX_SKIP_CHECKSUM)
             "${CMAKE_COMMAND}"
             "-DSOURCE_FILE=${CMAKE_SOURCE_DIR}/thirdparty/WDL/source/WDL/eel2/asm-nseel-x64-sse.asm"
             "-DCHECKSUM_FILE=${CMAKE_SOURCE_DIR}/sources/eel2-gas/sources/ref-hash-sha512.txt"
+            "-DTEXT_MODE=ON"
             "-P" "${PROJECT_SOURCE_DIR}/cmake/ValidateSHA512.cmake"
         COMMAND
             "${CMAKE_COMMAND}" "-E" "touch" "${CMAKE_CURRENT_BINARY_DIR}/eel2-gas-validate-stamp.txt"

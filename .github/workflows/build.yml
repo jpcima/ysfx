@@ -63,7 +63,7 @@ jobs:
       - name: Configure CMake (Windows)
         if: ${{ matrix.os-type == 'Windows' }}
         working-directory: ${{ runner.workspace }}/build
-        run: cmake "${Env:GITHUB_WORKSPACE}" -G"Visual Studio 16 2019" -A"${Env:release_arch}" -DCMAKE_BUILD_TYPE="${Env:build_type}" -DYSFX_PLUGIN=OFF -DYSFX_TESTS=ON -DYSFX_SKIP_CHECKSUM=ON
+        run: cmake "${Env:GITHUB_WORKSPACE}" -G"Visual Studio 16 2019" -A"${Env:release_arch}" -DCMAKE_BUILD_TYPE="${Env:build_type}" -DYSFX_PLUGIN=OFF -DYSFX_TESTS=ON
       - name: Configure CMake (Linux and macOS)
         if: ${{ matrix.os-type == 'Linux' || matrix.os-type == 'macOS' }}
         working-directory: ${{ runner.workspace }}/build
