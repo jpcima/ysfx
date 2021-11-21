@@ -56,7 +56,7 @@ TEST_CASE("flac audio format", "[flac]")
             info.format = SF_FORMAT_FLAC|SF_FORMAT_PCM_16;
             SNDFILE *snd = sf_open(flac_file.m_path.c_str(), SFM_WRITE, &info);
             REQUIRE(snd);
-            REQUIRE(sf_writef_float(snd, data.get(), totalframes) == totalframes);
+            REQUIRE(sf_writef_float(snd, data.get(), totalframes) == (sf_count_t)totalframes);
             sf_close(snd);
         }
 
