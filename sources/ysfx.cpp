@@ -732,10 +732,22 @@ std::string ysfx_resolve_import_path(ysfx_t *fx, const std::string &name, const 
             dirs.push_back(import_root);
     }
 
+    // the search should be case-insensitive
+    static constexpr bool nocase = true;
+
+    static auto *check_existence = +[](const std::string &dir, const std::string &file, std::string &result_path) -> int {
+        if (nocase)
+            return ysfx::case_resolve(dir.c_str(), file.c_str(), result_path);
+        else {
+            result_path = dir + file;
+            return ysfx::exists(result_path.c_str());
+        }
+    };
+
     // search for the file in these directories directly
     for (const std::string &dir : dirs) {
-        std::string resolved = dir + name;
-        if (ysfx::exists(resolved.c_str()))
+        std::string resolved;
+        if (check_existence(dir, name, resolved))
             return resolved;
     }
 
@@ -749,8 +761,8 @@ std::string ysfx_resolve_import_path(ysfx_t *fx, const std::string &name, const 
         vd.name = &name;
         auto visit = [](const std::string &dir, void *data) -> bool {
             visit_data &vd = *(visit_data *)data;
-            std::string resolved = dir + *vd.name;
-            if (ysfx::exists(resolved.c_str())) {
+            std::string resolved;
+            if (check_existence(dir, *vd.name, resolved)) {
                 vd.resolved = std::move(resolved);
                 return false;
             }
