@@ -60,7 +60,7 @@ struct ysfx_s {
     bool must_compute_init = false;
     bool must_compute_slider = false;
 
-    std::unordered_map<EEL_F *, uint32_t> slider_of_var;
+    std::unordered_map<ysfx_real *, uint32_t> slider_of_var;
 
     // source
     struct {
