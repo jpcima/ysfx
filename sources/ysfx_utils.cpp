@@ -21,6 +21,7 @@
 #include <deque>
 #include <clocale>
 #include <cstring>
+#include <cassert>
 #if !defined(_WIN32)
 #   include <sys/stat.h>
 #   include <sys/types.h>
@@ -595,6 +596,63 @@ void visit_directories(const char *rootpath, bool (*visit)(const std::string &, 
     }
 }
 #endif
+
+int case_resolve(const char *root_, const char *fragment, std::string &result)
+{
+    if (fragment[0] == '\0')
+        return 0;
+
+    std::string root = path_ensure_final_separator(root_);
+
+    result = root + fragment;
+    if (exists(result.c_str()))
+        return 1;
+
+    struct Item {
+        std::string root;
+        string_list components;
+    };
+
+    std::deque<Item> worklist;
+
+    {
+        Item item;
+        item.root = root;
+        item.components = split_strings_noempty(fragment, &is_path_separator);
+        if (item.components.empty())
+            return 0;
+        for (size_t i = 0; i + 1 < item.components.size(); ++i)
+            item.components[i].push_back('/');
+        if (is_path_separator(fragment[strlen(fragment) - 1]))
+            item.components.back().push_back('/');
+        worklist.push_back(std::move(item));
+    }
+
+    while (!worklist.empty()) {
+        Item item = std::move(worklist.front());
+        worklist.pop_front();
+
+        for (const std::string &entry : list_directory(item.root.c_str())) {
+            if (ascii_strcmp(entry.c_str(), item.components[0].c_str()) != 0)
+                continue;
+
+            if (item.components.size() == 1) {
+                result = item.root + entry;
+                if (exists(result.c_str()))
+                    return 2;
+            }
+            else {
+                assert(item.components.size() > 1);
+                Item newitem;
+                newitem.root = item.root + entry;
+                newitem.components.assign(item.components.begin() + 1, item.components.end());
+                worklist.push_front(std::move(newitem));
+            }
+        }
+    }
+
+    return 0;
+}
 
 //------------------------------------------------------------------------------
 

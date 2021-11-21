@@ -141,6 +141,8 @@ bool exists(const char *path);
 string_list list_directory(const char *path);
 // visit the root and subdirectories in depth-first order
 void visit_directories(const char *rootpath, bool (*visit)(const std::string &, void *), void *data);
+// resolve a path which matches root/fragment, where fragment is case-insensitive (0=failed, 1=exact, 2=inexact)
+int case_resolve(const char *root, const char *fragment, std::string &result);
 
 //------------------------------------------------------------------------------
 
