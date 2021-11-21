@@ -86,3 +86,16 @@ scoped_new_txt::~scoped_new_txt()
 {
     unlink(m_path.c_str());
 }
+
+//------------------------------------------------------------------------------
+bool is_on_case_sensitive_filesystem(const char *path)
+{
+    // it's not 100% accurate, but fine for test purposes
+#if defined(_WIN32)
+    return false;
+#elif defined(__APPLE__)
+    return pathconf(path, _PC_CASE_SENSITIVE) != 0;
+#else
+    return true;
+#endif
+}

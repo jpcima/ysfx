@@ -29,43 +29,50 @@ TEST_CASE("file system utilities", "[filesystem]")
 
         std::string result;
 
+        // case-insensitive file systems will never return `inexact`
+        const bool caseSensitiveFs = is_on_case_sensitive_filesystem(root.m_path.c_str());
+
+        const int retExact = 1;
+        const int retInexact = caseSensitiveFs ? 2 : 1;
+        const int retNotFound = 0;
+
         //----------------------------------------------------------------------
 
         // exact resolution
-        REQUIRE(ysfx::case_resolve(root.m_path.c_str(), "dir1/file1.txt", result) == 1);
+        REQUIRE(ysfx::case_resolve(root.m_path.c_str(), "dir1/file1.txt", result) == retExact);
         REQUIRE(result == root.m_path + "dir1/file1.txt");
         // inexact resolution (1)
-        REQUIRE(ysfx::case_resolve(root.m_path.c_str(), "Dir1/file1.txt", result) == 2);
+        REQUIRE(ysfx::case_resolve(root.m_path.c_str(), "Dir1/file1.txt", result) == retInexact);
         REQUIRE(result == root.m_path + "dir1/file1.txt");
         // inexact resolution (2)
-        REQUIRE(ysfx::case_resolve(root.m_path.c_str(), "dir1/File1.txt", result) == 2);
+        REQUIRE(ysfx::case_resolve(root.m_path.c_str(), "dir1/File1.txt", result) == retInexact);
         REQUIRE(result == root.m_path + "dir1/file1.txt");
         // inexact resolution (3)
-        REQUIRE(ysfx::case_resolve(root.m_path.c_str(), "Dir1/File1.txt", result) == 2);
+        REQUIRE(ysfx::case_resolve(root.m_path.c_str(), "Dir1/File1.txt", result) == retInexact);
         REQUIRE(result == root.m_path + "dir1/file1.txt");
         // failed resolution
-        REQUIRE(ysfx::case_resolve(root.m_path.c_str(), "dir1/file2.txt", result) == 0);
+        REQUIRE(ysfx::case_resolve(root.m_path.c_str(), "dir1/file2.txt", result) == retNotFound);
 
         //----------------------------------------------------------------------
 
         // exact resolution
-        REQUIRE(ysfx::case_resolve(sub1.m_path.c_str(), "file1.txt", result) == 1);
+        REQUIRE(ysfx::case_resolve(sub1.m_path.c_str(), "file1.txt", result) == retExact);
         REQUIRE(result == sub1.m_path + "file1.txt");
         // inexact resolution
-        REQUIRE(ysfx::case_resolve(sub1.m_path.c_str(), "File1.txt", result) == 2);
+        REQUIRE(ysfx::case_resolve(sub1.m_path.c_str(), "File1.txt", result) == retInexact);
         REQUIRE(result == sub1.m_path + "file1.txt");
         // failed resolution
-        REQUIRE(ysfx::case_resolve(sub1.m_path.c_str(), "file2.txt", result) == 0);
+        REQUIRE(ysfx::case_resolve(sub1.m_path.c_str(), "file2.txt", result) == retNotFound);
 
         //----------------------------------------------------------------------
 
         // exact resolution
-        REQUIRE(ysfx::case_resolve(root.m_path.c_str(), "dir1/", result) == 1);
+        REQUIRE(ysfx::case_resolve(root.m_path.c_str(), "dir1/", result) == retExact);
         REQUIRE(result == root.m_path + "dir1/");
         // inexact resolution (1)
-        REQUIRE(ysfx::case_resolve(root.m_path.c_str(), "Dir1/", result) == 2);
+        REQUIRE(ysfx::case_resolve(root.m_path.c_str(), "Dir1/", result) == retInexact);
         REQUIRE(result == root.m_path + "dir1/");
         // failed resolution
-        REQUIRE(ysfx::case_resolve(root.m_path.c_str(), "dir2/", result) == 0);
+        REQUIRE(ysfx::case_resolve(root.m_path.c_str(), "dir2/", result) == retNotFound);
     }
 }
