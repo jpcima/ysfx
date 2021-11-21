@@ -89,7 +89,7 @@ double dot_strtod(const char *text, char **endp);
 bool ascii_isspace(char c);
 char ascii_tolower(char c);
 char ascii_toupper(char c);
-int ascii_strcmp(const char *a, const char *b);
+int ascii_casecmp(const char *a, const char *b);
 string_list split_strings_noempty(const char *input, bool(*pred)(char));
 std::string trim(const char *input, bool(*pred)(char));
 

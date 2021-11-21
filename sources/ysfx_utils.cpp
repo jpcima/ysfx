@@ -217,7 +217,7 @@ char ascii_toupper(char c)
     return (c >= 'a' && c <= 'z') ? (c - 'a' + 'A') : c;
 }
 
-int ascii_strcmp(const char *a, const char *b)
+int ascii_casecmp(const char *a, const char *b)
 {
     for (char ca, cb; (ca = *a++) | (cb = *b++); ) {
         ca = ascii_tolower(ca);
@@ -437,7 +437,7 @@ bool path_has_suffix(const char *path, const char *suffix)
         return false;
 
     return path[plen - slen - 1] == '.' &&
-        ascii_strcmp(suffix, &path[plen - slen]) == 0;
+        ascii_casecmp(suffix, &path[plen - slen]) == 0;
 }
 
 bool path_is_relative(const char *path)
@@ -633,7 +633,7 @@ int case_resolve(const char *root_, const char *fragment, std::string &result)
         worklist.pop_front();
 
         for (const std::string &entry : list_directory(item.root.c_str())) {
-            if (ascii_strcmp(entry.c_str(), item.components[0].c_str()) != 0)
+            if (ascii_casecmp(entry.c_str(), item.components[0].c_str()) != 0)
                 continue;
 
             if (item.components.size() == 1) {

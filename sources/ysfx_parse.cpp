@@ -195,9 +195,9 @@ void ysfx_parse_header(ysfx_section_t *section, ysfx_header_t &header)
     }
 
     //--------------------------------------------------------------------------
-    if (header.in_pins.size() == 1 && !ysfx::ascii_strcmp(header.in_pins.front().c_str(), "none"))
+    if (header.in_pins.size() == 1 && !ysfx::ascii_casecmp(header.in_pins.front().c_str(), "none"))
         header.in_pins.clear();
-    if (header.out_pins.size() == 1 && !ysfx::ascii_strcmp(header.out_pins.front().c_str(), "none"))
+    if (header.out_pins.size() == 1 && !ysfx::ascii_casecmp(header.out_pins.front().c_str(), "none"))
         header.out_pins.clear();
 
     if (header.in_pins.size() > ysfx_max_channels)

@@ -40,7 +40,7 @@ TEST_CASE("file system utilities", "[filesystem]")
             if (caseSensitiveFs)
                 return result == other;
             else
-                return ysfx::ascii_strcmp(result.c_str(), other.c_str()) == 0;
+                return ysfx::ascii_casecmp(result.c_str(), other.c_str()) == 0;
         };
 
         //----------------------------------------------------------------------
