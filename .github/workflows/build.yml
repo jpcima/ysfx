@@ -22,25 +22,46 @@ jobs:
             platform: x86
             release-arch: Win32
             os-type: Windows
+            shell: pwsh
           - name: win64
             display-name: Windows 64-bit
             runs-on: windows-2019
             platform: x64
             release-arch: x64
             os-type: Windows
+            shell: pwsh
           - name: linux64
             display-name: Linux 64-bit
             runs-on: ubuntu-20.04
-            platform: x64
+            platform: x86_64
             release-arch: Linux64
             os-type: Linux
+            shell: bash
           - name: macos
             display-name: macOS
             runs-on: macos-11
             os-type: macOS
+            shell: bash
+          - name: mingw32
+            display-name: MSYS MinGW 32-bit
+            runs-on: windows-2019
+            platform: i686
+            msystem: MINGW32
+            os-type: MinGW
+            shell: msys2 {0}
+          - name: mingw64
+            display-name: MSYS MinGW 64-bit
+            runs-on: windows-2019
+            platform: x86_64
+            msystem: MINGW64
+            os-type: MinGW
+            shell: msys2 {0}
       fail-fast: false
     name: Compile for ${{ matrix.display-name }}
     runs-on: ${{ matrix.runs-on }}
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
     env:
       name: ${{ matrix.name }}
       display_name: ${{ matrix.display-name }}
@@ -57,6 +78,17 @@ jobs:
         run: sudo apt-get -y install libsndfile1-dev
       - uses: ilammy/setup-nasm@v1
         if: ${{ matrix.os-type == 'Windows' }}
+      - uses: msys2/setup-msys2@v2
+        if: ${{ matrix.os-type == 'MinGW' }}
+        with:
+          msystem: ${{ matrix.msystem }}
+          update: true
+          install: >-
+            git
+            mingw-w64-${{ matrix.platform }}-toolchain
+            mingw-w64-${{ matrix.platform }}-cmake
+            mingw-w64-${{ matrix.platform }}-ninja
+            mingw-w64-${{ matrix.platform }}-libsndfile
       - name: Create Build Directory
         working-directory: ${{ runner.workspace }}
         run: cmake -E make_directory build
@@ -64,16 +96,16 @@ jobs:
         if: ${{ matrix.os-type == 'Windows' }}
         working-directory: ${{ runner.workspace }}/build
         run: cmake "${Env:GITHUB_WORKSPACE}" -G"Visual Studio 16 2019" -A"${Env:release_arch}" -DCMAKE_BUILD_TYPE="${Env:build_type}" -DYSFX_PLUGIN=OFF -DYSFX_TESTS=ON
-      - name: Configure CMake (Linux and macOS)
-        if: ${{ matrix.os-type == 'Linux' || matrix.os-type == 'macOS' }}
+      - name: Configure CMake (Linux, macOS and MinGW)
+        if: ${{ matrix.os-type == 'Linux' || matrix.os-type == 'macOS' || matrix.os-type == 'MinGW' }}
         working-directory: ${{ runner.workspace }}/build
         run: cmake "${GITHUB_WORKSPACE}" -DCMAKE_BUILD_TYPE="${build_type}" -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" -DYSFX_PLUGIN=OFF -DYSFX_TESTS=ON
       - name: Build (Windows)
         if: ${{ matrix.os-type == 'Windows' }}
         working-directory: ${{ runner.workspace }}/build
         run: cmake --build . --config "${Env:build_type}" -j "${Env:num_jobs}"
-      - name: Build (Linux and macOS)
-        if: ${{ matrix.os-type == 'Linux' || matrix.os-type == 'macOS' }}
+      - name: Build (Linux, macOS and MinGW)
+        if: ${{ matrix.os-type == 'Linux' || matrix.os-type == 'macOS' || matrix.os-type == 'MinGW' }}
         working-directory: ${{ runner.workspace }}/build
         run: cmake --build . --config "${build_type}" -j "${num_jobs}"
       - name: Test
