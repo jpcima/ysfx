@@ -111,6 +111,18 @@ if(YSFX_GFX)
     target_link_libraries(lice PUBLIC ysfx::swell)
     add_library(ysfx::lice ALIAS lice)
 
+    # custom image loaders
+    target_sources(lice
+        PRIVATE
+            "sources/lice_stb/lice_stb_generic.hpp"
+            "sources/lice_stb/lice_stb_loaders.cpp"
+            "sources/lice_stb/lice_stb_loaders.hpp"
+            "sources/lice_stb/lice_stb_bmp.cpp"
+            "sources/lice_stb/lice_stb_gif.cpp"
+            "sources/lice_stb/lice_stb_jpg.cpp"
+            "sources/lice_stb/lice_stb_png.cpp")
+    target_link_libraries(lice PRIVATE ysfx::stb)
+
     # lice and swell codependence
     target_link_libraries(lice PUBLIC ysfx::swell)
     target_link_libraries(swell PUBLIC ysfx::lice)
