@@ -18,6 +18,16 @@
 #define STBI_ONLY_GIF
 #include "lice_stb_generic.hpp"
 
+LICE_IBitmap *LICE_LoadGIF(const char *filename, LICE_IBitmap *bmp, int *nframes)
+{
+    LICE_IBitmap *ret = LICE_LoadSTB(filename, bmp);
+    if (ret) {
+        if (nframes) // animation not implemented
+            *nframes = 1;
+    }
+    return ret;
+}
+
 class LICE_stb_GIFLoader
 {
     _LICE_ImageLoader_rec rec;

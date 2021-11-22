@@ -18,6 +18,11 @@
 #define STBI_ONLY_BMP
 #include "lice_stb_generic.hpp"
 
+LICE_IBitmap *LICE_LoadBMP(const char *filename, LICE_IBitmap *bmp)
+{
+    return LICE_LoadSTB(filename, bmp);
+}
+
 class LICE_stb_BMPLoader
 {
     _LICE_ImageLoader_rec rec;
