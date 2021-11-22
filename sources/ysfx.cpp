@@ -830,6 +830,11 @@ void ysfx_init(ysfx_t *fx)
 
     fx->must_compute_init = false;
     fx->must_compute_slider = true;
+
+#if !defined(YSFX_NO_GFX)
+    // do initializations on next @gfx, on the gfx thread
+    fx->gfx_must_init.store(true, std::memory_order_relaxed);
+#endif
 }
 
 void ysfx_first_init(ysfx_t *fx)
@@ -1014,6 +1019,11 @@ void ysfx_draw(ysfx_t *fx)
 {
 #if !defined(YSFX_NO_GFX)
     ysfx_gfx_enter(fx);
+
+    if (fx->gfx_must_init.exchange(false, std::memory_order_relaxed)) {
+        // TODO: perform gfx initializations
+    }
+
     NSEEL_code_execute(fx->code.gfx.get());
 #endif
 }

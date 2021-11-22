@@ -27,6 +27,7 @@
 #include "WDL/eel2/ns-eel.h"
 #include "WDL/eel2/ns-eel-int.h"
 #include <unordered_map>
+#include <atomic>
 
 YSFX_DEFINE_AUTO_PTR(NSEEL_VMCTX_u, void, NSEEL_VM_free); // NOTE: `NSEEL_VMCTX` is `void *`
 YSFX_DEFINE_AUTO_PTR(NSEEL_CODEHANDLE_u, void, NSEEL_code_free); // NOTE: `NSEEL_CODEHANDLE` is `void *`
@@ -128,6 +129,7 @@ struct ysfx_s {
 #if !defined(YSFX_NO_GFX)
     // Graphics
     ysfx_gfx_state_u gfx_state;
+    std::atomic<bool> gfx_must_init{false};
 #endif
 };
 
