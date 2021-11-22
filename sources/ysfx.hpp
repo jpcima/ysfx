@@ -124,6 +124,11 @@ struct ysfx_s {
         std::vector<ysfx_file_u> list;
         ysfx::mutex list_mutex;
     } file;
+
+#if !defined(YSFX_NO_GFX)
+    // Graphics
+    ysfx_gfx_state_u gfx_state;
+#endif
 };
 
 void ysfx_unload_source(ysfx_t *fx);

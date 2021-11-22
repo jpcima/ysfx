@@ -82,9 +82,13 @@ ysfx_t *ysfx_new(ysfx_config_t *config)
         throw std::bad_alloc();
     fx->vm.reset(vm);
 
+    NSEEL_VM_SetCustomFuncThis(vm, fx.get());
+
     ysfx_eel_string_initvm(vm);
 
-    NSEEL_VM_SetCustomFuncThis(vm, fx.get());
+#if !defined(YSFX_NO_GFX)
+    fx->gfx_state.reset(ysfx_gfx_state_new());
+#endif
 
     auto var_resolver = [](void *userdata, const char *name) -> EEL_F * {
         ysfx_t *fx = (ysfx_t *)userdata;
@@ -1008,7 +1012,10 @@ void ysfx_process_double(ysfx_t *fx, const double *const *ins, double *const *ou
 
 void ysfx_draw(ysfx_t *fx)
 {
+#if !defined(YSFX_NO_GFX)
+    ysfx_gfx_enter(fx);
     NSEEL_code_execute(fx->code.gfx.get());
+#endif
 }
 
 void ysfx_clear_files(ysfx_t *fx)
