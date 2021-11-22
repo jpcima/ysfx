@@ -17,6 +17,9 @@
 
 #include "ysfx_api_gfx.hpp"
 #include "ysfx_eel_utils.hpp"
+#if !defined(YSFX_NO_GFX)
+#   include "lice_stb/lice_stb_loaders.hpp"
+#endif
 
 static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_stub(void *opaque, INT_PTR np, EEL_F **parms)
 {
@@ -28,7 +31,10 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_stub(void *opaque, INT_PTR np, EEL_F *
 
 void ysfx_api_init_gfx()
 {
-    //TODO implement me
+#if !defined(YSFX_NO_GFX)
+    lice_stb_install_loaders();
+#endif
+
     NSEEL_addfunc_varparm("gfx_set", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
     NSEEL_addfunc_varparm("gfx_lineto", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
     NSEEL_addfunc_varparm("gfx_line", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
@@ -44,7 +50,6 @@ void ysfx_api_init_gfx()
     NSEEL_addfunc_varparm("gfx_getfont", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
     NSEEL_addfunc_varparm("gfx_printf", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
     NSEEL_addfunc_varparm("gfx_blurto", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_blit", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
     NSEEL_addfunc_varparm("gfx_blit", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
     NSEEL_addfunc_varparm("gfx_blitext", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
     NSEEL_addfunc_varparm("gfx_getimgdim", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
