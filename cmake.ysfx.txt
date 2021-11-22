@@ -52,6 +52,8 @@ add_library(ysfx-private
         "sources/ysfx_api_file.hpp"
         "sources/ysfx_api_gfx.cpp"
         "sources/ysfx_api_gfx.hpp"
+        "sources/ysfx_api_gfx_dummy.hpp"
+        "sources/ysfx_api_gfx_lice.hpp"
         "sources/ysfx_eel_utils.cpp"
         "sources/ysfx_eel_utils.hpp")
 target_compile_definitions(ysfx-private

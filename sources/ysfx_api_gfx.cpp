@@ -77,88 +77,51 @@ ysfx_gfx_state_t *ysfx_gfx_get_context(ysfx_t *fx)
 
 //------------------------------------------------------------------------------
 #if !defined(YSFX_NO_GFX)
-    // TODO: implement gfx API
+#   include "ysfx_api_gfx_lice.hpp"
+#else
+#   include "ysfx_api_gfx_dummy.hpp"
 #endif
 
-static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_stub(void *opaque, INT_PTR np, EEL_F **parms)
-{
-    (void)opaque;
-    (void)np;
-    (void)parms;
-    return 0;
-}
-
+//------------------------------------------------------------------------------
 void ysfx_api_init_gfx()
 {
 #if !defined(YSFX_NO_GFX)
     lice_stb_install_loaders();
 #endif
 
-#if !defined(YSFX_NO_GFX)
-    // TODO: implement these
-    NSEEL_addfunc_varparm("gfx_set", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_lineto", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_line", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_rectto", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_rect", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_setpixel", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_getpixel", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_drawnumber", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_drawchar", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_drawstr", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_measurestr", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_setfont", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_getfont", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_printf", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_blurto", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_blit", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_blitext", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_getimgdim", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_setimgdim", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_loadimg", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_gradrect", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_muladdrect", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_deltablit", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_transformblit", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_circle", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_roundrect", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_arc", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_triangle", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_getchar", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_showmenu", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_setcursor", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-#else
-    // stubs
-    NSEEL_addfunc_varparm("gfx_set", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_lineto", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_line", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_rectto", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_rect", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_setpixel", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_getpixel", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_drawnumber", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_drawchar", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_drawstr", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_measurestr", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_setfont", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_getfont", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_printf", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_blurto", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_blit", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_blitext", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_getimgdim", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_setimgdim", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_loadimg", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_gradrect", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_muladdrect", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_deltablit", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_transformblit", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_circle", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_roundrect", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_arc", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_triangle", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_getchar", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_showmenu", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-    NSEEL_addfunc_varparm("gfx_setcursor", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_stub);
-#endif
+    NSEEL_addfunc_retptr("gfx_lineto", 3, NSEEL_PProc_THIS, &ysfx_api_gfx_lineto);
+    NSEEL_addfunc_retptr("gfx_lineto", 2, NSEEL_PProc_THIS, &ysfx_api_gfx_lineto2);
+    NSEEL_addfunc_retptr("gfx_rectto", 2, NSEEL_PProc_THIS, &ysfx_api_gfx_rectto);
+    NSEEL_addfunc_varparm("gfx_rect", 4, NSEEL_PProc_THIS, &ysfx_api_gfx_rect);
+    NSEEL_addfunc_varparm("gfx_line", 4, NSEEL_PProc_THIS, &ysfx_api_gfx_line);
+    NSEEL_addfunc_varparm("gfx_gradrect", 8, NSEEL_PProc_THIS, &ysfx_api_gfx_gradrect);
+    NSEEL_addfunc_varparm("gfx_muladdrect", 7, NSEEL_PProc_THIS, &ysfx_api_gfx_muladdrect);
+    NSEEL_addfunc_varparm("gfx_deltablit", 9, NSEEL_PProc_THIS, &ysfx_api_gfx_deltablit);
+    NSEEL_addfunc_exparms("gfx_transformblit", 8, NSEEL_PProc_THIS, &ysfx_api_gfx_transformblit);
+    NSEEL_addfunc_varparm("gfx_circle", 3, NSEEL_PProc_THIS, &ysfx_api_gfx_circle);
+    NSEEL_addfunc_varparm("gfx_triangle",  6,  NSEEL_PProc_THIS,  &ysfx_api_gfx_triangle);
+    NSEEL_addfunc_varparm("gfx_roundrect", 5, NSEEL_PProc_THIS, &ysfx_api_gfx_roundrect);
+    NSEEL_addfunc_varparm("gfx_arc", 5, NSEEL_PProc_THIS, &ysfx_api_gfx_arc);
+    NSEEL_addfunc_retptr("gfx_blurto", 2, NSEEL_PProc_THIS, &ysfx_api_gfx_blurto);
+    NSEEL_addfunc_exparms("gfx_showmenu", 1, NSEEL_PProc_THIS, &ysfx_api_gfx_showmenu);
+    NSEEL_addfunc_varparm("gfx_setcursor", 1,  NSEEL_PProc_THIS,  &ysfx_api_gfx_setcursor);
+    NSEEL_addfunc_retptr("gfx_drawnumber", 2, NSEEL_PProc_THIS, &ysfx_api_gfx_drawnumber);
+    NSEEL_addfunc_retptr("gfx_drawchar", 1, NSEEL_PProc_THIS, &ysfx_api_gfx_drawchar);
+    NSEEL_addfunc_varparm("gfx_drawstr", 1, NSEEL_PProc_THIS, &ysfx_api_gfx_drawstr);
+    NSEEL_addfunc_retptr("gfx_measurestr", 3, NSEEL_PProc_THIS, &ysfx_api_gfx_measurestr);
+    NSEEL_addfunc_retptr("gfx_measurechar", 3, NSEEL_PProc_THIS, &ysfx_api_gfx_measurechar);
+    NSEEL_addfunc_varparm("gfx_printf", 1, NSEEL_PProc_THIS, &ysfx_api_gfx_printf);
+    NSEEL_addfunc_retptr("gfx_setpixel", 3, NSEEL_PProc_THIS, &ysfx_api_gfx_setpixel);
+    NSEEL_addfunc_retptr("gfx_getpixel", 3, NSEEL_PProc_THIS, &ysfx_api_gfx_getpixel);
+    NSEEL_addfunc_retptr("gfx_getimgdim", 3, NSEEL_PProc_THIS, &ysfx_api_gfx_getimgdim);
+    NSEEL_addfunc_retval("gfx_setimgdim", 3, NSEEL_PProc_THIS, &ysfx_api_gfx_setimgdim);
+    NSEEL_addfunc_retval("gfx_loadimg", 2, NSEEL_PProc_THIS, &ysfx_api_gfx_loadimg);
+    NSEEL_addfunc_retptr("gfx_blit", 3, NSEEL_PProc_THIS, &ysfx_api_gfx_blit);
+    NSEEL_addfunc_retptr("gfx_blitext", 3, NSEEL_PProc_THIS, &ysfx_api_gfx_blitext);
+    NSEEL_addfunc_varparm("gfx_blit", 4, NSEEL_PProc_THIS, &ysfx_api_gfx_blit2);
+    NSEEL_addfunc_varparm("gfx_setfont", 1, NSEEL_PProc_THIS, &ysfx_api_gfx_setfont);
+    NSEEL_addfunc_varparm("gfx_getfont", 1, NSEEL_PProc_THIS, &ysfx_api_gfx_getfont);
+    NSEEL_addfunc_varparm("gfx_set", 1, NSEEL_PProc_THIS, &ysfx_api_gfx_set);
+    NSEEL_addfunc_varparm("gfx_getdropfile", 1, NSEEL_PProc_THIS, &ysfx_api_gfx_getdropfile);
+    NSEEL_addfunc_varparm("gfx_getsyscol", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_getsyscol);
 }
