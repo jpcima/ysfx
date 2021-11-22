@@ -120,7 +120,8 @@ if(YSFX_GFX)
             "sources/lice_stb/lice_stb_bmp.cpp"
             "sources/lice_stb/lice_stb_gif.cpp"
             "sources/lice_stb/lice_stb_jpg.cpp"
-            "sources/lice_stb/lice_stb_png.cpp")
+            "sources/lice_stb/lice_stb_png.cpp"
+            "sources/lice_stb/lice_stb_write.cpp")
     target_link_libraries(lice PRIVATE ysfx::stb)
 
     # lice and swell codependence
