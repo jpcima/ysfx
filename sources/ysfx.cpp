@@ -385,6 +385,14 @@ bool ysfx_compile(ysfx_t *fx, uint32_t compileopts)
     fx->is_freshly_compiled = true;
     fx->must_compute_init = true;
 
+#if !defined(YSFX_NO_GFX)
+    {
+        std::lock_guard<std::mutex> lock{fx->gfx.mutex};
+        fx->gfx.ready = false;
+        fx->gfx.must_init.store(false);
+    }
+#endif
+
     ///
     ysfx_eel_string_context_update_named_vars(fx->string_ctx.get(), vm);
 
@@ -404,6 +412,16 @@ void ysfx_unload_source(ysfx_t *fx)
 
 void ysfx_unload_code(ysfx_t *fx)
 {
+#if !defined(YSFX_NO_GFX)
+    // get rid of gfx first, to prevent a UI thread from trying
+    // to access VM and invoke code
+    {
+        std::lock_guard<std::mutex> lock{fx->gfx.mutex};
+        fx->gfx.ready = false;
+        fx->gfx.must_init.store(false);
+    }
+#endif
+
     fx->code = {};
 
     fx->is_freshly_compiled = false;
@@ -833,7 +851,8 @@ void ysfx_init(ysfx_t *fx)
 
 #if !defined(YSFX_NO_GFX)
     // do initializations on next @gfx, on the gfx thread
-    fx->gfx.must_init.store(true, std::memory_order_relaxed);
+    // release-acquire order is for VM `gfx_*` variables
+    fx->gfx.must_init.store(true, std::memory_order_release);
 #endif
 }
 
@@ -1013,19 +1032,6 @@ void ysfx_process_float(ysfx_t *fx, const float *const *ins, float *const *outs,
 void ysfx_process_double(ysfx_t *fx, const double *const *ins, double *const *outs, uint32_t num_ins, uint32_t num_outs, uint32_t num_frames)
 {
     ysfx_process_generic<double>(fx, ins, outs, num_ins, num_outs, num_frames);
-}
-
-void ysfx_draw(ysfx_t *fx)
-{
-#if !defined(YSFX_NO_GFX)
-    ysfx_gfx_enter(fx);
-
-    if (fx->gfx.must_init.exchange(false, std::memory_order_relaxed)) {
-        // TODO: perform gfx initializations
-    }
-
-    NSEEL_code_execute(fx->code.gfx.get());
-#endif
 }
 
 void ysfx_clear_files(ysfx_t *fx)
@@ -1258,4 +1264,16 @@ ysfx_file_type_t ysfx_detect_file_type(ysfx_t *fx, const char *path, void **fmto
         }
     }
     return ysfx_file_type_none;
+}
+
+void ysfx_gfx_run(ysfx_t *fx)
+{
+#if !defined(YSFX_NO_GFX)
+    ysfx_scoped_gfx_t scope{fx};
+
+    if (!fx->gfx.ready)
+        return;
+
+    NSEEL_code_execute(fx->code.gfx.get());
+#endif
 }

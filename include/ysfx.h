@@ -274,9 +274,6 @@ YSFX_API void ysfx_process_float(ysfx_t *fx, const float *const *ins, float *con
 // process a cycle in 64-bit float
 YSFX_API void ysfx_process_double(ysfx_t *fx, const double *const *ins, double *const *outs, uint32_t num_ins, uint32_t num_outs, uint32_t num_frames);
 
-// invoke @gfx to paint the graphics
-YSFX_API void ysfx_draw(ysfx_t *fx);
-
 typedef struct ysfx_state_slider_s {
     // index of the slider
     uint32_t index;
@@ -312,6 +309,14 @@ YSFX_API void ysfx_enum_vars(ysfx_t *fx, ysfx_enum_vars_callback_t *callback, vo
 YSFX_API ysfx_real *ysfx_find_var(ysfx_t *fx, const char *name);
 // read a chunk of virtual memory from the VM
 YSFX_API void ysfx_read_vmem(ysfx_t *fx, uint32_t addr, ysfx_real *dest, uint32_t count);
+
+//------------------------------------------------------------------------------
+// YSFX graphics
+
+// NOTE: all `ysfx_gfx_*` functions must be invoked from a dedicated UI thread
+
+// invoke @gfx to paint the graphics
+YSFX_API void ysfx_gfx_run(ysfx_t *fx);
 
 //------------------------------------------------------------------------------
 // YSFX audio formats

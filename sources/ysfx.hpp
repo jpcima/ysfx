@@ -130,6 +130,8 @@ struct ysfx_s {
     // Graphics
     struct {
         ysfx_gfx_state_u state;
+        std::mutex mutex;
+        volatile bool ready = false;
         std::atomic<bool> must_init{false};
     } gfx;
 #endif

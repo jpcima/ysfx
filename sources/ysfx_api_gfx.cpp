@@ -48,7 +48,19 @@ void ysfx_gfx_state_set_thread(ysfx_gfx_state_t *state, std::thread::id id)
 //------------------------------------------------------------------------------
 void ysfx_gfx_enter(ysfx_t *fx)
 {
+    fx->gfx.mutex.lock();
+
+    if (fx->gfx.must_init.exchange(false, std::memory_order_acquire)) {
+        // TODO: perform gfx initializations
+        fx->gfx.ready = true;
+    }
+
     ysfx_gfx_state_set_thread(fx->gfx.state.get(), std::this_thread::get_id());
+}
+
+void ysfx_gfx_leave(ysfx_t *fx)
+{
+    fx->gfx.mutex.unlock();
 }
 
 ysfx_gfx_state_t *ysfx_gfx_get_context(ysfx_t *fx)
