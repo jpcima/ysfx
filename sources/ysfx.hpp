@@ -128,8 +128,10 @@ struct ysfx_s {
 
 #if !defined(YSFX_NO_GFX)
     // Graphics
-    ysfx_gfx_state_u gfx_state;
-    std::atomic<bool> gfx_must_init{false};
+    struct {
+        ysfx_gfx_state_u state;
+        std::atomic<bool> must_init{false};
+    } gfx;
 #endif
 };
 

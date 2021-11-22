@@ -87,7 +87,7 @@ ysfx_t *ysfx_new(ysfx_config_t *config)
     ysfx_eel_string_initvm(vm);
 
 #if !defined(YSFX_NO_GFX)
-    fx->gfx_state.reset(ysfx_gfx_state_new());
+    fx->gfx.state.reset(ysfx_gfx_state_new());
 #endif
 
     auto var_resolver = [](void *userdata, const char *name) -> EEL_F * {
@@ -833,7 +833,7 @@ void ysfx_init(ysfx_t *fx)
 
 #if !defined(YSFX_NO_GFX)
     // do initializations on next @gfx, on the gfx thread
-    fx->gfx_must_init.store(true, std::memory_order_relaxed);
+    fx->gfx.must_init.store(true, std::memory_order_relaxed);
 #endif
 }
 
@@ -1020,7 +1020,7 @@ void ysfx_draw(ysfx_t *fx)
 #if !defined(YSFX_NO_GFX)
     ysfx_gfx_enter(fx);
 
-    if (fx->gfx_must_init.exchange(false, std::memory_order_relaxed)) {
+    if (fx->gfx.must_init.exchange(false, std::memory_order_relaxed)) {
         // TODO: perform gfx initializations
     }
 

@@ -48,7 +48,7 @@ void ysfx_gfx_state_set_thread(ysfx_gfx_state_t *state, std::thread::id id)
 //------------------------------------------------------------------------------
 void ysfx_gfx_enter(ysfx_t *fx)
 {
-    ysfx_gfx_state_set_thread(fx->gfx_state.get(), std::this_thread::get_id());
+    ysfx_gfx_state_set_thread(fx->gfx.state.get(), std::this_thread::get_id());
 }
 
 ysfx_gfx_state_t *ysfx_gfx_get_context(ysfx_t *fx)
@@ -56,7 +56,7 @@ ysfx_gfx_state_t *ysfx_gfx_get_context(ysfx_t *fx)
     // NOTE: make sure that this will be used from the @gfx thread only
     if (!fx)
         return nullptr;
-    ysfx_gfx_state_t *state = fx->gfx_state.get();
+    ysfx_gfx_state_t *state = fx->gfx.state.get();
     if (state->gfx_thread_id.load(std::memory_order_relaxed) != std::this_thread::get_id())
         return nullptr;
     return state;
