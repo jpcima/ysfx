@@ -239,7 +239,7 @@ void YsfxEditor::Impl::connectUI()
     m_infoTimer->startTimer(100);
 
     m_gfxTimer.reset(FunctionalTimer::create([this]() { updateGfx(); }));
-    m_gfxTimer->startTimer(30);
+    m_gfxTimer->startTimerHz(30);
 }
 
 void YsfxEditor::Impl::relayoutUI()
