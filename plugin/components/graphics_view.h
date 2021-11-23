@@ -19,6 +19,24 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 
 class YsfxGraphicsView : public juce::Component {
+public:
+    void configureGfx(int gfxWidth, int gfxHeight, bool gfxWantRetina);
+    juce::Image &getBitmap() { return m_bitmap; }
+    double getBitmapScale() const { return m_bitmapScale; }
+
 protected:
     void paint(juce::Graphics &g) override;
+    void resized() override;
+
+private:
+    void updateBitmap();
+
+private:
+    int m_gfxWidth = 0;
+    int m_gfxHeight = 0;
+    bool m_wantRetina = false;
+    juce::Image m_bitmap{juce::Image::ARGB, 0, 0, false};
+    double m_bitmapScale = 1;
+    int m_bitmapUnscaledWidth = 0;
+    int m_bitmapUnscaledHeight = 0;
 };

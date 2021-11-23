@@ -94,7 +94,30 @@ void YsfxEditor::Impl::grabInfoAndUpdate()
 void YsfxEditor::Impl::updateGfx()
 {
     ysfx_t *fx = m_proc->getYsfx();
-    ysfx_gfx_run(fx);
+    YsfxInfo::Ptr info = m_proc->getCurrentInfo();
+
+    bool gfxWantRetina = ysfx_gfx_wants_retina(fx);
+    m_graphicsView->configureGfx(info->gfxWidth, info->gfxHeight, gfxWantRetina);
+
+    juce::Image &bitmap = m_graphicsView->getBitmap();
+    bool mustRepaint;
+
+    {
+        juce::Image::BitmapData bdata{bitmap, juce::Image::BitmapData::readWrite};
+
+        ysfx_gfx_config_t gc{};
+        gc.pixel_width = (uint32_t)bdata.width;
+        gc.pixel_height = (uint32_t)bdata.height;
+        gc.pixel_stride = (uint32_t)bdata.lineStride;
+        gc.pixels = bdata.data;
+        gc.scale_factor = m_graphicsView->getBitmapScale();
+        ysfx_gfx_setup(fx, &gc);
+
+        mustRepaint = ysfx_gfx_run(fx);
+    }
+
+    if (mustRepaint)
+        m_graphicsView->repaint();
 }
 
 void YsfxEditor::Impl::updateInfo()

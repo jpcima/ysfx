@@ -336,8 +336,8 @@ typedef struct ysfx_gfx_config_s {
 YSFX_API void ysfx_gfx_setup(ysfx_t *fx, ysfx_gfx_config_t *gc);
 // get whether the current effect is requesting Retina support
 YSFX_API bool ysfx_gfx_wants_retina(ysfx_t *fx);
-// invoke @gfx to paint the graphics
-YSFX_API void ysfx_gfx_run(ysfx_t *fx);
+// invoke @gfx to paint the graphics; returns whether the framer buffer is modified
+YSFX_API bool ysfx_gfx_run(ysfx_t *fx);
 
 //------------------------------------------------------------------------------
 // YSFX audio formats

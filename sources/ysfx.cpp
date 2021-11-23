@@ -1331,17 +1331,20 @@ bool ysfx_gfx_wants_retina(ysfx_t *fx)
 #endif
 }
 
-void ysfx_gfx_run(ysfx_t *fx)
+bool ysfx_gfx_run(ysfx_t *fx)
 {
 #if !defined(YSFX_NO_GFX)
     bool doinit = true;
     ysfx_scoped_gfx_t scope{fx, doinit};
 
     if (!fx->gfx.ready)
-        return;
+        return false;
 
     ysfx_gfx_prepare(fx);
     NSEEL_code_execute(fx->code.gfx.get());
+
+    // TODO return the dirty status of the framebuffer
+    return true;
 #else
     (void)fx;
 #endif
