@@ -410,6 +410,7 @@ bool ysfx_compile(ysfx_t *fx, uint32_t compileopts)
     {
         std::lock_guard<std::mutex> lock{fx->gfx.mutex};
         fx->gfx.ready = false;
+        fx->gfx.wants_retina = false;
         fx->gfx.must_init.store(false);
     }
 #endif
@@ -439,6 +440,7 @@ void ysfx_unload_code(ysfx_t *fx)
     {
         std::lock_guard<std::mutex> lock{fx->gfx.mutex};
         fx->gfx.ready = false;
+        fx->gfx.wants_retina = false;
         fx->gfx.must_init.store(false);
     }
 #endif
@@ -897,7 +899,8 @@ void ysfx_init(ysfx_t *fx)
 
 #if !defined(YSFX_NO_GFX)
     // do initializations on next @gfx, on the gfx thread
-    // release-acquire order is for VM `gfx_*` variables
+    // release-acquire order is for VM `gfx_*` variables and `wants_retina`
+    fx->gfx.wants_retina = *fx->var.gfx_ext_retina > 0;
     fx->gfx.must_init.store(true, std::memory_order_release);
 #endif
 }
