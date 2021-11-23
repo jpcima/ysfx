@@ -317,6 +317,22 @@ YSFX_API void ysfx_read_vmem(ysfx_t *fx, uint32_t addr, ysfx_real *dest, uint32_
 
 // NOTE: all `ysfx_gfx_*` functions must be invoked from a dedicated UI thread
 
+typedef struct ysfx_gfx_config_s {
+    // the width of the frame buffer (having the scale factor applied)
+    uint32_t pixel_width;
+    // the height of the frame buffer (having the scale factor applied)
+    uint32_t pixel_height;
+    // the distance in bytes between lines; if 0, it defaults to (4*width)
+    uint32_t pixel_stride;
+    // the pixel data of the frame buffer, of size (stride*height) bytes
+    // the byte order in little-endian is 'BGRA', big-endian is 'ARGB'
+    uint8_t *pixels;
+    // the scale factor of the display; 1.0 or greater, 2.0 for Retina display
+    ysfx_real scale_factor;
+} ysfx_gfx_config_t;
+
+// set up the graphics rendering
+YSFX_API void ysfx_gfx_setup(ysfx_t *fx, ysfx_gfx_config_t *gc);
 // invoke @gfx to paint the graphics
 YSFX_API void ysfx_gfx_run(ysfx_t *fx);
 

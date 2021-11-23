@@ -1291,6 +1291,17 @@ ysfx_file_type_t ysfx_detect_file_type(ysfx_t *fx, const char *path, void **fmto
     return ysfx_file_type_none;
 }
 
+void ysfx_gfx_setup(ysfx_t *fx, ysfx_gfx_config_t *gc)
+{
+#if !defined(YSFX_NO_GFX)
+    ysfx_scoped_gfx_t scope{fx};
+    // TODO configure the frame buffer, scale ratio, etc
+#else
+    (void)fx;
+    (void)gc;
+#endif
+}
+
 void ysfx_gfx_run(ysfx_t *fx)
 {
 #if !defined(YSFX_NO_GFX)
@@ -1300,5 +1311,7 @@ void ysfx_gfx_run(ysfx_t *fx)
         return;
 
     NSEEL_code_execute(fx->code.gfx.get());
+#else
+    (void)fx;
 #endif
 }
