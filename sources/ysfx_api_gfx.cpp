@@ -54,7 +54,7 @@ void ysfx_gfx_state_set_bitmap(ysfx_gfx_state_t *state, uint8_t *data, uint32_t 
     if (stride == 0)
         stride = 4 * w;
 
-    bool valid = (stride % 4) != 0;
+    bool valid = (stride % 4) == 0;
     if (!valid)
         state->framebuffer = LICE_WrapperBitmap{nullptr, 0, 0, 0, false};
     else
