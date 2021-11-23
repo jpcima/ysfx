@@ -249,7 +249,7 @@ void YsfxEditor::Impl::relayoutUI()
 
     temp = bounds;
     const juce::Rectangle<int> topRow = temp.removeFromTop(50);
-    const juce::Rectangle<int> centerArea = temp.reduced(10);
+    const juce::Rectangle<int> centerArea = temp.withTrimmedLeft(10).withTrimmedRight(10).withTrimmedBottom(10);
 
     temp = topRow.reduced(10, 10);
     m_btnLoadFile->setBounds(temp.removeFromLeft(100));
