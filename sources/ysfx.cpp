@@ -1325,6 +1325,7 @@ void ysfx_gfx_run(ysfx_t *fx)
     if (!fx->gfx.ready)
         return;
 
+    ysfx_gfx_prepare(fx);
     NSEEL_code_execute(fx->code.gfx.get());
 #else
     (void)fx;

@@ -26,11 +26,13 @@ void ysfx_gfx_state_free(ysfx_gfx_state_t *state);
 YSFX_DEFINE_AUTO_PTR(ysfx_gfx_state_u, ysfx_gfx_state_t, ysfx_gfx_state_free);
 void ysfx_gfx_state_set_thread(ysfx_gfx_state_t *state, std::thread::id id);
 void ysfx_gfx_state_set_bitmap(ysfx_gfx_state_t *state, uint8_t *data, uint32_t w, uint32_t h, uint32_t stride);
+void ysfx_gfx_state_set_scale_factor(ysfx_gfx_state_t *state, ysfx_real scale);
 
 //------------------------------------------------------------------------------
 void ysfx_gfx_enter(ysfx_t *fx);
 void ysfx_gfx_leave(ysfx_t *fx);
 ysfx_gfx_state_t *ysfx_gfx_get_context(ysfx_t *fx);
+void ysfx_gfx_prepare(ysfx_t *fx);
 
 struct ysfx_scoped_gfx_t {
     ysfx_scoped_gfx_t(ysfx_t *fx) : m_fx(fx) { ysfx_gfx_enter(fx); }

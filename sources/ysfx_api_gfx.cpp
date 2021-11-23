@@ -31,6 +31,7 @@
 struct ysfx_gfx_state_t {
     std::atomic<std::thread::id> gfx_thread_id;
     LICE_WrapperBitmap framebuffer{nullptr, 0, 0, 0, false};
+    ysfx_real scale = 0.0;
 };
 
 ysfx_gfx_state_t *ysfx_gfx_state_new()
@@ -55,6 +56,11 @@ void ysfx_gfx_state_set_bitmap(ysfx_gfx_state_t *state, uint8_t *data, uint32_t 
         state->framebuffer = LICE_WrapperBitmap{nullptr, 0, 0, 0, false};
     else
         state->framebuffer = LICE_WrapperBitmap{(LICE_pixel *)data, (int)w, (int)h, (int)(stride / 4), false};
+}
+
+void ysfx_gfx_state_set_scale_factor(ysfx_gfx_state_t *state, ysfx_real scale)
+{
+    state->scale = scale;
 }
 
 //------------------------------------------------------------------------------
@@ -84,6 +90,28 @@ ysfx_gfx_state_t *ysfx_gfx_get_context(ysfx_t *fx)
     if (state->gfx_thread_id.load(std::memory_order_relaxed) != std::this_thread::get_id())
         return nullptr;
     return state;
+}
+
+void ysfx_gfx_prepare(ysfx_t *fx)
+{
+    ysfx_gfx_state_t *state = ysfx_gfx_get_context(fx);
+
+    // set variables `gfx_w` and `gfx_h`
+    ysfx_real gfx_w = (ysfx_real)state->framebuffer.getWidth();
+    ysfx_real gfx_h = (ysfx_real)state->framebuffer.getHeight();
+    if (state->scale > 1.0) {
+        gfx_w *= state->scale;
+        gfx_h *= state->scale;
+    }
+    *fx->var.gfx_w = gfx_w;
+    *fx->var.gfx_h = gfx_h;
+
+    // clear the screen
+    if (*fx->var.gfx_clear > -1.0) {
+        int rgba = (int)*fx->var.gfx_clear;
+        LICE_pixel color = LICE_RGBA(rgba & 0xff, (rgba >> 8) & 0xff, (rgba >> 16) & 0xff, 0);
+        LICE_Clear(&state->framebuffer, color);
+    }
 }
 #endif
 
