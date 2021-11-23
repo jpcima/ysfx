@@ -250,11 +250,12 @@ void YsfxEditor::Impl::relayoutUI()
 
     m_centerViewPort->setBounds(centerArea);
 
+    juce::Component *viewed;
     if (m_btnSwitchEditor->getToggleState())
-        m_centerViewPort->setViewedComponent(m_graphicsView.get(), false);
+        viewed = m_graphicsView.get();
     else
-        m_centerViewPort->setViewedComponent(m_parametersPanel.get(), false);
+        viewed = m_parametersPanel.get();
 
-    m_centerViewPort->getViewedComponent()->
-        setSize(centerArea.getWidth(), centerArea.getHeight());
+    m_centerViewPort->setViewedComponent(viewed, false);
+    viewed->setSize(centerArea.getWidth(), centerArea.getHeight());
 }
