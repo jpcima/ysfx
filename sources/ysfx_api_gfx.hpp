@@ -29,13 +29,13 @@ void ysfx_gfx_state_set_bitmap(ysfx_gfx_state_t *state, uint8_t *data, uint32_t 
 void ysfx_gfx_state_set_scale_factor(ysfx_gfx_state_t *state, ysfx_real scale);
 
 //------------------------------------------------------------------------------
-void ysfx_gfx_enter(ysfx_t *fx);
+void ysfx_gfx_enter(ysfx_t *fx, bool doinit);
 void ysfx_gfx_leave(ysfx_t *fx);
 ysfx_gfx_state_t *ysfx_gfx_get_context(ysfx_t *fx);
 void ysfx_gfx_prepare(ysfx_t *fx);
 
 struct ysfx_scoped_gfx_t {
-    ysfx_scoped_gfx_t(ysfx_t *fx) : m_fx(fx) { ysfx_gfx_enter(fx); }
+    ysfx_scoped_gfx_t(ysfx_t *fx, bool doinit) : m_fx(fx) { ysfx_gfx_enter(fx, doinit); }
     ~ysfx_scoped_gfx_t() { ysfx_gfx_leave(m_fx); }
     ysfx_t *m_fx = nullptr;
 };

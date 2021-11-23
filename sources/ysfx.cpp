@@ -1309,18 +1309,32 @@ ysfx_file_type_t ysfx_detect_file_type(ysfx_t *fx, const char *path, void **fmto
 void ysfx_gfx_setup(ysfx_t *fx, ysfx_gfx_config_t *gc)
 {
 #if !defined(YSFX_NO_GFX)
-    ysfx_scoped_gfx_t scope{fx};
-    // TODO configure the frame buffer, scale ratio, etc
+    bool doinit = false;
+    ysfx_scoped_gfx_t scope{fx, doinit};
+
+    ysfx_gfx_state_set_bitmap(fx->gfx.state.get(), gc->pixels, gc->pixel_width, gc->pixel_height, gc->pixel_stride);
+    ysfx_real scale = fx->gfx.wants_retina ? gc->scale_factor : 1;
+    ysfx_gfx_state_set_scale_factor(fx->gfx.state.get(), scale);
 #else
     (void)fx;
     (void)gc;
 #endif
 }
 
+bool ysfx_gfx_wants_retina(ysfx_t *fx)
+{
+#if !defined(YSFX_NO_GFX)
+    return fx->gfx.wants_retina;
+#else
+    return false;
+#endif
+}
+
 void ysfx_gfx_run(ysfx_t *fx)
 {
 #if !defined(YSFX_NO_GFX)
-    ysfx_scoped_gfx_t scope{fx};
+    bool doinit = true;
+    ysfx_scoped_gfx_t scope{fx, doinit};
 
     if (!fx->gfx.ready)
         return;

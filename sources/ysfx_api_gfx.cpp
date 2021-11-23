@@ -64,13 +64,15 @@ void ysfx_gfx_state_set_scale_factor(ysfx_gfx_state_t *state, ysfx_real scale)
 }
 
 //------------------------------------------------------------------------------
-void ysfx_gfx_enter(ysfx_t *fx)
+void ysfx_gfx_enter(ysfx_t *fx, bool doinit)
 {
     fx->gfx.mutex.lock();
 
-    if (fx->gfx.must_init.exchange(false, std::memory_order_acquire)) {
-        // TODO: perform gfx initializations
-        fx->gfx.ready = true;
+    if (doinit) {
+        if (fx->gfx.must_init.exchange(false, std::memory_order_acquire)) {
+            // TODO: perform gfx initializations
+            fx->gfx.ready = true;
+        }
     }
 
     ysfx_gfx_state_set_thread(fx->gfx.state.get(), std::this_thread::get_id());
