@@ -107,6 +107,7 @@ void ysfx_gfx_prepare(ysfx_t *fx)
     if (state->scale > 1.0) {
         gfx_w *= state->scale;
         gfx_h *= state->scale;
+        *fx->var.gfx_ext_retina = state->scale;
     }
     *fx->var.gfx_w = gfx_w;
     *fx->var.gfx_h = gfx_h;
