@@ -20,6 +20,7 @@
 #include "parameter.h"
 #include "info.h"
 #include "components/parameters_panel.h"
+#include "components/graphics_view.h"
 #include "utility/functional_timer.h"
 #include <juce_gui_extra/juce_gui_extra.h>
 
@@ -38,6 +39,7 @@ struct YsfxEditor::Impl {
     void chooseFileAndLoad();
     void loadFile(const juce::File &file);
     void popupRecentFiles();
+    void switchEditor(bool showGfx);
     static juce::File getAppDataDirectory();
     juce::RecentlyOpenedFilesList loadRecentFiles();
     void saveRecentFiles(const juce::RecentlyOpenedFilesList &recent);
@@ -45,9 +47,11 @@ struct YsfxEditor::Impl {
     //==========================================================================
     std::unique_ptr<juce::TextButton> m_btnLoadFile;
     std::unique_ptr<juce::TextButton> m_btnRecentFiles;
+    std::unique_ptr<juce::TextButton> m_btnSwitchEditor;
     std::unique_ptr<juce::Label> m_lblFilePath;
     std::unique_ptr<juce::Viewport> m_centerViewPort;
     std::unique_ptr<YsfxParametersPanel> m_parametersPanel;
+    std::unique_ptr<YsfxGraphicsView> m_graphicsView;
 
     //==========================================================================
     void createUI();
@@ -98,6 +102,7 @@ void YsfxEditor::Impl::updateInfo()
             params.add(m_proc->getYsfxParameter((int)i));
     }
     m_parametersPanel->setParametersDisplayed(params);
+    m_parametersPanel->setSize(m_centerViewPort->getWidth(), m_centerViewPort->getHeight());
 }
 
 void YsfxEditor::Impl::chooseFileAndLoad()
@@ -151,6 +156,14 @@ void YsfxEditor::Impl::popupRecentFiles()
     });
 }
 
+void YsfxEditor::Impl::switchEditor(bool showGfx)
+{
+    juce::String text = showGfx ? TRANS("Graphics") : TRANS("Sliders");
+    m_btnSwitchEditor->setButtonText(text);
+
+    relayoutUI();
+}
+
 juce::RecentlyOpenedFilesList YsfxEditor::Impl::loadRecentFiles()
 {
     juce::RecentlyOpenedFilesList recent;
@@ -196,18 +209,22 @@ void YsfxEditor::Impl::createUI()
     m_self->addAndMakeVisible(*m_btnLoadFile);
     m_btnRecentFiles.reset(new juce::TextButton(TRANS("Recent")));
     m_self->addAndMakeVisible(*m_btnRecentFiles);
+    m_btnSwitchEditor.reset(new juce::TextButton(TRANS("Sliders")));
+    m_btnSwitchEditor->setClickingTogglesState(true);
+    m_self->addAndMakeVisible(*m_btnSwitchEditor);
     m_lblFilePath.reset(new juce::Label);
     m_self->addAndMakeVisible(*m_lblFilePath);
     m_centerViewPort.reset(new juce::Viewport);
     m_self->addAndMakeVisible(*m_centerViewPort);
     m_parametersPanel.reset(new YsfxParametersPanel);
-    m_centerViewPort->setViewedComponent(m_parametersPanel.get(), false);
+    m_graphicsView.reset(new YsfxGraphicsView);
 }
 
 void YsfxEditor::Impl::connectUI()
 {
     m_btnLoadFile->onClick = [this]() { chooseFileAndLoad(); };
     m_btnRecentFiles->onClick = [this]() { popupRecentFiles(); };
+    m_btnSwitchEditor->onClick = [this]() { switchEditor(m_btnSwitchEditor->getToggleState()); };
 
     m_infoTimer.reset(FunctionalTimer::create([this]() { grabInfoAndUpdate(); }));
     m_infoTimer->startTimer(100);
@@ -220,14 +237,24 @@ void YsfxEditor::Impl::relayoutUI()
 
     temp = bounds;
     const juce::Rectangle<int> topRow = temp.removeFromTop(50);
-    const juce::Rectangle<int> centerArea = temp;
+    const juce::Rectangle<int> centerArea = temp.reduced(10);
 
     temp = topRow.reduced(10, 10);
     m_btnLoadFile->setBounds(temp.removeFromLeft(100));
     temp.removeFromLeft(10);
     m_btnRecentFiles->setBounds(temp.removeFromLeft(100));
     temp.removeFromLeft(10);
+    m_btnSwitchEditor->setBounds(temp.removeFromRight(100));
+    temp.removeFromRight(10);
     m_lblFilePath->setBounds(temp);
 
     m_centerViewPort->setBounds(centerArea);
+
+    if (m_btnSwitchEditor->getToggleState())
+        m_centerViewPort->setViewedComponent(m_graphicsView.get(), false);
+    else
+        m_centerViewPort->setViewedComponent(m_parametersPanel.get(), false);
+
+    m_centerViewPort->getViewedComponent()->
+        setSize(centerArea.getWidth(), centerArea.getHeight());
 }
