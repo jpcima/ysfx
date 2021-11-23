@@ -38,6 +38,8 @@ struct YsfxInfo : public std::enable_shared_from_this<YsfxInfo> {
     juce::String path;
     bool isLoaded = false;
     bool isCompiled = false;
+    int gfxWidth = 0;
+    int gfxHeight = 0;
     YsfxSliderInfo::Ptr sliders[ysfx_max_sliders];
     //
     using Ptr = std::shared_ptr<YsfxInfo>;

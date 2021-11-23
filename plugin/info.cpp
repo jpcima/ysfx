@@ -60,6 +60,10 @@ YsfxInfo::Ptr YsfxInfo::extractFrom(ysfx_t *fx)
     info->path = juce::CharPointer_UTF8(ysfx_get_file_path(fx));
     info->isLoaded = ysfx_is_loaded(fx);
     info->isCompiled = ysfx_is_compiled(fx);
+    uint32_t gfxdim[2] = {};
+    ysfx_get_gfx_dim(fx, gfxdim);
+    info->gfxWidth = (int)gfxdim[0];
+    info->gfxHeight = (int)gfxdim[1];
     for (uint32_t i = 0; i < ysfx_max_sliders; ++i)
         info->sliders[i] = YsfxSliderInfo::extractFrom(fx, i);
     return info;
