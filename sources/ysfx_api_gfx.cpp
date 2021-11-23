@@ -99,12 +99,12 @@ void ysfx_api_init_gfx()
     NSEEL_addfunc_varparm("gfx_deltablit", 9, NSEEL_PProc_THIS, &ysfx_api_gfx_deltablit);
     NSEEL_addfunc_exparms("gfx_transformblit", 8, NSEEL_PProc_THIS, &ysfx_api_gfx_transformblit);
     NSEEL_addfunc_varparm("gfx_circle", 3, NSEEL_PProc_THIS, &ysfx_api_gfx_circle);
-    NSEEL_addfunc_varparm("gfx_triangle",  6,  NSEEL_PProc_THIS,  &ysfx_api_gfx_triangle);
+    NSEEL_addfunc_varparm("gfx_triangle", 6, NSEEL_PProc_THIS, &ysfx_api_gfx_triangle);
     NSEEL_addfunc_varparm("gfx_roundrect", 5, NSEEL_PProc_THIS, &ysfx_api_gfx_roundrect);
     NSEEL_addfunc_varparm("gfx_arc", 5, NSEEL_PProc_THIS, &ysfx_api_gfx_arc);
     NSEEL_addfunc_retptr("gfx_blurto", 2, NSEEL_PProc_THIS, &ysfx_api_gfx_blurto);
     NSEEL_addfunc_exparms("gfx_showmenu", 1, NSEEL_PProc_THIS, &ysfx_api_gfx_showmenu);
-    NSEEL_addfunc_varparm("gfx_setcursor", 1,  NSEEL_PProc_THIS,  &ysfx_api_gfx_setcursor);
+    NSEEL_addfunc_varparm("gfx_setcursor", 1, NSEEL_PProc_THIS, &ysfx_api_gfx_setcursor);
     NSEEL_addfunc_retptr("gfx_drawnumber", 2, NSEEL_PProc_THIS, &ysfx_api_gfx_drawnumber);
     NSEEL_addfunc_retptr("gfx_drawchar", 1, NSEEL_PProc_THIS, &ysfx_api_gfx_drawchar);
     NSEEL_addfunc_varparm("gfx_drawstr", 1, NSEEL_PProc_THIS, &ysfx_api_gfx_drawstr);
