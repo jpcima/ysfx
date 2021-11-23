@@ -139,6 +139,8 @@ YSFX_API const char *ysfx_get_input_name(ysfx_t *fx, uint32_t index);
 YSFX_API const char *ysfx_get_output_name(ysfx_t *fx, uint32_t index);
 // get whether this effect wants metering
 YSFX_API bool ysfx_wants_meters(ysfx_t *fx);
+// get requested dimensions of the graphics area; 0 means host should decide
+YSFX_API bool ysfx_get_gfx_dim(ysfx_t *fx, uint32_t dim[2]);
 
 typedef enum ysfx_section_type_e {
     ysfx_section_init = 1,

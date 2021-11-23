@@ -142,7 +142,7 @@ void ysfx_unload_code(ysfx_t *fx);
 void ysfx_first_init(ysfx_t *fx);
 void ysfx_fill_file_enums(ysfx_t *fx);
 void ysfx_fix_invalid_enums(ysfx_t *fx);
-ysfx_section_t *ysfx_search_section(ysfx_t *fx, uint32_t type);
+ysfx_section_t *ysfx_search_section(ysfx_t *fx, uint32_t type, ysfx_toplevel_t **origin = nullptr);
 std::string ysfx_resolve_import_path(ysfx_t *fx, const std::string &name, const std::string &origin);
 uint32_t ysfx_current_midi_bus(ysfx_t *fx);
 void ysfx_clear_files(ysfx_t *fx);

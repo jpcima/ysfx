@@ -589,33 +589,58 @@ bool ysfx_wants_meters(ysfx_t *fx)
     return !main->header.options.no_meter;
 }
 
-ysfx_section_t *ysfx_search_section(ysfx_t *fx, uint32_t type)
+bool ysfx_get_gfx_dim(ysfx_t *fx, uint32_t dim[2])
+{
+    ysfx_toplevel_t *origin = nullptr;
+    ysfx_section_t *sec = ysfx_search_section(fx, ysfx_section_gfx, &origin);
+
+    if (!sec) {
+        if (dim) {
+            dim[0] = 0;
+            dim[1] = 0;
+        }
+        return false;
+    }
+
+    if (dim) {
+        dim[0] = origin->gfx_w;
+        dim[1] = origin->gfx_h;
+    }
+    return true;
+}
+
+ysfx_section_t *ysfx_search_section(ysfx_t *fx, uint32_t type, ysfx_toplevel_t **origin)
 {
     if (!fx->source.main)
         return nullptr;
 
     auto search =
-        [fx](ysfx_section_t *(*test)(ysfx_toplevel_t &tl)) -> ysfx_section_t *
+        [fx](ysfx_section_t *(*test)(ysfx_toplevel_t &tl), ysfx_toplevel_t **origin) -> ysfx_section_t *
         {
-            ysfx_section_t *sec = test(fx->source.main->toplevel);
-            for (size_t i = 0; !sec && i < fx->source.imports.size(); ++i)
-                sec = test(fx->source.imports[i]->toplevel);
+            ysfx_toplevel_t *tl = &fx->source.main->toplevel;
+            ysfx_section_t *sec = test(*tl);
+            for (size_t i = 0; !sec && i < fx->source.imports.size(); ++i) {
+                tl = &fx->source.imports[i]->toplevel;
+                sec = test(*tl);
+            }
+            if (origin)
+                *origin = sec ? tl : nullptr;
             return sec;
         };
 
     switch (type) {
     case ysfx_section_init:
-        return search([](ysfx_toplevel_t &tl) { return tl.init.get(); });
+        return search([](ysfx_toplevel_t &tl) { return tl.init.get(); }, origin);
     case ysfx_section_slider:
-        return search([](ysfx_toplevel_t &tl) { return tl.slider.get(); });
+        return search([](ysfx_toplevel_t &tl) { return tl.slider.get(); }, origin);
     case ysfx_section_block:
-        return search([](ysfx_toplevel_t &tl) { return tl.block.get(); });
+        return search([](ysfx_toplevel_t &tl) { return tl.block.get(); }, origin);
     case ysfx_section_sample:
-        return search([](ysfx_toplevel_t &tl) { return tl.sample.get(); });
+        return search([](ysfx_toplevel_t &tl) { return tl.sample.get(); }, origin);
     case ysfx_section_gfx:
-        return search([](ysfx_toplevel_t &tl) { return tl.gfx.get(); });
+        return search([](ysfx_toplevel_t &tl) { return tl.gfx.get(); }, origin);
     case ysfx_section_serialize:
-        return search([](ysfx_toplevel_t &tl) { return tl.serialize.get(); });
+        return search([](ysfx_toplevel_t &tl) { return tl.serialize.get(); }, origin);
     default:
         return nullptr;
     }
