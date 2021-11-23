@@ -1326,6 +1326,7 @@ bool ysfx_gfx_wants_retina(ysfx_t *fx)
 #if !defined(YSFX_NO_GFX)
     return fx->gfx.wants_retina;
 #else
+    (void)fx;
     return false;
 #endif
 }
