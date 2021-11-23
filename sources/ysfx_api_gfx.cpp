@@ -20,6 +20,8 @@
 #include "ysfx_eel_utils.hpp"
 #if !defined(YSFX_NO_GFX)
 #   include "lice_stb/lice_stb_loaders.hpp"
+#   define WDL_NO_DEFINE_MINMAX
+#   include "WDL/lice/lice.h"
 #endif
 #include <atomic>
 
@@ -28,6 +30,7 @@
 
 struct ysfx_gfx_state_t {
     std::atomic<std::thread::id> gfx_thread_id;
+    LICE_WrapperBitmap framebuffer{nullptr, 0, 0, 0, false};
 };
 
 ysfx_gfx_state_t *ysfx_gfx_state_new()
@@ -43,6 +46,15 @@ void ysfx_gfx_state_free(ysfx_gfx_state_t *state)
 void ysfx_gfx_state_set_thread(ysfx_gfx_state_t *state, std::thread::id id)
 {
     state->gfx_thread_id.store(id, std::memory_order_relaxed);
+}
+
+void ysfx_gfx_state_set_bitmap(ysfx_gfx_state_t *state, uint8_t *data, uint32_t w, uint32_t h, uint32_t stride)
+{
+    bool valid = (stride % 4) != 0;
+    if (!valid)
+        state->framebuffer = LICE_WrapperBitmap{nullptr, 0, 0, 0, false};
+    else
+        state->framebuffer = LICE_WrapperBitmap{(LICE_pixel *)data, (int)w, (int)h, (int)(stride / 4), false};
 }
 
 //------------------------------------------------------------------------------

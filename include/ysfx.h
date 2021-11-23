@@ -323,6 +323,7 @@ typedef struct ysfx_gfx_config_s {
     // the height of the frame buffer (having the scale factor applied)
     uint32_t pixel_height;
     // the distance in bytes between lines; if 0, it defaults to (4*width)
+    // currently it is required to be a multiple of 4
     uint32_t pixel_stride;
     // the pixel data of the frame buffer, of size (stride*height) bytes
     // the byte order in little-endian is 'BGRA', big-endian is 'ARGB'

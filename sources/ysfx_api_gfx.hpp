@@ -25,6 +25,7 @@ ysfx_gfx_state_t *ysfx_gfx_state_new();
 void ysfx_gfx_state_free(ysfx_gfx_state_t *state);
 YSFX_DEFINE_AUTO_PTR(ysfx_gfx_state_u, ysfx_gfx_state_t, ysfx_gfx_state_free);
 void ysfx_gfx_state_set_thread(ysfx_gfx_state_t *state, std::thread::id id);
+void ysfx_gfx_state_set_bitmap(ysfx_gfx_state_t *state, uint8_t *data, uint32_t w, uint32_t h, uint32_t stride);
 
 //------------------------------------------------------------------------------
 void ysfx_gfx_enter(ysfx_t *fx);
