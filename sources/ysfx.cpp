@@ -126,6 +126,27 @@ ysfx_t *ysfx_new(ysfx_config_t *config)
     AUTOVAR(ext_nodenorm, 0);
     AUTOVAR(ext_midi_bus, 0);
     AUTOVAR(midi_bus, 0);
+    // gfx variables
+    AUTOVAR(gfx_r, 0);
+    AUTOVAR(gfx_g, 0);
+    AUTOVAR(gfx_b, 0);
+    AUTOVAR(gfx_a, 0);
+    AUTOVAR(gfx_a2, 0);
+    AUTOVAR(gfx_w, 0);
+    AUTOVAR(gfx_h, 0);
+    AUTOVAR(gfx_x, 0);
+    AUTOVAR(gfx_y, 0);
+    AUTOVAR(gfx_mode, 0);
+    AUTOVAR(gfx_clear, 0);
+    AUTOVAR(gfx_texth, 0);
+    AUTOVAR(gfx_dest, 0);
+    AUTOVAR(gfx_ext_retina, 0);
+    AUTOVAR(gfx_ext_flags, 0);
+    AUTOVAR(mouse_x, 0);
+    AUTOVAR(mouse_y, 0);
+    AUTOVAR(mouse_cap, 0);
+    AUTOVAR(mouse_wheel, 0);
+    AUTOVAR(mouse_hwheel, 0);
     #undef AUTOVAR
 
     fx->midi.in.reset(new ysfx_midi_buffer_t);

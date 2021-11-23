@@ -100,6 +100,28 @@ struct ysfx_s {
         EEL_F *ext_nodenorm = nullptr;
         EEL_F *ext_midi_bus = nullptr;
         EEL_F *midi_bus = nullptr;
+        // gfx variables
+        EEL_F *gfx_r = nullptr;
+        EEL_F *gfx_g = nullptr;
+        EEL_F *gfx_b = nullptr;
+        EEL_F *gfx_a = nullptr;
+        EEL_F *gfx_a2 = nullptr;
+        EEL_F *gfx_w = nullptr;
+        EEL_F *gfx_h = nullptr;
+        EEL_F *gfx_x = nullptr;
+        EEL_F *gfx_y = nullptr;
+        EEL_F *gfx_mode = nullptr;
+        EEL_F *gfx_clear = nullptr;
+        EEL_F *gfx_texth = nullptr;
+        EEL_F *gfx_dest = nullptr;
+        EEL_F *gfx_ext_retina = nullptr;
+        EEL_F *gfx_ext_flags = nullptr;
+        EEL_F *mouse_x = nullptr;
+        EEL_F *mouse_y = nullptr;
+        EEL_F *mouse_cap = nullptr;
+        EEL_F *mouse_wheel = nullptr;
+        EEL_F *mouse_hwheel = nullptr;
+        // other
         EEL_F ret_temp = 0;
     } var;
 
