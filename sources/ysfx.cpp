@@ -406,15 +406,6 @@ bool ysfx_compile(ysfx_t *fx, uint32_t compileopts)
     fx->is_freshly_compiled = true;
     fx->must_compute_init = true;
 
-#if !defined(YSFX_NO_GFX)
-    {
-        std::lock_guard<std::mutex> lock{fx->gfx.mutex};
-        fx->gfx.ready = false;
-        fx->gfx.wants_retina = false;
-        fx->gfx.must_init.store(false);
-    }
-#endif
-
     ///
     ysfx_eel_string_context_update_named_vars(fx->string_ctx.get(), vm);
 
