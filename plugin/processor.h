@@ -20,6 +20,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <memory>
 class YsfxParameter;
+using ysfx_t = struct ysfx_s;
 using ysfx_state_t = struct ysfx_state_s;
 
 class YsfxProcessor : public juce::AudioProcessor {
@@ -27,6 +28,7 @@ public:
     YsfxProcessor();
     ~YsfxProcessor() override;
 
+    ysfx_t *getYsfx();
     YsfxParameter *getYsfxParameter(int sliderIndex);
     void loadJsfxFile(const juce::String &filePath, ysfx_state_t *initialState, bool async);
     YsfxInfo::Ptr getCurrentInfo();

@@ -22,6 +22,7 @@
 #include "components/parameters_panel.h"
 #include "components/graphics_view.h"
 #include "utility/functional_timer.h"
+#include "ysfx.h"
 #include <juce_gui_extra/juce_gui_extra.h>
 
 struct YsfxEditor::Impl {
@@ -29,6 +30,7 @@ struct YsfxEditor::Impl {
     YsfxProcessor *m_proc = nullptr;
     YsfxInfo::Ptr m_info;
     std::unique_ptr<juce::Timer> m_infoTimer;
+    std::unique_ptr<juce::Timer> m_gfxTimer;
     std::unique_ptr<juce::FileChooser> m_fileChooser;
     std::unique_ptr<juce::PopupMenu> m_recentFilesPopup;
     bool m_fileChooserActive = false;
@@ -36,6 +38,7 @@ struct YsfxEditor::Impl {
     //==========================================================================
     void updateInfo();
     void grabInfoAndUpdate();
+    void updateGfx();
     void chooseFileAndLoad();
     void loadFile(const juce::File &file);
     void popupRecentFiles();
@@ -86,6 +89,12 @@ void YsfxEditor::Impl::grabInfoAndUpdate()
         m_info = info;
         updateInfo();
     }
+}
+
+void YsfxEditor::Impl::updateGfx()
+{
+    ysfx_t *fx = m_proc->getYsfx();
+    ysfx_gfx_run(fx);
 }
 
 void YsfxEditor::Impl::updateInfo()
@@ -228,6 +237,9 @@ void YsfxEditor::Impl::connectUI()
 
     m_infoTimer.reset(FunctionalTimer::create([this]() { grabInfoAndUpdate(); }));
     m_infoTimer->startTimer(100);
+
+    m_gfxTimer.reset(FunctionalTimer::create([this]() { updateGfx(); }));
+    m_gfxTimer->startTimer(30);
 }
 
 void YsfxEditor::Impl::relayoutUI()

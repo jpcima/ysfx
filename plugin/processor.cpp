@@ -130,6 +130,11 @@ YsfxProcessor::~YsfxProcessor()
     m_impl->m_background->shutdown();
 }
 
+ysfx_t *YsfxProcessor::getYsfx()
+{
+    return m_impl->m_fx.get();
+}
+
 YsfxParameter *YsfxProcessor::getYsfxParameter(int sliderIndex)
 {
     if (sliderIndex < 0 || sliderIndex >= ysfx_max_sliders)
