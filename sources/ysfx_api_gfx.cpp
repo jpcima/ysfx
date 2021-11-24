@@ -197,4 +197,5 @@ void ysfx_api_init_gfx()
     NSEEL_addfunc_varparm("gfx_set", 1, NSEEL_PProc_THIS, &ysfx_api_gfx_set);
     NSEEL_addfunc_varparm("gfx_getdropfile", 1, NSEEL_PProc_THIS, &ysfx_api_gfx_getdropfile);
     NSEEL_addfunc_varparm("gfx_getsyscol", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_getsyscol);
+    NSEEL_addfunc_retval("gfx_getchar", 1, NSEEL_PProc_THIS, &ysfx_api_gfx_getchar);
 }

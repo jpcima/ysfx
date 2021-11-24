@@ -836,3 +836,9 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_getsyscol(void *opaque, INT_PTR np, EE
     // TODO
     return 0;
 }
+
+static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_getchar(void *opaque, EEL_F *p)
+{
+    // TODO
+    return 0;
+}

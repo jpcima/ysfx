@@ -38,12 +38,17 @@ static EEL_F *NSEEL_CGEN_CALL ysfx_api_gfx_stub_retptr3(void *, EEL_F *arg, EEL_
   return arg;
 }
 
-static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_stub_retval2(void *, EEL_F *arg, EEL_F *)
+static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_stub_retval1(void *, EEL_F *)
 {
   return 0;
 }
 
-static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_stub_retval3(void *, EEL_F *arg, EEL_F *, EEL_F *)
+static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_stub_retval2(void *, EEL_F *, EEL_F *)
+{
+  return 0;
+}
+
+static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_stub_retval3(void *, EEL_F *, EEL_F *, EEL_F *)
 {
   return 0;
 }
@@ -83,3 +88,4 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_stub_retval3(void *, EEL_F *arg, EEL_F
 #define ysfx_api_gfx_set ysfx_api_gfx_stub_varparm
 #define ysfx_api_gfx_getdropfile ysfx_api_gfx_stub_varparm
 #define ysfx_api_gfx_getsyscol ysfx_api_gfx_stub_varparm
+#define ysfx_api_gfx_getchar ysfx_api_gfx_stub_retval1
