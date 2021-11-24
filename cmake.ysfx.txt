@@ -64,6 +64,11 @@ if(MSVC)
         PRIVATE
             "_CRT_NONSTDC_NO_WARNINGS")
 endif()
+if(WIN32)
+    target_compile_definitions(ysfx-private
+        PRIVATE
+            "NOMINMAX")
+endif()
 target_include_directories(ysfx-private
     PUBLIC
         "include"
