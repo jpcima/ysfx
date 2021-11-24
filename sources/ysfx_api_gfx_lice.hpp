@@ -287,7 +287,22 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_triangle(void *opaque, INT_PTR np, EEL
 
 static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_roundrect(void *opaque, INT_PTR np, EEL_F **parms)
 {
-    // TODO
+    ysfx_t *fx = (ysfx_t *)opaque;
+    ysfx_gfx_state_t *state = GFX_GET_CONTEXT(opaque);
+    if (!state)
+        return 0;
+
+    LICE_IBitmap *dest = image_for_index(opaque, *fx->var.gfx_dest, "gfx_roundrect");
+    if (!dest)
+        return 0;
+
+    const bool aa = np <= 5 || parms[5][0] > (EEL_F)0.5;
+
+    if (parms[2][0] > 0 && parms[3][0] > 0) {
+        set_image_dirty(opaque, dest);
+        LICE_RoundRect(dest, (float)parms[0][0], (float)parms[1][0], (float)parms[2][0], (float)parms[3][0], (int)parms[4][0], current_color(opaque), (float)*fx->var.gfx_a, current_mode(opaque), aa);
+    }
+
     return 0;
 }
 
@@ -312,7 +327,27 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_arc(void *opaque, INT_PTR np, EEL_F **
 
 static EEL_F *NSEEL_CGEN_CALL ysfx_api_gfx_blurto(void *opaque, EEL_F *x, EEL_F *y)
 {
-    // TODO
+    ysfx_t *fx = (ysfx_t *)opaque;
+    ysfx_gfx_state_t *state = GFX_GET_CONTEXT(opaque);
+    if (!state)
+        return x;
+
+    LICE_IBitmap *dest = image_for_index(opaque, *fx->var.gfx_dest, "gfx_blurto");
+    if (!dest)
+        return x;
+
+    set_image_dirty(opaque, dest);
+
+    int srcx = (int)*x;
+    int srcy = (int)*y;
+    int srcw = (int)(*fx->var.gfx_x - *x);
+    int srch = (int)(*fx->var.gfx_y - *y);
+    if (srch < 0) { srch = -srch; srcy = (int)*fx->var.gfx_y; }
+    if (srcw < 0) { srcw = -srcw; srcx = (int)*fx->var.gfx_x; }
+    LICE_Blur(dest, dest, srcx, srcy, srcx, srcy, srcw, srch);
+    *fx->var.gfx_x = *x;
+    *fx->var.gfx_y = *y;
+
     return x;
 }
 
