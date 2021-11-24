@@ -23,6 +23,8 @@
 #   define WDL_NO_DEFINE_MINMAX
 #   include "WDL/lice/lice.h"
 #endif
+#include <vector>
+#include <memory>
 #include <atomic>
 
 #if !defined(YSFX_NO_GFX)
