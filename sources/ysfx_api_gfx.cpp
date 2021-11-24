@@ -36,6 +36,7 @@ struct ysfx_gfx_state_t {
     std::atomic<std::thread::id> gfx_thread_id;
     bool framebuffer_dirty = false;
     LICE_WrapperBitmap framebuffer{nullptr, 0, 0, 0, false};
+    std::unique_ptr<LICE_MemBitmap> framebuffer_extra;
     std::vector<std::unique_ptr<LICE_IBitmap>> images;
     ysfx_real scale = 0.0;
 };
