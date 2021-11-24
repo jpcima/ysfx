@@ -198,16 +198,48 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_line(void *opaque, INT_PTR np, EEL_F *
     return 0;
 }
 
+static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_grad_or_muladd_rect(void *opaque, int whichmode, INT_PTR np, EEL_F **parms)
+{
+    ysfx_t *fx = (ysfx_t *)opaque;
+    ysfx_gfx_state_t *state = GFX_GET_CONTEXT(opaque);
+    if (!state)
+        return 0;
+
+    LICE_IBitmap *dest = image_for_index(opaque, *fx->var.gfx_dest, (whichmode == 0) ? "gfx_gradrect" : "gfx_muladdrect");
+    if (!dest)
+        return 0;
+
+    const int x1 = (int)std::floor(parms[0][0]);
+    const int y1 = (int)std::floor(parms[1][0]);
+    const int w = (int)std::floor(parms[2][0]);
+    const int h = (int)std::floor(parms[3][0]);
+
+    if (w > 0 && h > 0) {
+        set_image_dirty(opaque, dest);
+        if (whichmode == 0 && np > 7) {
+            LICE_GradRect(dest, x1, y1, w, h, (float)parms[4][0], (float)parms[5][0], (float)parms[6][0], (float)parms[7][0],
+                          (np > 8) ? (float)parms[8][0] : 0, (np > 9) ? (float)parms[9][0] : 0, (np > 10) ? (float)parms[10][0] : 0, (np > 11) ? (float)parms[11][0] : 0,
+                          (np > 12) ? (float)parms[12][0] : 0, (np > 13) ? (float)parms[13][0] : 0,  (np > 14) ? (float)parms[14][0] : 0, (np > 15) ? (float)parms[15][0] : 0,
+                          current_mode(opaque));
+        }
+        else if (whichmode == 1 && np > 6) {
+            const EEL_F sc = 255;
+            LICE_MultiplyAddRect(dest, x1, y1, w, h, (float)parms[4][0], (float)parms[5][0], (float)parms[6][0], (np > 7) ? (float)parms[7][0] : 1,
+                                 (float)((np > 8) ? sc * parms[8][0] : 0), (float)((np > 9) ? sc * parms[9][0] : 0),  (float)((np > 10) ? sc * parms[10][0] : 0), (float)((np > 11) ? sc * parms[11][0] : 0));
+        }
+    }
+
+    return 0;
+}
+
 static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_gradrect(void *opaque, INT_PTR np, EEL_F **parms)
 {
-    // TODO
-    return 0;
+    return ysfx_api_gfx_grad_or_muladd_rect(opaque, 0, np, parms);
 }
 
 static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_muladdrect(void *opaque, INT_PTR np, EEL_F **parms)
 {
-    // TODO
-    return 0;
+    return ysfx_api_gfx_grad_or_muladd_rect(opaque, 1, np, parms);
 }
 
 static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_deltablit(void *opaque, INT_PTR np, EEL_F **parms)
