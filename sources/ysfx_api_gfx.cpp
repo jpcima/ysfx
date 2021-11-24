@@ -28,6 +28,10 @@
 #if !defined(YSFX_NO_GFX)
 #define GFX_GET_CONTEXT(opaque) (((opaque)) ? ysfx_gfx_get_context((ysfx_t *)(opaque)) : nullptr)
 
+enum {
+    ysfx_gfx_max_images = 1024,
+};
+
 struct ysfx_gfx_state_t {
     std::atomic<std::thread::id> gfx_thread_id;
     bool framebuffer_dirty = false;
@@ -38,7 +42,9 @@ struct ysfx_gfx_state_t {
 
 ysfx_gfx_state_t *ysfx_gfx_state_new()
 {
-    return new ysfx_gfx_state_t;
+    ysfx_gfx_state_u state{new ysfx_gfx_state_t};
+    state->images.resize(ysfx_gfx_max_images);
+    return state.release();
 }
 
 void ysfx_gfx_state_free(ysfx_gfx_state_t *state)

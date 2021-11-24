@@ -30,6 +30,7 @@
 //
 
 #pragma once
+#include <algorithm>
 #include <cmath>
 
 // help clangd to figure things out
@@ -57,7 +58,7 @@ static LICE_IBitmap *image_for_index(void *opaque, EEL_F idx, const char *caller
 
         const int a = (int)idx;
         if (a >= 0 && (size_t)a < state->images.size())
-            return state->images[a].get();
+            return state->images[(size_t)a].get();
     }
     return nullptr;
 }
@@ -92,7 +93,8 @@ static LICE_pixel current_color(void *opaque)
 static EEL_F *NSEEL_CGEN_CALL ysfx_api_gfx_lineto(void *opaque, EEL_F *xpos, EEL_F *ypos, EEL_F *useaa)
 {
     ysfx_t *fx = (ysfx_t *)opaque;
-    if (!fx)
+    ysfx_gfx_state_t *state = GFX_GET_CONTEXT(opaque);
+    if (!state)
         return xpos;
 
     LICE_IBitmap *dest = image_for_index(opaque, *fx->var.gfx_dest, "gfx_lineto");
@@ -122,7 +124,8 @@ static EEL_F *NSEEL_CGEN_CALL ysfx_api_gfx_lineto2(void *opaque, EEL_F *xpos, EE
 static EEL_F *NSEEL_CGEN_CALL ysfx_api_gfx_rectto(void *opaque, EEL_F *xpos, EEL_F *ypos)
 {
     ysfx_t *fx = (ysfx_t *)opaque;
-    if (!fx)
+    ysfx_gfx_state_t *state = GFX_GET_CONTEXT(opaque);
+    if (!state)
         return xpos;
 
     LICE_IBitmap *dest = image_for_index(opaque, *fx->var.gfx_dest, "gfx_rectto");
@@ -149,7 +152,8 @@ static EEL_F *NSEEL_CGEN_CALL ysfx_api_gfx_rectto(void *opaque, EEL_F *xpos, EEL
 static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_rect(void *opaque, INT_PTR np, EEL_F **parms)
 {
     ysfx_t *fx = (ysfx_t *)opaque;
-    if (!fx)
+    ysfx_gfx_state_t *state = GFX_GET_CONTEXT(opaque);
+    if (!state)
         return 0;
 
     LICE_IBitmap *dest = image_for_index(opaque, *fx->var.gfx_dest, "gfx_rect");
@@ -174,7 +178,8 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_rect(void *opaque, INT_PTR np, EEL_F *
 static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_line(void *opaque, INT_PTR np, EEL_F **parms)
 {
     ysfx_t *fx = (ysfx_t *)opaque;
-    if (!fx)
+    ysfx_gfx_state_t *state = GFX_GET_CONTEXT(opaque);
+    if (!state)
         return 0;
 
     LICE_IBitmap *dest = image_for_index(opaque, *fx->var.gfx_dest, "gfx_line");
@@ -249,7 +254,34 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_circle(void *opaque, INT_PTR np, EEL_F
 
 static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_triangle(void *opaque, INT_PTR np, EEL_F **parms)
 {
-    // TODO
+    ysfx_t *fx = (ysfx_t *)opaque;
+    ysfx_gfx_state_t *state = GFX_GET_CONTEXT(opaque);
+    if (!state)
+        return 0;
+
+    LICE_IBitmap *dest = image_for_index(opaque, *fx->var.gfx_dest, "gfx_triangle");
+    if (np >= 6) {
+        np &= ~1;
+        set_image_dirty(opaque, dest);
+        if (np == 6) {
+            LICE_FillTriangle(dest, (int)parms[0][0], (int)parms[1][0], (int)parms[2][0], (int)parms[3][0],
+                              (int)parms[4][0], (int)parms[5][0], current_color(opaque), (float)*fx->var.gfx_a, current_mode(opaque));
+        }
+        else {
+            const int maxpt = 512;
+            const int n = std::min((int)(np / 2), maxpt);
+            int i, rdi = 0;
+            int x[maxpt], y[maxpt];
+            for (i = 0; i < n; i++)
+            {
+                x[i] = (int)parms[rdi++][0];
+                y[i] = (int)parms[rdi++][0];
+            }
+
+            LICE_FillConvexPolygon(dest, x, y, n, current_color(opaque), (float)*fx->var.gfx_a, current_mode(opaque));
+        }
+    }
+
     return 0;
 }
 
@@ -261,7 +293,20 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_roundrect(void *opaque, INT_PTR np, EE
 
 static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_arc(void *opaque, INT_PTR np, EEL_F **parms)
 {
-    // TODO
+    ysfx_t *fx = (ysfx_t *)opaque;
+    ysfx_gfx_state_t *state = GFX_GET_CONTEXT(opaque);
+    if (!state)
+        return 0;
+
+    LICE_IBitmap *dest = image_for_index(opaque, *fx->var.gfx_dest, "gfx_arc");
+    if (!dest)
+        return 0;
+
+    const bool aa = np <= 5 || parms[5][0] > (EEL_F)0.5;
+
+    set_image_dirty(opaque, dest);
+    LICE_Arc(dest, (float)parms[0][0], (float)parms[1][0], (float)parms[2][0], (float)parms[3][0], (float)parms[4][0], current_color(opaque), (float)*fx->var.gfx_a, current_mode(opaque), aa);
+
     return 0;
 }
 
@@ -322,26 +367,94 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_printf(void *opaque, INT_PTR nparms, E
 
 static EEL_F *NSEEL_CGEN_CALL ysfx_api_gfx_setpixel(void *opaque, EEL_F *r, EEL_F *g, EEL_F *b)
 {
-    // TODO
+    ysfx_t *fx = (ysfx_t *)opaque;
+    ysfx_gfx_state_t *state = GFX_GET_CONTEXT(opaque);
+    if (!state)
+        return r;
+
+    LICE_IBitmap *dest = image_for_index(opaque, *fx->var.gfx_dest,"gfx_setpixel");
+    if (!dest)
+        return r;
+
+    int red = (int)(*r * 255);
+    int green = (int)(*g * 255);
+    int blue = (int)(*b * 255);
+    if (red < 0) red = 0; else if (red > 255) red = 255;
+    if (green < 0) green = 0; else if (green > 255) green = 255;
+    if (blue < 0) blue = 0; else if (blue > 255) blue = 255;
+
+    set_image_dirty(opaque, dest);
+    LICE_PutPixel(dest, (int)*fx->var.gfx_x, (int)*fx->var.gfx_y, LICE_RGBA(red, green, blue, 255), (float)*fx->var.gfx_a, current_mode(opaque));
+
     return r;
 }
 
 static EEL_F *NSEEL_CGEN_CALL ysfx_api_gfx_getpixel(void *opaque, EEL_F *r, EEL_F *g, EEL_F *b)
 {
-    // TODO
+    ysfx_t *fx = (ysfx_t *)opaque;
+    ysfx_gfx_state_t *state = GFX_GET_CONTEXT(opaque);
+    if (!state)
+        return r;
+
+    LICE_IBitmap *dest = image_for_index(opaque, *fx->var.gfx_dest, "gfx_getpixel");
+    if (!dest)
+        return r;
+
+    int ret = LICE_GetPixel(dest, (int)*fx->var.gfx_x, (int)*fx->var.gfx_y);
+
+    *r = LICE_GETR(ret) / (EEL_F)255;
+    *g = LICE_GETG(ret) / (EEL_F)255;
+    *b = LICE_GETB(ret) / (EEL_F)255;
+
     return r;
 }
 
 static EEL_F *NSEEL_CGEN_CALL ysfx_api_gfx_getimgdim(void *opaque, EEL_F *img, EEL_F *w, EEL_F *h)
 {
-    // TODO
+    *w = 0;
+    *h = 0;
+
+    ysfx_gfx_state_t *state = GFX_GET_CONTEXT(opaque);
+    if (!state)
+        return img;
+
+    LICE_IBitmap *bm = image_for_index(opaque, *img, "gfx_getimgdim");
+    if (bm) {
+        *w = bm->getWidth();
+        *h = bm->getHeight();
+    }
+
     return img;
 }
 
 static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_setimgdim(void *opaque, EEL_F *img, EEL_F *w, EEL_F *h)
 {
-    // TODO
-    return 0;
+    ysfx_gfx_state_t *state = GFX_GET_CONTEXT(opaque);
+    if (!state)
+        return 0;
+
+    int rv = 0;
+
+    int use_w = (int)*w;
+    int use_h = (int)*h;
+    if (use_w < 1 || use_h < 1) use_w = use_h = 0;
+    if (use_w > 8192) use_w = 8192;
+    if (use_h > 8192) use_h = 8192;
+
+    LICE_IBitmap *bm = nullptr;
+    if (*img >= 0 && (size_t)*img < state->images.size()) {
+        bm = state->images[(size_t)*img].get();
+        if (!bm) {
+            bm = new LICE_SysBitmap(use_w, use_h);
+            state->images[(size_t)*img].reset(bm);
+            rv = !!bm;
+        }
+        else {
+            rv = bm->resize(use_w, use_h);
+        }
+    }
+
+    return rv?1.0:0.0;
 }
 
 static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_loadimg(void *opaque, EEL_F *img, EEL_F *fr)
@@ -382,7 +495,22 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_getfont(void *opaque, INT_PTR np, EEL_
 
 static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_set(void *opaque, INT_PTR np, EEL_F **parms)
 {
-    // TODO
+    if (np < 1)
+        return 0;
+
+    ysfx_t *fx = (ysfx_t *)opaque;
+    ysfx_gfx_state_t *state = GFX_GET_CONTEXT(opaque);
+    if (!state)
+        return 0;
+
+    *fx->var.gfx_r = parms[0][0];
+    *fx->var.gfx_g = (np > 1) ? parms[1][0] : parms[0][0];
+    *fx->var.gfx_b = (np > 2) ? parms[2][0] : parms[0][0];
+    *fx->var.gfx_a = (np > 3) ? parms[3][0] : 1;
+    *fx->var.gfx_mode = (np > 4) ? parms[4][0] : 0;
+    if (np > 5) *fx->var.gfx_dest = parms[5][0];
+    *fx->var.gfx_a2 = (np > 6) ? parms[6][0] : 1;
+
     return 0;
 }
 
