@@ -30,6 +30,7 @@
 //
 
 #pragma once
+#include <cmath>
 
 // help clangd to figure things out
 #if defined(__CLANGD__)
@@ -90,31 +91,105 @@ static LICE_pixel current_color(void *opaque)
 //------------------------------------------------------------------------------
 static EEL_F *NSEEL_CGEN_CALL ysfx_api_gfx_lineto(void *opaque, EEL_F *xpos, EEL_F *ypos, EEL_F *useaa)
 {
-    // TODO
+    ysfx_t *fx = (ysfx_t *)opaque;
+    if (!fx)
+        return xpos;
+
+    LICE_IBitmap *dest = image_for_index(opaque, *fx->var.gfx_dest, "gfx_lineto");
+    if (!dest)
+        return xpos;
+
+    int x1 = (int)std::floor(*xpos);
+    int y1 = (int)std::floor(*ypos);
+    int x2 = (int)std::floor(*fx->var.gfx_x);
+    int y2 = (int)std::floor(*fx->var.gfx_y);
+    if (LICE_ClipLine(&x1, &y1, &x2, &y2, 0, 0, dest->getWidth(), dest->getHeight())) {
+        set_image_dirty(opaque, dest);
+        LICE_Line(dest, x1, y1, x2, y2, current_color(opaque), (float)*fx->var.gfx_a, current_mode(opaque), *useaa > (EEL_F)0.5);
+    }
+    *fx->var.gfx_x = *xpos;
+    *fx->var.gfx_y = *ypos;
+
     return xpos;
 }
 
 static EEL_F *NSEEL_CGEN_CALL ysfx_api_gfx_lineto2(void *opaque, EEL_F *xpos, EEL_F *ypos)
 {
-    // TODO
-    return xpos;
+    EEL_F useaa = 1;
+    return ysfx_api_gfx_lineto(opaque, xpos, ypos, &useaa);
 }
 
 static EEL_F *NSEEL_CGEN_CALL ysfx_api_gfx_rectto(void *opaque, EEL_F *xpos, EEL_F *ypos)
 {
-    // TODO
+    ysfx_t *fx = (ysfx_t *)opaque;
+    if (!fx)
+        return xpos;
+
+    LICE_IBitmap *dest = image_for_index(opaque, *fx->var.gfx_dest, "gfx_rectto");
+    if (!dest)
+        return xpos;
+
+    EEL_F x1 = *xpos;
+    EEL_F y1 = *ypos;
+    EEL_F x2 = *fx->var.gfx_x;
+    EEL_F y2 = *fx->var.gfx_y;
+    if (x2 < x1) { x1 = x2; x2 = *xpos; }
+    if (y2 < y1) { y1 = y2; y2 = *ypos; }
+
+    if (x2 - x1 > 0.5 && y2 - y1 > 0.5) {
+        set_image_dirty(opaque, dest);
+        LICE_FillRect(dest, (int)x1, (int)y1, (int)(x2 - x1), (int)(y2 - y1), current_color(opaque), (float)*fx->var.gfx_a, current_mode(opaque));
+    }
+    *fx->var.gfx_x = *xpos;
+    *fx->var.gfx_y = *ypos;
+
     return xpos;
 }
 
 static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_rect(void *opaque, INT_PTR np, EEL_F **parms)
 {
-    // TODO
+    ysfx_t *fx = (ysfx_t *)opaque;
+    if (!fx)
+        return 0;
+
+    LICE_IBitmap *dest = image_for_index(opaque, *fx->var.gfx_dest, "gfx_rect");
+    if (!dest)
+        return 0;
+
+    int x1 = (int)std::floor(parms[0][0]);
+    int y1 = (int)std::floor(parms[1][0]);
+    int w = (int)std::floor(parms[2][0]);
+    int h = (int)std::floor(parms[3][0]);
+    int filled = (np < 5 || parms[4][0] > (EEL_F)0.5);
+
+    if (w > 0 && h > 0) {
+        set_image_dirty(opaque, dest);
+        if (filled) LICE_FillRect(dest, x1, y1, w, h, current_color(opaque), (float)*fx->var.gfx_a, current_mode(opaque));
+        else LICE_DrawRect(dest, x1, y1, w - 1, h - 1, current_color(opaque), (float)*fx->var.gfx_a, current_mode(opaque));
+    }
+
     return 0;
 }
 
 static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_line(void *opaque, INT_PTR np, EEL_F **parms)
 {
-    // TODO
+    ysfx_t *fx = (ysfx_t *)opaque;
+    if (!fx)
+        return 0;
+
+    LICE_IBitmap *dest = image_for_index(opaque, *fx->var.gfx_dest, "gfx_line");
+    if (!dest)
+        return 0;
+
+    int x1 = (int)std::floor(parms[0][0]);
+    int y1 = (int)std::floor(parms[1][0]);
+    int x2 = (int)std::floor(parms[2][0]);
+    int y2 = (int)std::floor(parms[3][0]);
+    if (LICE_ClipLine(&x1, &y1, &x2, &y2, 0, 0, dest->getWidth(),dest->getHeight())) {
+        set_image_dirty(opaque, dest);
+        LICE_Line(dest, x1, y1, x2, y2, current_color(opaque), (float)*fx->var.gfx_a, current_mode(opaque), np < 5 || parms[4][0] > (EEL_F)0.5);
+    }
+
     return 0;
 }
 
