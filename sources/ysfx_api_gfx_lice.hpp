@@ -731,7 +731,64 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_deltablit(void *opaque, INT_PTR np, EE
 
 static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_transformblit(void *opaque, INT_PTR np, EEL_F **parms)
 {
-    // TODO
+    ysfx_t *fx = (ysfx_t *)opaque;
+    ysfx_gfx_state_t *state = GFX_GET_CONTEXT(opaque);
+    if (!state)
+        return 0;
+
+    // NOTE(jpc) enforced limit to 64, as indicated by specification
+    const int divw = std::min(64, (int)(parms[5][0] + (EEL_F)0.5));
+    const int divh = std::min(64, (int)(parms[6][0] + (EEL_F)0.5));
+    if (divw < 1 || divh < 1)
+        return 0;
+    const int sz = divw * divh * 2;
+
+    double *d;
+
+    //
+    double d_small[128];
+    std::unique_ptr<double[]> d_large;
+    if (sz <= 128)
+        d = d_small;
+    else
+        d_large.reset((d = new double[sz]));
+
+    {
+        ysfx_eel_ram_reader rr{fx->vm.get(), (int)(parms[7][0] + (EEL_F)0.5)};
+        for (int i = 0; i < sz; ++i)
+            d[i] = rr.read_next();
+    }
+
+    //
+    LICE_IBitmap *dest = image_for_index(opaque, *fx->var.gfx_dest, "gfx_transformblit");
+    if (!dest)
+        return 0;
+
+    LICE_IBitmap *bm = image_for_index(opaque, parms[0][0], "gfx_transformblit:src");
+    if (!bm)
+        return 0;
+
+    const int bmw = bm->getWidth();
+    const int bmh = bm->getHeight();
+
+    const bool isFromFB = bm == &state->framebuffer;
+
+    set_image_dirty(opaque, dest);
+
+    if (bm == dest) {
+        if (!state->framebuffer_extra)
+            state->framebuffer_extra.reset(new LICE_MemBitmap(bmw, bmh));
+        if (state->framebuffer_extra) {
+            bm = state->framebuffer_extra.get();
+            bm->resize(bmw, bmh);
+            LICE_ScaledBlit(bm, dest, // copy the entire image
+                            0, 0, bmw, bmh,
+                            0.0f, 0.0f, (float)bmw, (float)bmh,
+                            1.0f, LICE_BLIT_MODE_COPY);
+        }
+    }
+    LICE_TransformBlit2(dest, bm, (int)std::floor(parms[1][0]), (int)std::floor(parms[2][0]), (int)std::floor(parms[3][0]), (int)std::floor(parms[4][0]), d, divw, divh, (float)*fx->var.gfx_a, current_mode_for_blit(opaque, isFromFB));
+
     return 0;
 }
 
