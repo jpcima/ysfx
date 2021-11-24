@@ -30,7 +30,9 @@
 
 struct ysfx_gfx_state_t {
     std::atomic<std::thread::id> gfx_thread_id;
+    bool framebuffer_dirty = false;
     LICE_WrapperBitmap framebuffer{nullptr, 0, 0, 0, false};
+    std::vector<std::unique_ptr<LICE_IBitmap>> images;
     ysfx_real scale = 0.0;
 };
 
@@ -66,6 +68,11 @@ void ysfx_gfx_state_set_scale_factor(ysfx_gfx_state_t *state, ysfx_real scale)
     state->scale = scale;
 }
 
+bool ysfx_gfx_state_is_dirty(ysfx_gfx_state_t *state)
+{
+    return state->framebuffer_dirty;
+}
+
 //------------------------------------------------------------------------------
 void ysfx_gfx_enter(ysfx_t *fx, bool doinit)
 {
@@ -73,7 +80,15 @@ void ysfx_gfx_enter(ysfx_t *fx, bool doinit)
 
     if (doinit) {
         if (fx->gfx.must_init.exchange(false, std::memory_order_acquire)) {
-            // TODO: perform gfx initializations
+            *fx->var.gfx_r = 1.0;
+            *fx->var.gfx_g = 1.0;
+            *fx->var.gfx_b = 1.0;
+            *fx->var.gfx_a = 1.0;
+            *fx->var.gfx_a2 = 1.0;
+            *fx->var.gfx_dest = -1.0;
+            *fx->var.mouse_wheel = 0.0;
+            *fx->var.mouse_hwheel = 0.0;
+            // NOTE possibly others in the future, check eel_lice.h `resetVarsToStock`
             fx->gfx.ready = true;
         }
     }
@@ -101,6 +116,8 @@ void ysfx_gfx_prepare(ysfx_t *fx)
 {
     ysfx_gfx_state_t *state = ysfx_gfx_get_context(fx);
 
+    state->framebuffer_dirty = false;
+
     // set variables `gfx_w` and `gfx_h`
     ysfx_real gfx_w = (ysfx_real)state->framebuffer.getWidth();
     ysfx_real gfx_h = (ysfx_real)state->framebuffer.getHeight();
@@ -117,6 +134,7 @@ void ysfx_gfx_prepare(ysfx_t *fx)
         int rgba = (int)*fx->var.gfx_clear;
         LICE_pixel color = LICE_RGBA(rgba & 0xff, (rgba >> 8) & 0xff, (rgba >> 16) & 0xff, 0);
         LICE_Clear(&state->framebuffer, color);
+        state->framebuffer_dirty = true;
     }
 }
 #endif

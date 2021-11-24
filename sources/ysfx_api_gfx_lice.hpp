@@ -1,24 +1,93 @@
-// Copyright 2021 Jean Pierre Cimalando
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
+// This file is based in part on modified source code from `WDL/eel2/eel_lice.h`.
+// The zlib license from the WDL applies to this source file.
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//------------------------------------------------------------------------------
 //
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright (C) 2021 and later Jean Pierre Cimalando
+// Copyright (C) 2005 and later Cockos Incorporated
 //
-// SPDX-License-Identifier: Apache-2.0
+//
+// Portions copyright other contributors, see each source file for more information
+//
+// This software is provided 'as-is', without any express or implied
+// warranty.  In no event will the authors be held liable for any damages
+// arising from the use of this software.
+//
+// Permission is granted to anyone to use this software for any purpose,
+// including commercial applications, and to alter it and redistribute it
+// freely, subject to the following restrictions:
+//
+// 1. The origin of this software must not be misrepresented; you must not
+//    claim that you wrote the original software. If you use this software
+//    in a product, an acknowledgment in the product documentation would be
+//    appreciated but is not required.
+// 2. Altered source versions must be plainly marked as such, and must not be
+//    misrepresented as being the original software.
+// 3. This notice may not be removed or altered from any source distribution.
+//
+// SPDX-License-Identifier: Zlib
 //
 
 #pragma once
-#include "ysfx_api_gfx.hpp"
-#include "ysfx_eel_utils.hpp"
 
+// help clangd to figure things out
+#if defined(__CLANGD__)
+#   include "ysfx_api_gfx.cpp"
+#endif
+
+//------------------------------------------------------------------------------
+static void set_image_dirty(void *opaque, LICE_IBitmap *bm)
+{
+    ysfx_t *fx = (ysfx_t *)opaque;
+    ysfx_gfx_state_t *state = fx->gfx.state.get();
+
+    if (bm == &state->framebuffer)
+        state->framebuffer_dirty = true;
+}
+
+static LICE_IBitmap *image_for_index(void *opaque, EEL_F idx, const char *callername)
+{
+    ysfx_t *fx = (ysfx_t *)opaque;
+    ysfx_gfx_state_t *state = fx->gfx.state.get();
+    if (idx > -2) {
+        if (idx < 0)
+            return &state->framebuffer;
+
+        const int a = (int)idx;
+        if (a >= 0 && (size_t)a < state->images.size())
+            return state->images[a].get();
+    }
+    return nullptr;
+}
+
+static int current_mode(void *opaque)
+{
+    ysfx_t *fx = (ysfx_t *)opaque;
+    const int gmode = (int)(*fx->var.gfx_mode);
+
+    const int sm = (gmode >> 4) & 0xf;
+    if (sm > LICE_BLIT_MODE_COPY && sm <= LICE_BLIT_MODE_HSVADJ)
+        return sm;
+
+    return (gmode & 1) ? LICE_BLIT_MODE_ADD : LICE_BLIT_MODE_COPY;
+}
+
+static LICE_pixel current_color(void *opaque)
+{
+    ysfx_t *fx = (ysfx_t *)opaque;
+    int red = (int)(*fx->var.gfx_r * 255);
+    int green = (int)(*fx->var.gfx_g * 255);
+    int blue = (int)(*fx->var.gfx_b * 255);
+    int a2 = (int)(*fx->var.gfx_a2 * 255);
+    if (red < 0) red = 0; else if (red > 255) red = 255;
+    if (green < 0) green = 0; else if (green > 255) green = 255;
+    if (blue < 0) blue = 0; else if (blue > 255) blue = 255;
+    if (a2 < 0) a2 = 0; else if (a2 > 255) a2 = 255;
+    return LICE_RGBA(red, green, blue, a2);
+}
+
+//------------------------------------------------------------------------------
 static EEL_F *NSEEL_CGEN_CALL ysfx_api_gfx_lineto(void *opaque, EEL_F *xpos, EEL_F *ypos, EEL_F *useaa)
 {
     // TODO
@@ -75,8 +144,32 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_transformblit(void *opaque, INT_PTR np
 
 static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_circle(void *opaque, INT_PTR np, EEL_F **parms)
 {
-    // TODO
-    return 0;
+    ysfx_t *fx = (ysfx_t *)opaque;
+    ysfx_gfx_state_t *state = GFX_GET_CONTEXT(opaque);
+    if (!state)
+        return 0;
+
+    float x = (float)parms[0][0];
+    float y = (float)parms[1][0];
+    float r = (float)parms[2][0];
+
+    bool aa = true, fill = false;
+    if (np > 3)
+        fill = parms[3][0] > 0.5;
+    if (np > 4)
+        aa = parms[4][0] > 0.5;
+
+    LICE_IBitmap *dest = image_for_index(opaque, *fx->var.gfx_dest, "gfx_circle");
+    if (!dest)
+        return 0;
+
+    set_image_dirty(opaque, dest);
+    if (fill)
+        LICE_FillCircle(dest, x, y, r, current_color(opaque), (float)*fx->var.gfx_a, current_mode(opaque), aa);
+    else
+        LICE_Circle(dest, x, y, r, current_color(opaque), (float)*fx->var.gfx_a, current_mode(opaque), aa);
+
+    return 0.0;
 }
 
 static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_triangle(void *opaque, INT_PTR np, EEL_F **parms)

@@ -1343,8 +1343,7 @@ bool ysfx_gfx_run(ysfx_t *fx)
     ysfx_gfx_prepare(fx);
     NSEEL_code_execute(fx->code.gfx.get());
 
-    // TODO return the dirty status of the framebuffer
-    return true;
+    return ysfx_gfx_state_is_dirty(fx->gfx.state.get());
 #else
     (void)fx;
 #endif

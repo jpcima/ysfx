@@ -27,6 +27,7 @@ YSFX_DEFINE_AUTO_PTR(ysfx_gfx_state_u, ysfx_gfx_state_t, ysfx_gfx_state_free);
 void ysfx_gfx_state_set_thread(ysfx_gfx_state_t *state, std::thread::id id);
 void ysfx_gfx_state_set_bitmap(ysfx_gfx_state_t *state, uint8_t *data, uint32_t w, uint32_t h, uint32_t stride);
 void ysfx_gfx_state_set_scale_factor(ysfx_gfx_state_t *state, ysfx_real scale);
+bool ysfx_gfx_state_is_dirty(ysfx_gfx_state_t *state);
 
 //------------------------------------------------------------------------------
 void ysfx_gfx_enter(ysfx_t *fx, bool doinit);
