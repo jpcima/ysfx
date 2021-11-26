@@ -16,10 +16,6 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-if(NOT RE2C_PROGRAM)
-    message(STATUS "re2c is missing, files will not regenerate (it's fine)")
-endif()
-
 # ysfx::ysfx-private
 #    A ysfx target which gives access to the internals.
 #    This target is adequate for unit-testing.
@@ -36,8 +32,6 @@ add_library(ysfx-private
         "sources/ysfx_reader.hpp"
         "sources/ysfx_parse.cpp"
         "sources/ysfx_parse.hpp"
-        "sources/ysfx_parse_slider.cpp"
-        "sources/ysfx_parse_filename.cpp"
         "sources/ysfx_audio_wav.cpp"
         "sources/ysfx_audio_wav.hpp"
         "sources/ysfx_audio_flac.cpp"
@@ -84,24 +78,6 @@ if(YSFX_GFX)
 else()
     target_compile_definitions(ysfx-private PUBLIC "YSFX_NO_GFX")
 endif()
-
-function(ysfx_re2c_file INPUT OUTPUT)
-    if(RE2C_PROGRAM)
-        get_filename_component(_in "${INPUT}" ABSOLUTE BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
-        get_filename_component(_out "${OUTPUT}" ABSOLUTE BASE_DIR "${CMAKE_CURRENT_BINARY_DIR}")
-        add_custom_command(
-            OUTPUT "${_out}"
-            COMMAND "${RE2C_PROGRAM}" "${_in}" "-o" "${_out}"
-            DEPENDS "${_in}")
-    endif()
-endfunction()
-
-ysfx_re2c_file(
-    "sources/ysfx_parse_slider.cpp.re"
-    "${CMAKE_CURRENT_SOURCE_DIR}/sources/ysfx_parse_slider.cpp")
-ysfx_re2c_file(
-    "sources/ysfx_parse_filename.cpp.re"
-    "${CMAKE_CURRENT_SOURCE_DIR}/sources/ysfx_parse_filename.cpp")
 
 # ysfx::ysfx
 #    A ysfx target which gives access to the public interface.

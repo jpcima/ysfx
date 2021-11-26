@@ -17,6 +17,7 @@
 
 #include "ysfx_parse.hpp"
 #include "ysfx_utils.hpp"
+#include <cstdlib>
 #include <cstring>
 
 bool ysfx_parse_toplevel(ysfx::text_reader &reader, ysfx_toplevel_t &toplevel, ysfx_parse_error *error)
@@ -204,4 +205,176 @@ void ysfx_parse_header(ysfx_section_t *section, ysfx_header_t &header)
         header.in_pins.resize(ysfx_max_channels);
     if (header.out_pins.size() > ysfx_max_channels)
         header.out_pins.resize(ysfx_max_channels);
+}
+
+bool ysfx_parse_slider(const char *line, ysfx_slider_t &slider)
+{
+    // NOTE this parser is intentionally very permissive,
+    //   in order to match the reference behavior
+
+    slider = ysfx_slider_t{};
+
+    #define PARSE_FAIL do {                                                   \
+        /*fprintf(stderr, "parse error (line %d): `%s`\n", __LINE__, line);*/ \
+        return false;                                                         \
+    } while (0)
+
+    const char *cur = line;
+
+    for (const char *p = "slider"; *p; ++p) {
+        if (*cur++ != *p)
+            PARSE_FAIL;
+    }
+
+    // parse ID (1-index)
+    unsigned long id = strtoul(cur, (char **)&cur, 10);
+    if (id < 1 || id > ysfx_max_sliders)
+        PARSE_FAIL;
+    slider.id = (uint32_t)--id;
+
+    // semicolon
+    if (*cur++ != ':')
+        PARSE_FAIL;
+
+    // search if there is an '=' sign prior to any '<' or ','
+    // if there is, it's a custom variable
+    {
+        const char *pos = cur;
+        for (char c; pos && (c = *pos) && c != '='; )
+            pos = (c == '<' || c == ',') ? nullptr : (pos + 1);
+        if (pos && *pos) {
+            slider.var.assign(cur, pos);
+            cur = pos + 1;
+        }
+        else
+            slider.var = "slider" + std::to_string(id + 1);
+    }
+
+    // a regular slider
+    if (*cur != '/') {
+        slider.def = (ysfx_real)ysfx::dot_strtod(cur, (char **)&cur);
+
+        while (*cur && *cur != ',' && *cur != '<') ++cur;
+        if (!*cur) PARSE_FAIL;
+
+        // no range specification
+        if (*cur == ',')
+            ++cur;
+        // range specification
+        else if (*cur == '<') {
+            ++cur;
+
+            // min
+            slider.min = (ysfx_real)ysfx::dot_strtod(cur, (char **)&cur);
+
+            while (*cur && *cur != ',' && *cur != '>') ++cur;
+            if (!*cur) PARSE_FAIL;
+
+            // max
+            if (*cur == ',') {
+                ++cur;
+                slider.max = (ysfx_real)ysfx::dot_strtod(cur, (char **)&cur);
+
+                while (*cur && *cur != ',' && *cur != '>') ++cur;
+                if (!*cur) PARSE_FAIL;
+            }
+
+            // inc
+            if (*cur == ',') {
+                ++cur;
+                slider.inc = (ysfx_real)ysfx::dot_strtod(cur, (char **)&cur);
+
+                while (*cur && *cur != '{' && *cur != ',' && *cur != '>') ++cur;
+                if (!*cur) PARSE_FAIL;
+
+                // enumeration values
+                if (*cur == '{') {
+                    const char *pos = ++cur;
+
+                    while (*cur && *cur != '}' && *cur != '>') ++cur;
+                    if (!*cur) PARSE_FAIL;
+
+                    slider.is_enum = true;
+                    slider.enum_names = ysfx::split_strings_noempty(
+                        std::string(pos, cur).c_str(),
+                        [](char c) -> bool { return c == ','; });
+                    for (std::string &name : slider.enum_names)
+                        name = ysfx::trim(name.c_str(), &ysfx::ascii_isspace);
+                }
+            }
+
+            while (*cur && *cur != '>') ++cur;
+            if (!*cur) PARSE_FAIL;
+
+            ++cur;
+        }
+        else
+            PARSE_FAIL;
+
+        // NOTE: skip ',' and whitespace. not sure why, it's how it is
+        while (*cur && (*cur == ',' || ysfx::ascii_isspace(*cur))) ++cur;
+        if (!*cur) PARSE_FAIL;
+    }
+    // a path slider
+    else
+    {
+        const char *pos = cur;
+        while (*cur && *cur != ':') ++cur;
+        if (!*cur) PARSE_FAIL;
+
+        slider.path.assign(pos, cur);
+        ++cur;
+        slider.def = (ysfx_real)ysfx::dot_strtod(cur, (char **)&cur);
+        slider.inc = 1;
+        slider.is_enum = true;
+
+        while (*cur && *cur != ':') ++cur;
+        if (!*cur) PARSE_FAIL;
+
+        ++cur;
+    }
+
+    // description and visibility
+    while (ysfx::ascii_isspace(*cur))
+        ++cur;
+
+    slider.initially_visible = true;
+    if (*cur == '-') {
+        ++cur;
+        slider.initially_visible = false;
+    }
+
+    slider.desc = ysfx::trim(cur, &ysfx::ascii_isspace);
+    if (slider.desc.empty())
+        PARSE_FAIL;
+
+    //
+    #undef PARSE_FAIL
+
+    return true;
+}
+
+bool ysfx_parse_filename(const char *line, ysfx_parsed_filename_t &filename)
+{
+    filename = ysfx_parsed_filename_t{};
+
+    const char *cur = line;
+
+    for (const char *p = "filename:"; *p; ++p) {
+        if (*cur++ != *p)
+            return false;
+    }
+
+    int64_t index = (int64_t)ysfx::dot_strtod(cur, (char **)&cur);
+    if (index < 0 || index > ~(uint32_t)0)
+        return false;
+
+    while (*cur && *cur != ',') ++cur;
+    if (!*cur) return false;;
+
+    ++cur;
+
+    filename.index = (uint32_t)index;
+    filename.filename.assign(cur);
+    return true;
 }
