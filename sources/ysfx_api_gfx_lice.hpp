@@ -839,6 +839,24 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_getsyscol(void *opaque, INT_PTR np, EE
 
 static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_getchar(void *opaque, EEL_F *p)
 {
-    // TODO
+    ysfx_gfx_state_t *state = GFX_GET_CONTEXT(opaque);
+    if (!state)
+        return 0;
+
+    if (*p >= 2) {
+        if (*p == 65536) {
+            // TODO implement window flags
+            return 0;
+        }
+        // TODO current key down status
+        return 0;
+    }
+
+    if (!state->input_queue.empty()) {
+        uint32_t key = state->input_queue.front();
+        state->input_queue.pop();
+        return (EEL_F)key;
+    }
+
     return 0;
 }

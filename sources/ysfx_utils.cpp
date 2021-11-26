@@ -207,6 +207,11 @@ bool ascii_isspace(char c)
     }
 }
 
+bool ascii_isalpha(char c)
+{
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+}
+
 char ascii_tolower(char c)
 {
     return (c >= 'A' && c <= 'Z') ? (c - 'A' + 'a') : c;

@@ -1331,6 +1331,23 @@ bool ysfx_gfx_wants_retina(ysfx_t *fx)
 #endif
 }
 
+void ysfx_gfx_add_key(ysfx_t *fx, uint32_t mods, uint32_t key, bool press)
+{
+#if !defined(YSFX_NO_GFX)
+    bool doinit = true;
+    ysfx_scoped_gfx_t scope{fx, doinit};
+
+    if (!fx->gfx.ready)
+        return;
+
+    ysfx_gfx_state_add_key(fx->gfx.state.get(), mods, key, press);
+#else
+    (void)fx;
+    (void)mods;
+    (void)key;
+#endif
+}
+
 bool ysfx_gfx_run(ysfx_t *fx)
 {
 #if !defined(YSFX_NO_GFX)

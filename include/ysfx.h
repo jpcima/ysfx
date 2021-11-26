@@ -336,8 +336,50 @@ typedef struct ysfx_gfx_config_s {
 YSFX_API void ysfx_gfx_setup(ysfx_t *fx, ysfx_gfx_config_t *gc);
 // get whether the current effect is requesting Retina support
 YSFX_API bool ysfx_gfx_wants_retina(ysfx_t *fx);
+// push a key to the input queue
+YSFX_API void ysfx_gfx_add_key(ysfx_t *fx, uint32_t mods, uint32_t key, bool press);
 // invoke @gfx to paint the graphics; returns whether the framer buffer is modified
 YSFX_API bool ysfx_gfx_run(ysfx_t *fx);
+
+//------------------------------------------------------------------------------
+// YSFX key map
+
+// these key definitions match those of pugl
+
+enum {
+    ysfx_mod_shift = 1 << 0,
+    ysfx_mod_ctrl = 1 << 1,
+    ysfx_mod_alt = 1 << 2,
+    ysfx_mod_super = 1 << 3,
+};
+
+enum {
+    ysfx_key_backspace = 0x08,
+    ysfx_key_escape = 0x1b,
+    ysfx_key_delete = 0x7f,
+
+    ysfx_key_f1 = 0xe000,
+    ysfx_key_f2,
+    ysfx_key_f3,
+    ysfx_key_f4,
+    ysfx_key_f5,
+    ysfx_key_f6,
+    ysfx_key_f7,
+    ysfx_key_f8,
+    ysfx_key_f9,
+    ysfx_key_f10,
+    ysfx_key_f11,
+    ysfx_key_f12,
+    ysfx_key_left,
+    ysfx_key_up,
+    ysfx_key_right,
+    ysfx_key_down,
+    ysfx_key_page_up,
+    ysfx_key_page_down,
+    ysfx_key_home,
+    ysfx_key_end,
+    ysfx_key_insert,
+};
 
 //------------------------------------------------------------------------------
 // YSFX audio formats

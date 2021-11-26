@@ -87,6 +87,7 @@ double c_strtod(const char *text, char **endp, c_locale_t loc);
 double dot_atof(const char *text);
 double dot_strtod(const char *text, char **endp);
 bool ascii_isspace(char c);
+bool ascii_isalpha(char c);
 char ascii_tolower(char c);
 char ascii_toupper(char c);
 int ascii_casecmp(const char *a, const char *b);

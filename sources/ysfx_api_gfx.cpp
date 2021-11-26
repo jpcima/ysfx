@@ -24,6 +24,7 @@
 #   include "WDL/lice/lice.h"
 #endif
 #include <vector>
+#include <queue>
 #include <memory>
 #include <atomic>
 
@@ -32,6 +33,7 @@
 
 enum {
     ysfx_gfx_max_images = 1024,
+    ysfx_gfx_max_input = 1024,
 };
 
 struct ysfx_gfx_state_t {
@@ -40,6 +42,7 @@ struct ysfx_gfx_state_t {
     LICE_WrapperBitmap framebuffer{nullptr, 0, 0, 0, false};
     std::unique_ptr<LICE_MemBitmap> framebuffer_extra;
     std::vector<std::unique_ptr<LICE_IBitmap>> images;
+    std::queue<uint32_t> input_queue;
     ysfx_real scale = 0.0;
 };
 
@@ -80,6 +83,108 @@ void ysfx_gfx_state_set_scale_factor(ysfx_gfx_state_t *state, ysfx_real scale)
 bool ysfx_gfx_state_is_dirty(ysfx_gfx_state_t *state)
 {
     return state->framebuffer_dirty;
+}
+
+void ysfx_gfx_state_add_key(ysfx_gfx_state_t *state, uint32_t mods, uint32_t key, bool press)
+{
+    if (key < 1)
+        return;
+
+    auto key_c = [](uint8_t a, uint8_t b, uint8_t c, uint8_t d) -> uint32_t {
+        return a | (b << 8) | (c << 16) | (d << 24);
+    };
+
+    switch (key) {
+    case ysfx_key_delete:
+        key = key_c('d', 'e', 'l', 0);
+        break;
+    case ysfx_key_f1:
+        key = key_c('f', '1', 0, 0);
+        break;
+    case ysfx_key_f2:
+        key = key_c('f', '2', 0, 0);
+        break;
+    case ysfx_key_f3:
+        key = key_c('f', '3', 0, 0);
+        break;
+    case ysfx_key_f4:
+        key = key_c('f', '4', 0, 0);
+        break;
+    case ysfx_key_f5:
+        key = key_c('f', '5', 0, 0);
+        break;
+    case ysfx_key_f6:
+        key = key_c('f', '6', 0, 0);
+        break;
+    case ysfx_key_f7:
+        key = key_c('f', '7', 0, 0);
+        break;
+    case ysfx_key_f8:
+        key = key_c('f', '8', 0, 0);
+        break;
+    case ysfx_key_f9:
+        key = key_c('f', '9', 0, 0);
+        break;
+    case ysfx_key_f10:
+        key = key_c('f', '1', '0', 0);
+        break;
+    case ysfx_key_f11:
+        key = key_c('f', '1', '1', 0);
+        break;
+    case ysfx_key_f12:
+        key = key_c('f', '1', '2', 0);
+        break;
+    case ysfx_key_left:
+        key = key_c('l', 'e', 'f', 't');
+        break;
+    case ysfx_key_up:
+        key = key_c('u', 'p', 0, 0);
+        break;
+    case ysfx_key_right:
+        key = key_c('r', 'g', 'h', 't');
+        break;
+    case ysfx_key_down:
+        key = key_c('d', 'o', 'w', 'n');
+        break;
+    case ysfx_key_page_up:
+        key = key_c('p', 'g', 'u', 'p');
+        break;
+    case ysfx_key_page_down:
+        key = key_c('p', 'g', 'd', 'n');
+        break;
+    case ysfx_key_home:
+        key = key_c('h', 'o', 'm', 'e');
+        break;
+    case ysfx_key_end:
+        key = key_c('e', 'n', 'd', 0);
+        break;
+    case ysfx_key_insert:
+        key = key_c('i', 'n', 's', 0);
+        break;
+    }
+
+    uint32_t key_lower = key;
+    if (key_lower >= 'A' && key_lower <= 'Z')
+        key_lower = (uint32_t)(key_lower - 'A' + 'a');
+
+    uint32_t key_with_mod = key;
+    if (key_lower >= 'a' && key_lower <= 'z') {
+        uint32_t off = (uint32_t)(key_lower - 'a');
+        if (mods & (ysfx_mod_ctrl|ysfx_mod_alt))
+            key_with_mod = off + 257;
+        else if (mods & ysfx_mod_ctrl)
+            key_with_mod = off + 1;
+        else if (mods & ysfx_mod_alt)
+            key_with_mod = off + 321;
+    }
+
+    if (press && key_with_mod > 0) {
+        while (state->input_queue.size() >= ysfx_gfx_max_input)
+            state->input_queue.pop();
+        state->input_queue.push(key_with_mod);
+    }
+
+    // TODO update the state of pressed keys
 }
 
 //------------------------------------------------------------------------------
