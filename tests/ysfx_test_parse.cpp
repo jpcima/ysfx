@@ -203,18 +203,21 @@ TEST_CASE("section splitting", "[parse]")
 }
 
 //------------------------------------------------------------------------------
-static void ensure_basic_slider(const ysfx_slider_t &slider, uint32_t id, const std::string &var, const std::string &desc)
+static void ensure_basic_slider(const ysfx_slider_t &slider, int32_t id, const std::string &var, const std::string &desc)
 {
-    REQUIRE(slider.id == id);
-    if (!var.empty())
-        REQUIRE(slider.var == var);
-    else
-        REQUIRE(slider.var == "slider" + std::to_string(id + 1));
+    if (id != -1)
+        REQUIRE(slider.id == (uint32_t)id);
+    if (!var.empty()) {
+        if (var != "/*skip*/")
+            REQUIRE(slider.var == var);
+    }
+    else if (id != -1)
+        REQUIRE(slider.var == "slider" + std::to_string((uint32_t)id + 1));
     if (!desc.empty())
         REQUIRE(slider.desc == desc);
 }
 
-static void ensure_regular_slider(const ysfx_slider_t &slider, uint32_t id, const std::string &var, const std::string &desc, ysfx_real def, ysfx_real min, ysfx_real max, ysfx_real inc)
+static void ensure_regular_slider(const ysfx_slider_t &slider, int32_t id, const std::string &var, const std::string &desc, ysfx_real def, ysfx_real min, ysfx_real max, ysfx_real inc)
 {
     ensure_basic_slider(slider, id, var, desc);
     REQUIRE(slider.def == Approx(def));
@@ -226,7 +229,7 @@ static void ensure_regular_slider(const ysfx_slider_t &slider, uint32_t id, cons
     REQUIRE(slider.path.empty());
 }
 
-static void ensure_enum_slider(const ysfx_slider_t &slider, uint32_t id, const std::string &var, const std::string &desc, ysfx_real def, const std::vector<std::string> &enums)
+static void ensure_enum_slider(const ysfx_slider_t &slider, int32_t id, const std::string &var, const std::string &desc, ysfx_real def, const std::vector<std::string> &enums)
 {
     ensure_basic_slider(slider, id, var, desc);
     REQUIRE(slider.def == Approx(def));
@@ -238,7 +241,7 @@ static void ensure_enum_slider(const ysfx_slider_t &slider, uint32_t id, const s
     REQUIRE(slider.path.empty());
 }
 
-static void ensure_path_slider(const ysfx_slider_t &slider, uint32_t id, const std::string &var, const std::string &desc, ysfx_real def, const std::string &path)
+static void ensure_path_slider(const ysfx_slider_t &slider, int32_t id, const std::string &var, const std::string &desc, ysfx_real def, const std::string &path)
 {
     ensure_basic_slider(slider, id, var, desc);
     REQUIRE(slider.def == Approx(def));
@@ -316,6 +319,27 @@ TEST_CASE("slider parsing", "[parse]")
         ysfx_slider_t slider;
         REQUIRE(ysfx_parse_slider(line, slider));
         ensure_enum_slider(slider, 4, {}, "Type", 0, {"LP", "BP", "HP"});
+    }
+
+    SECTION("misc")
+    {
+        for (const char *line : {
+                "slider1:official=0<-150,12,1>official",
+                "slider2:0<-150,12,1>official no var.name",
+                "slider3:=0<-150,12,1>=value",
+                "slider4:<-150,12,1>no default",
+                "slider5:0<-150,12,1,,,>toomanycommas",
+                "slider6:0<-150,12,1,2,3,4>toomanyvalues",
+                "slider7:0time<-150kilo,12uhr,1euro>strings",
+                "slider8:0*2<-150-151,12=13,1+3>math?",
+                "slider9:+/-0a0<-150<<-149<,12...13,1 3><v<<al..u e>",
+                "slider10:a1?+!%&<-150%&=/?+!,12!%/&?+=,1=/?+!%&>?+!%&=/",
+            })
+        {
+            ysfx_slider_t slider;
+            REQUIRE(ysfx_parse_slider(line, slider));
+            ensure_regular_slider(slider, -1, "/*skip*/", {}, 0, -150, 12, 1);
+        }
     }
 }
 
