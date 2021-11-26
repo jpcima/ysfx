@@ -202,6 +202,57 @@ TEST_CASE("section splitting", "[parse]")
     }
 }
 
+//------------------------------------------------------------------------------
+static void ensure_basic_slider(const ysfx_slider_t &slider, uint32_t id, const std::string &var, const std::string &desc)
+{
+    REQUIRE(slider.id == id);
+    if (!var.empty())
+        REQUIRE(slider.var == var);
+    else
+        REQUIRE(slider.var == "slider" + std::to_string(id + 1));
+    if (!desc.empty())
+        REQUIRE(slider.desc == desc);
+}
+
+static void ensure_regular_slider(const ysfx_slider_t &slider, uint32_t id, const std::string &var, const std::string &desc, ysfx_real def, ysfx_real min, ysfx_real max, ysfx_real inc)
+{
+    ensure_basic_slider(slider, id, var, desc);
+    REQUIRE(slider.def == Approx(def));
+    REQUIRE(slider.min == Approx(min));
+    REQUIRE(slider.max == Approx(max));
+    REQUIRE(slider.inc == Approx(inc));
+    REQUIRE(!slider.is_enum);
+    REQUIRE(slider.enum_names.empty());
+    REQUIRE(slider.path.empty());
+}
+
+static void ensure_enum_slider(const ysfx_slider_t &slider, uint32_t id, const std::string &var, const std::string &desc, ysfx_real def, const std::vector<std::string> &enums)
+{
+    ensure_basic_slider(slider, id, var, desc);
+    REQUIRE(slider.def == Approx(def));
+    REQUIRE(slider.min == 0);
+    REQUIRE(slider.max == enums.size() - 1);
+    REQUIRE(slider.inc == 1);
+    REQUIRE(slider.is_enum);
+    REQUIRE(slider.enum_names == enums);
+    REQUIRE(slider.path.empty());
+}
+
+static void ensure_path_slider(const ysfx_slider_t &slider, uint32_t id, const std::string &var, const std::string &desc, ysfx_real def, const std::string &path)
+{
+    ensure_basic_slider(slider, id, var, desc);
+    REQUIRE(slider.def == Approx(def));
+    REQUIRE(slider.min == 0);
+    REQUIRE(slider.max == 0);
+    REQUIRE(slider.inc == 1);
+    REQUIRE(slider.is_enum);
+    REQUIRE(slider.enum_names.empty());
+    if (!path.empty())
+        REQUIRE(slider.path == path);
+    else
+        REQUIRE(!slider.path.empty());
+}
+
 TEST_CASE("slider parsing", "[parse]")
 {
     SECTION("minimal range syntax")
@@ -209,16 +260,7 @@ TEST_CASE("slider parsing", "[parse]")
         const char *line = "slider43:123,Cui cui";
         ysfx_slider_t slider;
         REQUIRE(ysfx_parse_slider(line, slider));
-        REQUIRE(slider.id == 42);
-        REQUIRE(slider.var == "slider43");
-        REQUIRE(slider.def == 123);
-        REQUIRE(slider.min == 0);
-        REQUIRE(slider.max == 0);
-        REQUIRE(slider.inc == 0);
-        REQUIRE(!slider.is_enum);
-        REQUIRE(slider.enum_names.empty());
-        REQUIRE(slider.path == "");
-        REQUIRE(slider.desc == "Cui cui");
+        ensure_regular_slider(slider, 42, {}, "Cui cui", 123, 0, 0, 0);
     }
 
     SECTION("slider 0 invalid")
@@ -233,16 +275,7 @@ TEST_CASE("slider parsing", "[parse]")
         const char *line = "slider43:123.1,Cui cui";
         ysfx_slider_t slider;
         REQUIRE(ysfx_parse_slider(line, slider));
-        REQUIRE(slider.id == 42);
-        REQUIRE(slider.var == "slider43");
-        REQUIRE(slider.def == Approx(123.1));
-        REQUIRE(slider.min == 0);
-        REQUIRE(slider.max == 0);
-        REQUIRE(slider.inc == 0);
-        REQUIRE(!slider.is_enum);
-        REQUIRE(slider.enum_names.empty());
-        REQUIRE(slider.path == "");
-        REQUIRE(slider.desc == "Cui cui");
+        ensure_regular_slider(slider, 42, {}, "Cui cui", 123.1, 0, 0, 0);
     }
 
     SECTION("normal range syntax (no min-max-inc (2), no enum)")
@@ -250,16 +283,7 @@ TEST_CASE("slider parsing", "[parse]")
         const char *line = "slider43:123.1<>,Cui cui";
         ysfx_slider_t slider;
         REQUIRE(ysfx_parse_slider(line, slider));
-        REQUIRE(slider.id == 42);
-        REQUIRE(slider.var == "slider43");
-        REQUIRE(slider.def == Approx(123.1));
-        REQUIRE(slider.min == 0);
-        REQUIRE(slider.max == 0);
-        REQUIRE(slider.inc == 0);
-        REQUIRE(!slider.is_enum);
-        REQUIRE(slider.enum_names.empty());
-        REQUIRE(slider.path == "");
-        REQUIRE(slider.desc == "Cui cui");
+        ensure_regular_slider(slider, 42, {}, "Cui cui", 123.1, 0, 0, 0);
     }
 
     SECTION("normal range syntax (min-max-inc, no enum)")
@@ -267,16 +291,7 @@ TEST_CASE("slider parsing", "[parse]")
         const char *line = "slider43:123.1<45.2,67.3,89.4>Cui cui";
         ysfx_slider_t slider;
         REQUIRE(ysfx_parse_slider(line, slider));
-        REQUIRE(slider.id == 42);
-        REQUIRE(slider.var == "slider43");
-        REQUIRE(slider.def == Approx(123.1));
-        REQUIRE(slider.min == Approx(45.2));
-        REQUIRE(slider.max == Approx(67.3));
-        REQUIRE(slider.inc == Approx(89.4));
-        REQUIRE(!slider.is_enum);
-        REQUIRE(slider.enum_names.empty());
-        REQUIRE(slider.path == "");
-        REQUIRE(slider.desc == "Cui cui");
+        ensure_regular_slider(slider, 42, {}, "Cui cui", 123.1, 45.2, 67.3, 89.4);
     }
 
     SECTION("path syntax")
@@ -284,16 +299,7 @@ TEST_CASE("slider parsing", "[parse]")
         const char *line = "slider43:/titi:777:Cui cui";
         ysfx_slider_t slider;
         REQUIRE(ysfx_parse_slider(line, slider));
-        REQUIRE(slider.id == 42);
-        REQUIRE(slider.var == "slider43");
-        REQUIRE(slider.def == 777);
-        REQUIRE(slider.min == 0);
-        REQUIRE(slider.max == 0);
-        REQUIRE(slider.inc == 1);
-        REQUIRE(slider.is_enum);
-        REQUIRE(slider.enum_names.empty());
-        REQUIRE(slider.path == "/titi");
-        REQUIRE(slider.desc == "Cui cui");
+        ensure_path_slider(slider, 42, {}, "Cui cui", 777, "/titi");
     }
 
     SECTION("enum syntax")
@@ -301,18 +307,7 @@ TEST_CASE("slider parsing", "[parse]")
         const char *line = "slider5:0<0,2,1{LP,BP,HP}>Type";
         ysfx_slider_t slider;
         REQUIRE(ysfx_parse_slider(line, slider));
-        REQUIRE(slider.id == 4);
-        REQUIRE(slider.var == "slider5");
-        REQUIRE(slider.def == 0);
-        REQUIRE(slider.min == 0);
-        REQUIRE(slider.max == 2);
-        REQUIRE(slider.inc == 1);
-        REQUIRE(slider.is_enum);
-        REQUIRE(slider.enum_names.size() == 3);
-        REQUIRE(slider.enum_names[0] == "LP");
-        REQUIRE(slider.enum_names[1] == "BP");
-        REQUIRE(slider.enum_names[2] == "HP");
-        REQUIRE(slider.desc == "Type");
+        ensure_enum_slider(slider, 4, {}, "Type", 0, {"LP", "BP", "HP"});
     }
 
     SECTION("enum syntax, permissive")
@@ -320,18 +315,7 @@ TEST_CASE("slider parsing", "[parse]")
         const char *line = "slider5:0<0,2,1<{LP,BP,HP}>Type";
         ysfx_slider_t slider;
         REQUIRE(ysfx_parse_slider(line, slider));
-        REQUIRE(slider.id == 4);
-        REQUIRE(slider.var == "slider5");
-        REQUIRE(slider.def == 0);
-        REQUIRE(slider.min == 0);
-        REQUIRE(slider.max == 2);
-        REQUIRE(slider.inc == 1);
-        REQUIRE(slider.is_enum);
-        REQUIRE(slider.enum_names.size() == 3);
-        REQUIRE(slider.enum_names[0] == "LP");
-        REQUIRE(slider.enum_names[1] == "BP");
-        REQUIRE(slider.enum_names[2] == "HP");
-        REQUIRE(slider.desc == "Type");
+        ensure_enum_slider(slider, 4, {}, "Type", 0, {"LP", "BP", "HP"});
     }
 }
 
