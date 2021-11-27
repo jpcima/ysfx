@@ -233,6 +233,24 @@ int ascii_casecmp(const char *a, const char *b)
     return 0;
 }
 
+uint32_t latin1_toupper(uint32_t c)
+{
+    if (c >= 'a' && c <= 'z')
+        return c - 'a' + 'A';
+    if ((c >= 0xe0 && c <= 0xf6) || (c >= 0xf8 && c <= 0xfe))
+        return c - 0x20;
+    return c;
+}
+
+uint32_t latin1_tolower(uint32_t c)
+{
+    if (c >= 'A' && c <= 'Z')
+        return c - 'A' + 'a';
+    if ((c >= 0xc0 && c <= 0xd6) || (c >= 0xd8 && c <= 0xde))
+        return c + 0x20;
+    return c;
+}
+
 string_list split_strings_noempty(const char *input, bool(*pred)(char))
 {
     string_list list;

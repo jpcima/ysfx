@@ -25,6 +25,7 @@
 #endif
 #include <vector>
 #include <queue>
+#include <unordered_set>
 #include <memory>
 #include <atomic>
 
@@ -43,6 +44,7 @@ struct ysfx_gfx_state_t {
     std::unique_ptr<LICE_MemBitmap> framebuffer_extra;
     std::vector<std::unique_ptr<LICE_IBitmap>> images;
     std::queue<uint32_t> input_queue;
+    std::unordered_set<uint32_t> keys_pressed;
     ysfx_real scale = 0.0;
 };
 
@@ -85,91 +87,101 @@ bool ysfx_gfx_state_is_dirty(ysfx_gfx_state_t *state)
     return state->framebuffer_dirty;
 }
 
+static bool translate_special_key(uint32_t uni_key, uint32_t &jsfx_key)
+{
+    auto key_c = [](uint8_t a, uint8_t b, uint8_t c, uint8_t d) -> uint32_t {
+        return a | (b << 8) | (c << 16) | (d << 24);
+    };
+
+    switch (uni_key) {
+    default:
+        return false;
+    case ysfx_key_delete:
+        jsfx_key = key_c('d', 'e', 'l', 0);
+        break;
+    case ysfx_key_f1:
+        jsfx_key = key_c('f', '1', 0, 0);
+        break;
+    case ysfx_key_f2:
+        jsfx_key = key_c('f', '2', 0, 0);
+        break;
+    case ysfx_key_f3:
+        jsfx_key = key_c('f', '3', 0, 0);
+        break;
+    case ysfx_key_f4:
+        jsfx_key = key_c('f', '4', 0, 0);
+        break;
+    case ysfx_key_f5:
+        jsfx_key = key_c('f', '5', 0, 0);
+        break;
+    case ysfx_key_f6:
+        jsfx_key = key_c('f', '6', 0, 0);
+        break;
+    case ysfx_key_f7:
+        jsfx_key = key_c('f', '7', 0, 0);
+        break;
+    case ysfx_key_f8:
+        jsfx_key = key_c('f', '8', 0, 0);
+        break;
+    case ysfx_key_f9:
+        jsfx_key = key_c('f', '9', 0, 0);
+        break;
+    case ysfx_key_f10:
+        jsfx_key = key_c('f', '1', '0', 0);
+        break;
+    case ysfx_key_f11:
+        jsfx_key = key_c('f', '1', '1', 0);
+        break;
+    case ysfx_key_f12:
+        jsfx_key = key_c('f', '1', '2', 0);
+        break;
+    case ysfx_key_left:
+        jsfx_key = key_c('l', 'e', 'f', 't');
+        break;
+    case ysfx_key_up:
+        jsfx_key = key_c('u', 'p', 0, 0);
+        break;
+    case ysfx_key_right:
+        jsfx_key = key_c('r', 'g', 'h', 't');
+        break;
+    case ysfx_key_down:
+        jsfx_key = key_c('d', 'o', 'w', 'n');
+        break;
+    case ysfx_key_page_up:
+        jsfx_key = key_c('p', 'g', 'u', 'p');
+        break;
+    case ysfx_key_page_down:
+        jsfx_key = key_c('p', 'g', 'd', 'n');
+        break;
+    case ysfx_key_home:
+        jsfx_key = key_c('h', 'o', 'm', 'e');
+        break;
+    case ysfx_key_end:
+        jsfx_key = key_c('e', 'n', 'd', 0);
+        break;
+    case ysfx_key_insert:
+        jsfx_key = key_c('i', 'n', 's', 0);
+        break;
+    }
+    return true;
+}
+
 void ysfx_gfx_state_add_key(ysfx_gfx_state_t *state, uint32_t mods, uint32_t key, bool press)
 {
     if (key < 1)
         return;
 
-    auto key_c = [](uint8_t a, uint8_t b, uint8_t c, uint8_t d) -> uint32_t {
-        return a | (b << 8) | (c << 16) | (d << 24);
-    };
-
-    switch (key) {
-    case ysfx_key_delete:
-        key = key_c('d', 'e', 'l', 0);
-        break;
-    case ysfx_key_f1:
-        key = key_c('f', '1', 0, 0);
-        break;
-    case ysfx_key_f2:
-        key = key_c('f', '2', 0, 0);
-        break;
-    case ysfx_key_f3:
-        key = key_c('f', '3', 0, 0);
-        break;
-    case ysfx_key_f4:
-        key = key_c('f', '4', 0, 0);
-        break;
-    case ysfx_key_f5:
-        key = key_c('f', '5', 0, 0);
-        break;
-    case ysfx_key_f6:
-        key = key_c('f', '6', 0, 0);
-        break;
-    case ysfx_key_f7:
-        key = key_c('f', '7', 0, 0);
-        break;
-    case ysfx_key_f8:
-        key = key_c('f', '8', 0, 0);
-        break;
-    case ysfx_key_f9:
-        key = key_c('f', '9', 0, 0);
-        break;
-    case ysfx_key_f10:
-        key = key_c('f', '1', '0', 0);
-        break;
-    case ysfx_key_f11:
-        key = key_c('f', '1', '1', 0);
-        break;
-    case ysfx_key_f12:
-        key = key_c('f', '1', '2', 0);
-        break;
-    case ysfx_key_left:
-        key = key_c('l', 'e', 'f', 't');
-        break;
-    case ysfx_key_up:
-        key = key_c('u', 'p', 0, 0);
-        break;
-    case ysfx_key_right:
-        key = key_c('r', 'g', 'h', 't');
-        break;
-    case ysfx_key_down:
-        key = key_c('d', 'o', 'w', 'n');
-        break;
-    case ysfx_key_page_up:
-        key = key_c('p', 'g', 'u', 'p');
-        break;
-    case ysfx_key_page_down:
-        key = key_c('p', 'g', 'd', 'n');
-        break;
-    case ysfx_key_home:
-        key = key_c('h', 'o', 'm', 'e');
-        break;
-    case ysfx_key_end:
-        key = key_c('e', 'n', 'd', 0);
-        break;
-    case ysfx_key_insert:
-        key = key_c('i', 'n', 's', 0);
-        break;
-    }
-
-    uint32_t key_lower = key;
-    if (key_lower >= 'A' && key_lower <= 'Z')
-        key_lower = (uint32_t)(key_lower - 'A' + 'a');
+    uint32_t key_id;
+    if (translate_special_key(key, key))
+        key_id = key;
+    else if (key < 256)
+        key_id = ysfx::latin1_tolower(key);
+    else // support the Latin-1 character set only
+        return;
 
     uint32_t key_with_mod = key;
-    if (key_lower >= 'a' && key_lower <= 'z') {
-        uint32_t off = (uint32_t)(key_lower - 'a');
+    if (key_id >= 'a' && key_id <= 'z') {
+        uint32_t off = (uint32_t)(key_id - 'a');
         if (mods & (ysfx_mod_ctrl|ysfx_mod_alt))
             key_with_mod = off + 257;
         else if (mods & ysfx_mod_ctrl)
@@ -184,7 +196,10 @@ void ysfx_gfx_state_add_key(ysfx_gfx_state_t *state, uint32_t mods, uint32_t key
         state->input_queue.push(key_with_mod);
     }
 
-    // TODO update the state of pressed keys
+    if (press)
+        state->keys_pressed.insert(key_id);
+    else
+        state->keys_pressed.erase(key_id);
 }
 
 //------------------------------------------------------------------------------

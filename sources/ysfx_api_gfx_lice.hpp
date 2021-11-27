@@ -843,13 +843,22 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_getchar(void *opaque, EEL_F *p)
     if (!state)
         return 0;
 
-    if (*p >= 2) {
+    if (*p >= 1/*2*/) { // NOTE(jpc) this is 2.0 originally, which seems wrong
         if (*p == 65536) {
             // TODO implement window flags
             return 0;
         }
-        // TODO current key down status
-        return 0;
+
+        // current key down status
+        uint32_t key = (uint32_t)*p;
+        uint32_t key_id;
+        if (translate_special_key(key, key))
+            key_id = key;
+        else if (key < 256)
+            key_id = ysfx::latin1_tolower(key);
+        else // support the Latin-1 character set only
+            return 0;
+        return (EEL_F)(state->keys_pressed.find(key_id) != state->keys_pressed.end());
     }
 
     if (!state->input_queue.empty()) {

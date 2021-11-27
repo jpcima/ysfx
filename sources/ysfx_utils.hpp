@@ -91,6 +91,8 @@ bool ascii_isalpha(char c);
 char ascii_tolower(char c);
 char ascii_toupper(char c);
 int ascii_casecmp(const char *a, const char *b);
+uint32_t latin1_toupper(uint32_t c);
+uint32_t latin1_tolower(uint32_t c);
 string_list split_strings_noempty(const char *input, bool(*pred)(char));
 std::string trim(const char *input, bool(*pred)(char));
 
