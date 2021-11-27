@@ -134,7 +134,7 @@ void YsfxEditor::Impl::updateInfo()
             params.add(m_proc->getYsfxParameter((int)i));
     }
     m_parametersPanel->setParametersDisplayed(params);
-    m_parametersPanel->setSize(m_centerViewPort->getWidth(), m_centerViewPort->getHeight());
+    m_parametersPanel->setSize(m_centerViewPort->getWidth(), m_parametersPanel->getRecommendedHeight(m_centerViewPort->getHeight()));
 }
 
 void YsfxEditor::Impl::chooseFileAndLoad()
@@ -247,6 +247,7 @@ void YsfxEditor::Impl::createUI()
     m_lblFilePath.reset(new juce::Label);
     m_self->addAndMakeVisible(*m_lblFilePath);
     m_centerViewPort.reset(new juce::Viewport);
+    m_centerViewPort->setScrollBarsShown(true, false);
     m_self->addAndMakeVisible(*m_centerViewPort);
     m_parametersPanel.reset(new YsfxParametersPanel);
     m_graphicsView.reset(new YsfxGraphicsView);
@@ -286,11 +287,14 @@ void YsfxEditor::Impl::relayoutUI()
     m_centerViewPort->setBounds(centerArea);
 
     juce::Component *viewed;
-    if (m_btnSwitchEditor->getToggleState())
+    if (m_btnSwitchEditor->getToggleState()) {
         viewed = m_graphicsView.get();
-    else
+        viewed->setSize(centerArea.getWidth(), centerArea.getHeight());
+    }
+    else {
         viewed = m_parametersPanel.get();
+        viewed->setSize(centerArea.getWidth(), m_parametersPanel->getRecommendedHeight(m_centerViewPort->getHeight()));
+    }
 
     m_centerViewPort->setViewedComponent(viewed, false);
-    viewed->setSize(centerArea.getWidth(), centerArea.getHeight());
 }

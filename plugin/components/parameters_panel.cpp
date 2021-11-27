@@ -428,14 +428,22 @@ void YsfxParametersPanel::setParametersDisplayed(const juce::Array<YsfxParameter
                 new YsfxParameterDisplayComponent(*param)));
 
     int maxWidth = 800;
-    int height = 0;
 
     for (auto &comp : paramComponents) {
         maxWidth = juce::jmax(maxWidth, comp->getWidth());
-        height += comp->getHeight();
     }
 
-    setSize(maxWidth, juce::jmax(height, 125));
+    setSize(maxWidth, getRecommendedHeight());
+}
+
+int YsfxParametersPanel::getRecommendedHeight(int heightAtLeast) const
+{
+    int height = 0;
+
+    for (auto &comp : paramComponents)
+        height += comp->getHeight();
+
+    return juce::jmax(height, heightAtLeast);
 }
 
 void YsfxParametersPanel::paint(juce::Graphics &g)

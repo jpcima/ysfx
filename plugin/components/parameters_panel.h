@@ -27,6 +27,8 @@ public:
 
     void setParametersDisplayed(const juce::Array<YsfxParameter *> &parameters);
 
+    int getRecommendedHeight(int heightAtLeast = 125) const;
+
 protected:
     void paint(juce::Graphics &g) override;
     void resized() override;
