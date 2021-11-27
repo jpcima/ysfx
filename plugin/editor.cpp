@@ -264,6 +264,15 @@ void YsfxEditor::Impl::connectUI()
 
     m_gfxTimer.reset(FunctionalTimer::create([this]() { updateGfx(); }));
     m_gfxTimer->startTimerHz(30);
+
+    m_graphicsView->OnYsfxKeyPressed = [this](uint32_t ykey, uint32_t ymods) {
+        ysfx_t *fx = m_proc->getYsfx();
+        ysfx_gfx_add_key(fx, ymods, ykey, true);
+    };
+    m_graphicsView->OnYsfxKeyReleased = [this](uint32_t ykey, uint32_t ymods) {
+        ysfx_t *fx = m_proc->getYsfx();
+        ysfx_gfx_add_key(fx, ymods, ykey, false);
+    };
 }
 
 void YsfxEditor::Impl::relayoutUI()

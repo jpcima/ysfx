@@ -17,16 +17,25 @@
 
 #pragma once
 #include <juce_gui_basics/juce_gui_basics.h>
+#include <functional>
+#include <list>
 
 class YsfxGraphicsView : public juce::Component {
 public:
+    YsfxGraphicsView();
+
     void configureGfx(int gfxWidth, int gfxHeight, bool gfxWantRetina);
     juce::Image &getBitmap() { return m_bitmap; }
     double getBitmapScale() const { return m_bitmapScale; }
 
+    std::function<void(uint32_t, uint32_t)> OnYsfxKeyPressed;
+    std::function<void(uint32_t, uint32_t)> OnYsfxKeyReleased;
+
 protected:
     void paint(juce::Graphics &g) override;
     void resized() override;
+    bool keyPressed(const juce::KeyPress &key) override;
+    bool keyStateChanged(bool isKeyDown) override;
 
 private:
     void updateBitmap();
@@ -39,4 +48,12 @@ private:
     double m_bitmapScale = 1;
     int m_bitmapUnscaledWidth = 0;
     int m_bitmapUnscaledHeight = 0;
+
+    struct KeyPressed {
+        int jcode = 0;
+        uint32_t ykey = 0;
+        uint32_t ymods = 0;
+    };
+
+    std::list<KeyPressed> m_keysPressed;
 };

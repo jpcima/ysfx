@@ -16,7 +16,15 @@
 //
 
 #include "graphics_view.h"
+#include <ysfx.h>
+#include <map>
 #include <cmath>
+#include <cstdio>
+
+YsfxGraphicsView::YsfxGraphicsView()
+{
+    setWantsKeyboardFocus(true);
+}
 
 void YsfxGraphicsView::configureGfx(int gfxWidth, int gfxHeight, bool gfxWantRetina)
 {
@@ -58,6 +66,112 @@ void YsfxGraphicsView::resized()
 {
     Component::resized();
     updateBitmap();
+}
+
+static uint32_t translateKeyCode(int code)
+{
+    using Map = std::map<int, uint32_t>;
+
+    static const Map keyCodeMap = []() -> Map
+    {
+        Map map {
+            {juce::KeyPress::F1Key, ysfx_key_f1},
+            {juce::KeyPress::F2Key, ysfx_key_f2},
+            {juce::KeyPress::F3Key, ysfx_key_f3},
+            {juce::KeyPress::F4Key, ysfx_key_f4},
+            {juce::KeyPress::F5Key, ysfx_key_f5},
+            {juce::KeyPress::F6Key, ysfx_key_f6},
+            {juce::KeyPress::F7Key, ysfx_key_f7},
+            {juce::KeyPress::F8Key, ysfx_key_f8},
+            {juce::KeyPress::F9Key, ysfx_key_f9},
+            {juce::KeyPress::F10Key, ysfx_key_f10},
+            {juce::KeyPress::F11Key, ysfx_key_f11},
+            {juce::KeyPress::F12Key, ysfx_key_f12},
+            {juce::KeyPress::leftKey, ysfx_key_left},
+            {juce::KeyPress::upKey, ysfx_key_up},
+            {juce::KeyPress::rightKey, ysfx_key_right},
+            {juce::KeyPress::downKey, ysfx_key_down},
+            {juce::KeyPress::pageUpKey, ysfx_key_page_up},
+            {juce::KeyPress::pageDownKey, ysfx_key_page_down},
+            {juce::KeyPress::homeKey, ysfx_key_home},
+            {juce::KeyPress::endKey, ysfx_key_end},
+            {juce::KeyPress::insertKey, ysfx_key_insert},
+        };
+        return map;
+    }();
+
+    Map::const_iterator it = keyCodeMap.find(code);
+    if (it == keyCodeMap.end())
+        return 0;
+
+    return it->second;
+}
+
+static uint32_t translateModifiers(juce::ModifierKeys mods)
+{
+    uint32_t ymods = 0;
+    if (mods.isShiftDown())
+        ymods |= ysfx_mod_shift;
+    if (mods.isCtrlDown())
+        ymods |= ysfx_mod_ctrl;
+    if (mods.isAltDown())
+        ymods |= ysfx_mod_alt;
+    if (mods.isCommandDown())
+        ymods |= ysfx_mod_super;
+    return ymods;
+}
+
+static void translateKeyPress(const juce::KeyPress &key, uint32_t &ykey, uint32_t &ymods)
+{
+    int code = key.getKeyCode();
+    juce::juce_wchar character = key.getTextCharacter();
+    juce::ModifierKeys mods = key.getModifiers();
+
+    ykey = translateKeyCode(code);
+    if (ykey == 0) {
+        ykey = (uint32_t)character;
+        if (mods.isCtrlDown() && ykey >= 1 && ykey <= 26)
+            ykey = ykey - 1 + 'a';
+    }
+
+    ymods = translateModifiers(mods);
+}
+
+bool YsfxGraphicsView::keyPressed(const juce::KeyPress &key)
+{
+    for (const KeyPressed &kp : m_keysPressed) {
+        if (kp.jcode == key.getKeyCode())
+            return true;
+    }
+
+    KeyPressed kp;
+    kp.jcode = key.getKeyCode();
+    translateKeyPress(key, kp.ykey, kp.ymods);
+
+    m_keysPressed.push_back(kp);
+    if (OnYsfxKeyPressed)
+        OnYsfxKeyPressed(kp.ykey, kp.ymods);
+
+    return true;
+}
+
+bool YsfxGraphicsView::keyStateChanged(bool isKeyDown)
+{
+    if (!isKeyDown) {
+        for (auto it = m_keysPressed.begin(); it != m_keysPressed.end(); ) {
+            KeyPressed kp = *it;
+            if (juce::KeyPress::isKeyCurrentlyDown(kp.jcode))
+                ++it;
+            else {
+                m_keysPressed.erase(it++);
+                kp.ymods = translateModifiers(juce::ModifierKeys::getCurrentModifiers());
+                if (OnYsfxKeyReleased)
+                    OnYsfxKeyReleased(kp.ykey, kp.ymods);
+            }
+        }
+    }
+
+    return true;
 }
 
 void YsfxGraphicsView::updateBitmap()
