@@ -53,7 +53,7 @@ endif()
 
 ###
 include("cmake.deps.txt")
-include("cmake.eel2.txt")
+include("cmake.wdl.txt")
 include("cmake.ysfx.txt")
 if(YSFX_TESTS)
     include("cmake.tests.txt")
