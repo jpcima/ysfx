@@ -24,11 +24,11 @@
 #   include "WDL/lice/lice.h"
 #   include "WDL/lice/lice_text.h"
 #endif
-#include <vector>
 #include <queue>
 #include <unordered_set>
 #include <memory>
 #include <atomic>
+#include <cassert>
 
 #if !defined(YSFX_NO_GFX)
 #define GFX_GET_CONTEXT(opaque) (((opaque)) ? ysfx_gfx_get_context((ysfx_t *)(opaque)) : nullptr)
@@ -39,35 +39,114 @@ enum {
     ysfx_gfx_max_input = 1024,
 };
 
-struct ysfx_gfx_font_t {
-    LICE_IFont *font = nullptr;
-    // TODO
-    //char last_fontname[128]{};
-    //char actual_fontname[128]{};
-    //int last_fontsize = 0;
-    //int last_fontflag = 0;
-    int use_fonth = 0;
-};
+class eel_lice_state;
 
 struct ysfx_gfx_state_t {
+    ysfx_gfx_state_t(ysfx_t *fx);
+    ~ysfx_gfx_state_t();
     std::atomic<std::thread::id> gfx_thread_id;
-    bool framebuffer_dirty = false;
-    LICE_WrapperBitmap framebuffer{nullptr, 0, 0, 0, false};
-    std::unique_ptr<LICE_MemBitmap> framebuffer_extra;
-    std::vector<std::unique_ptr<LICE_IBitmap>> images;
-    int32_t font_active = -1;
-    std::vector<ysfx_gfx_font_t> fonts;
+    std::unique_ptr<eel_lice_state> lice;
     std::queue<uint32_t> input_queue;
     std::unordered_set<uint32_t> keys_pressed;
     ysfx_real scale = 0.0;
 };
 
-ysfx_gfx_state_t *ysfx_gfx_state_new()
+//------------------------------------------------------------------------------
+#if !defined(YSFX_NO_GFX)
+#   include "ysfx_api_gfx_lice.hpp"
+#else
+#   include "ysfx_api_gfx_dummy.hpp"
+#endif
+
+//------------------------------------------------------------------------------
+#if !defined(YSFX_NO_GFX)
+
+static bool translate_special_key(uint32_t uni_key, uint32_t &jsfx_key)
 {
-    ysfx_gfx_state_u state{new ysfx_gfx_state_t};
-    state->images.resize(ysfx_gfx_max_images);
-    state->fonts.resize(ysfx_gfx_max_fonts);
-    return state.release();
+    auto key_c = [](uint8_t a, uint8_t b, uint8_t c, uint8_t d) -> uint32_t {
+        return a | (b << 8) | (c << 16) | (d << 24);
+    };
+
+    switch (uni_key) {
+    default: return false;
+    case ysfx_key_delete: jsfx_key = key_c('d', 'e', 'l', 0); break;
+    case ysfx_key_f1: jsfx_key = key_c('f', '1', 0, 0); break;
+    case ysfx_key_f2: jsfx_key = key_c('f', '2', 0, 0); break;
+    case ysfx_key_f3: jsfx_key = key_c('f', '3', 0, 0); break;
+    case ysfx_key_f4: jsfx_key = key_c('f', '4', 0, 0); break;
+    case ysfx_key_f5: jsfx_key = key_c('f', '5', 0, 0); break;
+    case ysfx_key_f6: jsfx_key = key_c('f', '6', 0, 0); break;
+    case ysfx_key_f7: jsfx_key = key_c('f', '7', 0, 0); break;
+    case ysfx_key_f8: jsfx_key = key_c('f', '8', 0, 0); break;
+    case ysfx_key_f9: jsfx_key = key_c('f', '9', 0, 0); break;
+    case ysfx_key_f10: jsfx_key = key_c('f', '1', '0', 0); break;
+    case ysfx_key_f11: jsfx_key = key_c('f', '1', '1', 0); break;
+    case ysfx_key_f12: jsfx_key = key_c('f', '1', '2', 0); break;
+    case ysfx_key_left: jsfx_key = key_c('l', 'e', 'f', 't'); break;
+    case ysfx_key_up: jsfx_key = key_c('u', 'p', 0, 0); break;
+    case ysfx_key_right: jsfx_key = key_c('r', 'g', 'h', 't'); break;
+    case ysfx_key_down: jsfx_key = key_c('d', 'o', 'w', 'n'); break;
+    case ysfx_key_page_up: jsfx_key = key_c('p', 'g', 'u', 'p'); break;
+    case ysfx_key_page_down: jsfx_key = key_c('p', 'g', 'd', 'n'); break;
+    case ysfx_key_home: jsfx_key = key_c('h', 'o', 'm', 'e'); break;
+    case ysfx_key_end: jsfx_key = key_c('e', 'n', 'd', 0); break;
+    case ysfx_key_insert: jsfx_key = key_c('i', 'n', 's', 0); break;
+    }
+
+    return true;
+}
+
+static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_getchar(void *opaque, EEL_F *p)
+{
+    ysfx_gfx_state_t *state = GFX_GET_CONTEXT(opaque);
+    if (!state)
+        return 0;
+
+    if (*p >= 1/*2*/) { // NOTE(jpc) this is 2.0 originally, which seems wrong
+        if (*p == 65536) {
+            // TODO implement window flags
+            return 0;
+        }
+
+        // current key down status
+        uint32_t key = (uint32_t)*p;
+        uint32_t key_id;
+        if (translate_special_key(key, key))
+            key_id = key;
+        else if (key < 256)
+            key_id = ysfx::latin1_tolower(key);
+        else // support the Latin-1 character set only
+            return 0;
+        return (EEL_F)(state->keys_pressed.find(key_id) != state->keys_pressed.end());
+    }
+
+    if (!state->input_queue.empty()) {
+        uint32_t key = state->input_queue.front();
+        state->input_queue.pop();
+        return (EEL_F)key;
+    }
+
+    return 0;
+}
+
+#endif
+
+//------------------------------------------------------------------------------
+#if !defined(YSFX_NO_GFX)
+ysfx_gfx_state_t::ysfx_gfx_state_t(ysfx_t *fx)
+    : lice{new eel_lice_state{fx->vm.get(), fx, ysfx_gfx_max_images, ysfx_gfx_max_fonts}}
+{
+    lice->m_framebuffer = new LICE_WrapperBitmap{nullptr, 0, 0, 0, false};
+}
+
+ysfx_gfx_state_t::~ysfx_gfx_state_t()
+{
+}
+#endif
+
+ysfx_gfx_state_t *ysfx_gfx_state_new(ysfx_t *fx)
+{
+    return new ysfx_gfx_state_t{fx};
 }
 
 void ysfx_gfx_state_free(ysfx_gfx_state_t *state)
@@ -85,11 +164,10 @@ void ysfx_gfx_state_set_bitmap(ysfx_gfx_state_t *state, uint8_t *data, uint32_t 
     if (stride == 0)
         stride = 4 * w;
 
-    bool valid = (stride % 4) == 0;
-    if (!valid)
-        state->framebuffer = LICE_WrapperBitmap{nullptr, 0, 0, 0, false};
-    else
-        state->framebuffer = LICE_WrapperBitmap{(LICE_pixel *)data, (int)w, (int)h, (int)(stride / 4), false};
+    eel_lice_state *lice = state->lice.get();
+
+    assert(stride % 4 == 0);
+    *static_cast<LICE_WrapperBitmap *>(lice->m_framebuffer) = LICE_WrapperBitmap{(LICE_pixel *)data, (int)w, (int)h, (int)(stride / 4), false};
 }
 
 void ysfx_gfx_state_set_scale_factor(ysfx_gfx_state_t *state, ysfx_real scale)
@@ -99,86 +177,7 @@ void ysfx_gfx_state_set_scale_factor(ysfx_gfx_state_t *state, ysfx_real scale)
 
 bool ysfx_gfx_state_is_dirty(ysfx_gfx_state_t *state)
 {
-    return state->framebuffer_dirty;
-}
-
-static bool translate_special_key(uint32_t uni_key, uint32_t &jsfx_key)
-{
-    auto key_c = [](uint8_t a, uint8_t b, uint8_t c, uint8_t d) -> uint32_t {
-        return a | (b << 8) | (c << 16) | (d << 24);
-    };
-
-    switch (uni_key) {
-    default:
-        return false;
-    case ysfx_key_delete:
-        jsfx_key = key_c('d', 'e', 'l', 0);
-        break;
-    case ysfx_key_f1:
-        jsfx_key = key_c('f', '1', 0, 0);
-        break;
-    case ysfx_key_f2:
-        jsfx_key = key_c('f', '2', 0, 0);
-        break;
-    case ysfx_key_f3:
-        jsfx_key = key_c('f', '3', 0, 0);
-        break;
-    case ysfx_key_f4:
-        jsfx_key = key_c('f', '4', 0, 0);
-        break;
-    case ysfx_key_f5:
-        jsfx_key = key_c('f', '5', 0, 0);
-        break;
-    case ysfx_key_f6:
-        jsfx_key = key_c('f', '6', 0, 0);
-        break;
-    case ysfx_key_f7:
-        jsfx_key = key_c('f', '7', 0, 0);
-        break;
-    case ysfx_key_f8:
-        jsfx_key = key_c('f', '8', 0, 0);
-        break;
-    case ysfx_key_f9:
-        jsfx_key = key_c('f', '9', 0, 0);
-        break;
-    case ysfx_key_f10:
-        jsfx_key = key_c('f', '1', '0', 0);
-        break;
-    case ysfx_key_f11:
-        jsfx_key = key_c('f', '1', '1', 0);
-        break;
-    case ysfx_key_f12:
-        jsfx_key = key_c('f', '1', '2', 0);
-        break;
-    case ysfx_key_left:
-        jsfx_key = key_c('l', 'e', 'f', 't');
-        break;
-    case ysfx_key_up:
-        jsfx_key = key_c('u', 'p', 0, 0);
-        break;
-    case ysfx_key_right:
-        jsfx_key = key_c('r', 'g', 'h', 't');
-        break;
-    case ysfx_key_down:
-        jsfx_key = key_c('d', 'o', 'w', 'n');
-        break;
-    case ysfx_key_page_up:
-        jsfx_key = key_c('p', 'g', 'u', 'p');
-        break;
-    case ysfx_key_page_down:
-        jsfx_key = key_c('p', 'g', 'd', 'n');
-        break;
-    case ysfx_key_home:
-        jsfx_key = key_c('h', 'o', 'm', 'e');
-        break;
-    case ysfx_key_end:
-        jsfx_key = key_c('e', 'n', 'd', 0);
-        break;
-    case ysfx_key_insert:
-        jsfx_key = key_c('i', 'n', 's', 0);
-        break;
-    }
-    return true;
+    return state->lice->m_framebuffer_dirty;
 }
 
 void ysfx_gfx_state_add_key(ysfx_gfx_state_t *state, uint32_t mods, uint32_t key, bool press)
@@ -244,9 +243,13 @@ void ysfx_gfx_enter(ysfx_t *fx, bool doinit)
             state->input_queue = {};
             state->keys_pressed = {};
 
-            // clear images
-            for (auto &slot : state->images)
-                slot.reset();
+            // reset lice
+            eel_lice_state *lice = state->lice.get();
+            LICE_WrapperBitmap framebuffer = *static_cast<LICE_WrapperBitmap *>(lice->m_framebuffer);
+            state->lice.reset();
+            lice = new eel_lice_state{fx->vm.get(), fx, ysfx_gfx_max_images, ysfx_gfx_max_fonts};
+            state->lice.reset(lice);
+            lice->m_framebuffer = new LICE_WrapperBitmap(framebuffer);
 
             fx->gfx.ready = true;
         }
@@ -274,12 +277,13 @@ ysfx_gfx_state_t *ysfx_gfx_get_context(ysfx_t *fx)
 void ysfx_gfx_prepare(ysfx_t *fx)
 {
     ysfx_gfx_state_t *state = ysfx_gfx_get_context(fx);
+    eel_lice_state *lice = state->lice.get();
 
-    state->framebuffer_dirty = false;
+    lice->m_framebuffer_dirty = false;
 
     // set variables `gfx_w` and `gfx_h`
-    ysfx_real gfx_w = (ysfx_real)state->framebuffer.getWidth();
-    ysfx_real gfx_h = (ysfx_real)state->framebuffer.getHeight();
+    ysfx_real gfx_w = (ysfx_real)lice->m_framebuffer->getWidth();
+    ysfx_real gfx_h = (ysfx_real)lice->m_framebuffer->getHeight();
     if (state->scale > 1.0) {
         gfx_w *= state->scale;
         gfx_h *= state->scale;
@@ -287,22 +291,7 @@ void ysfx_gfx_prepare(ysfx_t *fx)
     }
     *fx->var.gfx_w = gfx_w;
     *fx->var.gfx_h = gfx_h;
-
-    // clear the screen
-    if (*fx->var.gfx_clear > -1.0) {
-        int rgba = (int)*fx->var.gfx_clear;
-        LICE_pixel color = LICE_RGBA(rgba & 0xff, (rgba >> 8) & 0xff, (rgba >> 16) & 0xff, 0);
-        LICE_Clear(&state->framebuffer, color);
-        state->framebuffer_dirty = true;
-    }
 }
-#endif
-
-//------------------------------------------------------------------------------
-#if !defined(YSFX_NO_GFX)
-#   include "ysfx_api_gfx_lice.hpp"
-#else
-#   include "ysfx_api_gfx_dummy.hpp"
 #endif
 
 //------------------------------------------------------------------------------

@@ -26,13 +26,12 @@
 #include "WDL/assocarray.h"
 #include "WDL/mutex.h"
 
-#define EEL_STRING_GET_CONTEXT_POINTER(opaque) (((ysfx_t *)(opaque))->string_ctx.get())
 #ifndef EELSCRIPT_NO_STDIO
 #   define EEL_STRING_STDOUT_WRITE(x,len) { fwrite(x,len,1,stdout); fflush(stdout); }
 #endif
 
 //TODO: thread-safety considerations with strings
-#define EEL_STRING_MUTEXLOCK_SCOPE std::lock_guard<ysfx::mutex> lock{((ysfx_t *)(opaque))->string_mutex};
+
 #define EEL_STRING_MAXUSERSTRING_LENGTH_HINT ysfx_string_max_length
 
 static ysfx::mutex atomic_mutex;
@@ -115,6 +114,21 @@ bool ysfx_string_set(ysfx_t *fx, ysfx_real id, const std::string &txt)
             size = ysfx_string_max_length;
         str.SetRaw(txt->data(), (int)size);
     }, (void *)&txt);
+}
+
+void ysfx_string_lock(ysfx_t *fx)
+{
+    fx->string_mutex.lock();
+}
+
+void ysfx_string_unlock(ysfx_t *fx)
+{
+    fx->string_mutex.unlock();
+}
+
+const char *ysfx_string_access_unlocked(ysfx_t *fx, ysfx_real id, WDL_FastString **fs, bool for_write)
+{
+    return fx->string_ctx->GetStringForIndex(id, fs, for_write);
 }
 
 //------------------------------------------------------------------------------

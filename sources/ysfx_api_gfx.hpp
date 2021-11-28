@@ -21,7 +21,7 @@
 
 #if !defined(YSFX_NO_GFX)
 struct ysfx_gfx_state_t;
-ysfx_gfx_state_t *ysfx_gfx_state_new();
+ysfx_gfx_state_t *ysfx_gfx_state_new(ysfx_t *fx);
 void ysfx_gfx_state_free(ysfx_gfx_state_t *state);
 YSFX_DEFINE_AUTO_PTR(ysfx_gfx_state_u, ysfx_gfx_state_t, ysfx_gfx_state_free);
 void ysfx_gfx_state_set_thread(ysfx_gfx_state_t *state, std::thread::id id);

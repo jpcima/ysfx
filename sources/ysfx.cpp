@@ -87,7 +87,7 @@ ysfx_t *ysfx_new(ysfx_config_t *config)
     ysfx_eel_string_initvm(vm);
 
 #if !defined(YSFX_NO_GFX)
-    fx->gfx.state.reset(ysfx_gfx_state_new());
+    fx->gfx.state.reset(ysfx_gfx_state_new(fx.get()));
 #endif
 
     auto var_resolver = [](void *userdata, const char *name) -> EEL_F * {
