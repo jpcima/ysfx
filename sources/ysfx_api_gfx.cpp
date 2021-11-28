@@ -22,6 +22,7 @@
 #   include "lice_stb/lice_stb_loaders.hpp"
 #   define WDL_NO_DEFINE_MINMAX
 #   include "WDL/lice/lice.h"
+#   include "WDL/lice/lice_text.h"
 #endif
 #include <vector>
 #include <queue>
@@ -34,7 +35,18 @@
 
 enum {
     ysfx_gfx_max_images = 1024,
+    ysfx_gfx_max_fonts = 128,
     ysfx_gfx_max_input = 1024,
+};
+
+struct ysfx_gfx_font_t {
+    LICE_IFont *font = nullptr;
+    // TODO
+    //char last_fontname[128]{};
+    //char actual_fontname[128]{};
+    //int last_fontsize = 0;
+    //int last_fontflag = 0;
+    int use_fonth = 0;
 };
 
 struct ysfx_gfx_state_t {
@@ -43,6 +55,8 @@ struct ysfx_gfx_state_t {
     LICE_WrapperBitmap framebuffer{nullptr, 0, 0, 0, false};
     std::unique_ptr<LICE_MemBitmap> framebuffer_extra;
     std::vector<std::unique_ptr<LICE_IBitmap>> images;
+    int32_t font_active = -1;
+    std::vector<ysfx_gfx_font_t> fonts;
     std::queue<uint32_t> input_queue;
     std::unordered_set<uint32_t> keys_pressed;
     ysfx_real scale = 0.0;
@@ -52,6 +66,7 @@ ysfx_gfx_state_t *ysfx_gfx_state_new()
 {
     ysfx_gfx_state_u state{new ysfx_gfx_state_t};
     state->images.resize(ysfx_gfx_max_images);
+    state->fonts.resize(ysfx_gfx_max_fonts);
     return state.release();
 }
 

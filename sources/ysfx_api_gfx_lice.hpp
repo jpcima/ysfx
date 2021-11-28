@@ -30,8 +30,12 @@
 //
 
 #pragma once
+#include "ysfx_api_eel.hpp"
+#include "WDL/wdlutf8.h"
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
+#include <cstring>
 
 // help clangd to figure things out
 #if defined(__CLANGD__)
@@ -61,6 +65,18 @@ static LICE_IBitmap *image_for_index(void *opaque, EEL_F idx, const char *caller
             return state->images[(size_t)a].get();
     }
     return nullptr;
+}
+
+static LICE_IFont *active_font(void *opaque)
+{
+    ysfx_t *fx = (ysfx_t *)opaque;
+    ysfx_gfx_state_t *state = fx->gfx.state.get();
+
+    if (state->font_active < 0 || (uint32_t)state->font_active >= state->fonts.size())
+        return nullptr;
+
+    ysfx_gfx_font_t &font = state->fonts[(uint32_t)state->font_active];
+    return font.use_fonth ? font.font : nullptr;
 }
 
 static bool coords_src_dest_overlap(EEL_F *coords)
@@ -414,41 +430,256 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_setcursor(void *opaque,  INT_PTR nparm
     return 0;
 }
 
+static int draw_text_with_font(
+    LICE_IBitmap *dest, const RECT *rect, LICE_IFont *font, const char *buf, int buflen,
+    int fg, int mode, float alpha, int flags, EEL_F *wantYoutput, EEL_F **measureOnly)
+{
+    if (font) {
+        RECT tr = *rect;
+        font->SetTextColor(fg);
+        font->SetCombineMode(mode, alpha);
+
+        int maxx = 0;
+        RECT r = {0, 0, tr.left, 0};
+        while (buflen > 0) {
+            int thislen = 0;
+            while (thislen < buflen && buf[thislen] != '\n') thislen++;
+            memset(&r, 0, sizeof(r));
+            int lineh = font->DrawText(dest, buf, thislen ? thislen : 1, &r, DT_SINGLELINE|DT_NOPREFIX|DT_CALCRECT);
+            if (!measureOnly) {
+                r.right += tr.left;
+                lineh = font->DrawText(dest, buf, thislen ? thislen : 1, &tr, DT_SINGLELINE|DT_NOPREFIX|flags);
+                if (wantYoutput) *wantYoutput = tr.top;
+            }
+            else {
+                if (r.right > maxx) maxx = r.right;
+            }
+            tr.top += lineh;
+
+            buflen -= thislen + 1;
+            buf += thislen + 1;
+        }
+        if (measureOnly) {
+            measureOnly[0][0] = maxx;
+            measureOnly[1][0] = tr.top;
+        }
+        return r.right;
+    }
+    else
+    {
+        int xpos = rect->left, ypos = rect->top;
+        int x;
+        int maxx = 0, maxy = 0;
+
+        LICE_SubBitmap sbm(
+            dest, rect->left, rect->top, rect->right-rect->left, rect->bottom-rect->top);
+
+        if (!measureOnly) {
+            if (!(flags & DT_NOCLIP)) {
+                if (rect->right <= rect->left || rect->bottom <= rect->top) return 0; // invalid clip rect hm
+
+                xpos = ypos = 0;
+                dest = &sbm;
+            }
+            if (flags & (DT_RIGHT|DT_BOTTOM|DT_CENTER|DT_VCENTER)) {
+                EEL_F w = 0.0, h = 0.0;
+                EEL_F *mo[2] = {&w, &h};
+                RECT tr = {0};
+                draw_text_with_font(dest, &tr, nullptr, buf, buflen, 0, 0, 0.0f, 0, nullptr, mo);
+
+                if (flags & DT_RIGHT) xpos += (rect->right-rect->left) - (int)std::floor(w);
+                else if (flags & DT_CENTER) xpos += (rect->right-rect->left) / 2 - (int)std::floor(w * (EEL_F).5);
+
+                if (flags & DT_BOTTOM) ypos += (rect->bottom-rect->top) - (int)std::floor(h);
+                else if (flags & DT_VCENTER) ypos += (rect->bottom-rect->top) / 2 - (int)std::floor(h * (EEL_F).5);
+            }
+        }
+        const int sxpos = xpos;
+
+        for (x = 0; x < buflen; x++) {
+            switch (buf[x]) {
+            case '\n':
+                ypos += 8;
+            case '\r':
+                xpos = sxpos;
+                break;
+            case ' ': xpos += 8; break;
+            case '\t': xpos += 8 * 5; break;
+            default:
+                if (!measureOnly) LICE_DrawChar(dest, xpos, ypos, buf[x], fg, alpha, mode);
+                xpos += 8;
+                if (xpos > maxx) maxx = xpos;
+                maxy = ypos + 8;
+                break;
+            }
+        }
+        if (measureOnly) {
+            measureOnly[0][0] = maxx;
+            measureOnly[1][0] = maxy;
+        }
+        else {
+            if (wantYoutput) *wantYoutput = ypos;
+        }
+        return xpos;
+    }
+}
+
 static EEL_F *NSEEL_CGEN_CALL ysfx_api_gfx_drawnumber(void *opaque, EEL_F *n, EEL_F *nd)
 {
-    // TODO
+    ysfx_t *fx = (ysfx_t *)opaque;
+    ysfx_gfx_state_t *state = GFX_GET_CONTEXT(opaque);
+    if (!state)
+        return n;
+
+    LICE_IBitmap *dest = image_for_index(opaque, *fx->var.gfx_dest, "gfx_drawnumber");
+    if (!dest)
+        return n;
+
+    set_image_dirty(opaque, dest);
+
+    char buf[512];
+    int a = (int)(*nd + (EEL_F)0.5);
+    if (a < 0) a = 0;
+    if (a > 16) a = 16;
+    snprintf(buf, sizeof(buf), "%.*f", a, (EEL_F)*n);
+
+    RECT r = {(int)std::floor(*fx->var.gfx_x), (int)std::floor(*fx->var.gfx_y), 0, 0};
+    *fx->var.gfx_x = draw_text_with_font(
+        dest, &r, active_font(opaque), buf, (int)std::strlen(buf),
+        current_color(opaque), current_mode(opaque), (float)*fx->var.gfx_a, DT_NOCLIP, nullptr, nullptr);
+
     return n;
 }
 
 static EEL_F *NSEEL_CGEN_CALL ysfx_api_gfx_drawchar(void *opaque, EEL_F *n)
 {
-    // TODO
+    ysfx_t *fx = (ysfx_t *)opaque;
+    ysfx_gfx_state_t *state = GFX_GET_CONTEXT(opaque);
+    if (!state)
+        return n;
+
+    LICE_IBitmap *dest = image_for_index(opaque, *fx->var.gfx_dest, "gfx_drawchar");
+    if (!dest)
+        return n;
+
+    set_image_dirty(opaque, dest);
+
+    int a = (int)(*n + (EEL_F)0.5);
+    if (a == '\r' || a == '\n') a = ' ';
+
+    char buf[32];
+    const int buflen = WDL_MakeUTFChar(buf, a, sizeof(buf));
+
+    RECT r = {(int)std::floor(*fx->var.gfx_x), (int)std::floor(*fx->var.gfx_y), 0, 0};
+    *fx->var.gfx_x = draw_text_with_font(
+        dest, &r, active_font(opaque), buf, buflen,
+        current_color(opaque), current_mode(opaque), (float)*fx->var.gfx_a, DT_NOCLIP, nullptr, nullptr);
+
     return n;
+}
+
+static void ysfx_gfx_api_dostr(void *opaque, EEL_F **parms, INT_PTR nparms, int formatmode)// formatmode=1 for format, 2 for purely measure no format
+{
+    ysfx_t *fx = (ysfx_t *)opaque;
+    ysfx_gfx_state_t *state = GFX_GET_CONTEXT(opaque);
+    if (!state)
+        return;
+
+    INT_PTR nfmtparms = nparms - 1;
+    EEL_F **fmtparms = parms + 1;
+    const char *funcname =
+        formatmode == 1 ? "gfx_printf" :
+        formatmode == 2 ? "gfx_measurestr" :
+        formatmode == 3 ? "gfx_measurechar" : "gfx_drawstr";
+
+    LICE_IBitmap *dest = image_for_index(opaque, *fx->var.gfx_dest, funcname);
+    if (!dest)
+        return;
+
+    std::string fs;
+    char buf[4096];
+    int s_len = 0;
+
+    const char *s = nullptr;
+    if (formatmode == 3) {
+        s_len = WDL_MakeUTFChar(buf, (int)parms[0][0], sizeof(buf));
+        s = buf;
+    }
+    else {
+        if (ysfx_string_get(fx, parms[0][0], fs))
+            s = fs.c_str();
+#ifdef EEL_STRING_DEBUGOUT
+        if (!s) EEL_STRING_DEBUGOUT("gfx_%s: invalid string identifier %f", funcname, parms[0][0]);
+#endif
+        if (!s) {
+            s = "<bad string>";
+            s_len = 12;
+        }
+        else if (formatmode == 1) {
+            extern int eel_format_strings(void *, const char *s, const char *ep, char *, int, int, EEL_F **);
+            s_len = eel_format_strings(opaque, s, (s + fs.size()), buf, sizeof(buf), nfmtparms, fmtparms);
+            if (s_len < 1) return;
+            s = buf;
+        }
+        else {
+            s_len = (int)fs.size();
+        }
+    }
+
+    if (s_len) {
+        set_image_dirty(opaque, dest);
+        if (formatmode >= 2) {
+            if (nfmtparms == 2) {
+                RECT r = {0,0,0,0};
+                draw_text_with_font(
+                    dest, &r, active_font(opaque), s, s_len,
+                    current_color(opaque), current_mode(opaque), (float)*fx->var.gfx_a, 0, nullptr, fmtparms);
+            }
+        }
+        else {
+            RECT r = {(int)std::floor(*fx->var.gfx_x), (int)std::floor(*fx->var.gfx_y), 0, 0};
+            int flags = DT_NOCLIP;
+            if (formatmode == 0 && nparms >= 4) {
+                flags = (int)*parms[1];
+                flags &= (DT_CENTER|DT_RIGHT|DT_VCENTER|DT_BOTTOM|DT_NOCLIP);
+                r.right = (int)*parms[2];
+                r.bottom = (int)*parms[3];
+            }
+            *fx->var.gfx_x = draw_text_with_font(
+                dest, &r, active_font(opaque), s, s_len,
+                current_color(opaque), current_mode(opaque), (float)*fx->var.gfx_a, flags, fx->var.gfx_y, nullptr);
+        }
+    }
 }
 
 static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_drawstr(void *opaque, INT_PTR nparms, EEL_F **parms)
 {
-    // TODO
-    return 0;
+    ysfx_gfx_api_dostr(opaque, parms, nparms, 0);
+    return parms[0][0];
 }
-
 
 static EEL_F *NSEEL_CGEN_CALL ysfx_api_gfx_measurestr(void *opaque, EEL_F *str, EEL_F *xOut, EEL_F *yOut)
 {
-    // TODO
+    EEL_F *p[3] = {str, xOut, yOut};
+    ysfx_gfx_api_dostr(opaque, p, 3, 2);
     return str;
 }
 
 static EEL_F *NSEEL_CGEN_CALL ysfx_api_gfx_measurechar(void *opaque, EEL_F *str, EEL_F *xOut, EEL_F *yOut)
 {
-    // TODO
+    EEL_F *p[3] = {str, xOut, yOut};
+    ysfx_gfx_api_dostr(opaque, p, 3, 3);
     return str;
 }
 
 static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_printf(void *opaque, INT_PTR nparms, EEL_F **parms)
 {
-    // TODO
-    return 0;
+    if (nparms < 1)
+        return 0;
+
+    EEL_F v = **parms;
+    ysfx_gfx_api_dostr(opaque, parms, nparms, 1);
+    return v;
 }
 
 static EEL_F *NSEEL_CGEN_CALL ysfx_api_gfx_setpixel(void *opaque, EEL_F *r, EEL_F *g, EEL_F *b)
