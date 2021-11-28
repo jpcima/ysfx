@@ -225,7 +225,8 @@ void ysfx_gfx_enter(ysfx_t *fx, bool doinit)
             state->keys_pressed = {};
 
             // clear images
-            state->images.clear();
+            for (auto &slot : state->images)
+                slot.reset();
 
             fx->gfx.ready = true;
         }
