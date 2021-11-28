@@ -224,6 +224,9 @@ void ysfx_gfx_enter(ysfx_t *fx, bool doinit)
             state->input_queue = {};
             state->keys_pressed = {};
 
+            // clear images
+            state->images.clear();
+
             fx->gfx.ready = true;
         }
     }
