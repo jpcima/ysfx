@@ -503,14 +503,14 @@ void ysfx_fix_invalid_enums(ysfx_t *fx)
         uint32_t count = (uint32_t)slider.enum_names.size();
         if (count == 0) {
             bool is_file = !slider.path.empty();
-            ysfx_logf(*fx->config, ysfx_log_warning, "slider%u: the enumeration does not contain any %s\n", i + 1, is_file ? "files" : "items");
+            ysfx_logf(*fx->config, ysfx_log_warning, "slider%u: the enumeration does not contain any %s", i + 1, is_file ? "files" : "items");
             slider.enum_names.emplace_back();
             slider.min = 0;
             slider.max = 0;
             slider.inc = 1;
         }
         else if (slider.min != 0 || slider.inc != 1 || slider.max != (EEL_F)(count - 1)) {
-            ysfx_logf(*fx->config, ysfx_log_warning, "slider%u: the enumeration has an invalid range\n", i + 1);
+            ysfx_logf(*fx->config, ysfx_log_warning, "slider%u: the enumeration has an invalid range", i + 1);
             slider.min = 0;
             slider.max = (EEL_F)(count - 1);
             slider.inc = 1;
