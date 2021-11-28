@@ -64,6 +64,14 @@ if(YSFX_GFX)
                     "thirdparty/WDL/source/WDL/swell/swell-modstub-generic.cpp"
                     "thirdparty/WDL/source/WDL/swell/swell-wnd-generic.cpp")
                 target_compile_definitions(swell PUBLIC "SWELL_LICE_GDI")
+                if(TARGET Fontconfig::Fontconfig)
+                    target_compile_definitions(swell PUBLIC "SWELL_FONTCONFIG")
+                    target_link_libraries(swell PRIVATE Fontconfig::Fontconfig)
+                endif()
+                if(TARGET Freetype::Freetype)
+                    target_compile_definitions(swell PUBLIC "SWELL_FREETYPE")
+                    target_link_libraries(swell PRIVATE Freetype::Freetype)
+                endif()
         else()
             target_sources(swell
                 PRIVATE

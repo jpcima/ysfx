@@ -38,6 +38,19 @@ if(APPLE)
     ysfx_find_apple_framework(Metal)
 endif()
 
+# Graphics libraries
+# ------------------------------------------------------------------------------
+
+if(NOT WIN32 AND NOT APPLE)
+    find_package(Fontconfig)
+    find_package(Freetype)
+    if(NOT TARGET Freetype::Freetype)
+        message(WARNING "Freetype not found; fonts will not be supported")
+    elseif(NOT TARGET Fontconfig::Fontconfig)
+        message(WARNING "Fontconfig not found; font support will be limited")
+    endif()
+endif()
+
 # ysfx::dl
 # ------------------------------------------------------------------------------
 add_library(dl INTERFACE)
