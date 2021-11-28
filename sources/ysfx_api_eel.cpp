@@ -101,7 +101,7 @@ bool ysfx_string_access(ysfx_t *fx, ysfx_real id, bool for_write, void (*access)
 
 bool ysfx_string_get(ysfx_t *fx, ysfx_real id, std::string &txt)
 {
-    return ysfx_string_access(fx, id, true, [](void *ud, WDL_FastString &str) {
+    return ysfx_string_access(fx, id, false, [](void *ud, WDL_FastString &str) {
         ((std::string *)ud)->assign(str.Get(), (uint32_t)str.GetLength());
     }, &txt);
 }
