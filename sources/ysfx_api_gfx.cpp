@@ -206,6 +206,7 @@ void ysfx_gfx_state_add_key(ysfx_gfx_state_t *state, uint32_t mods, uint32_t key
 void ysfx_gfx_enter(ysfx_t *fx, bool doinit)
 {
     fx->gfx.mutex.lock();
+    ysfx_gfx_state_t *state = fx->gfx.state.get();
 
     if (doinit) {
         if (fx->gfx.must_init.exchange(false, std::memory_order_acquire)) {
@@ -218,11 +219,16 @@ void ysfx_gfx_enter(ysfx_t *fx, bool doinit)
             *fx->var.mouse_wheel = 0.0;
             *fx->var.mouse_hwheel = 0.0;
             // NOTE possibly others in the future, check eel_lice.h `resetVarsToStock`
+
+            // reset key state
+            state->input_queue = {};
+            state->keys_pressed = {};
+
             fx->gfx.ready = true;
         }
     }
 
-    ysfx_gfx_state_set_thread(fx->gfx.state.get(), std::this_thread::get_id());
+    ysfx_gfx_state_set_thread(state, std::this_thread::get_id());
 }
 
 void ysfx_gfx_leave(ysfx_t *fx)
