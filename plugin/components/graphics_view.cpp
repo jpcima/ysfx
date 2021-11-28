@@ -246,6 +246,6 @@ void YsfxGraphicsView::updateYsfxMouseStatus(const juce::MouseEvent &event)
     if (event.mods.isRightButtonDown())
         YsfxMouseButtons |= ysfx_button_right;
 
-    YsfxMouseX = event.x;
-    YsfxMouseY = event.y;
+    YsfxMouseX = juce::roundToInt(event.x * m_bitmapScale);
+    YsfxMouseY = juce::roundToInt(event.y * m_bitmapScale);
 }
