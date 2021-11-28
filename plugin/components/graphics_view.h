@@ -30,15 +30,27 @@ public:
 
     std::function<void(uint32_t, uint32_t)> OnYsfxKeyPressed;
     std::function<void(uint32_t, uint32_t)> OnYsfxKeyReleased;
+    uint32_t YsfxMouseMods = 0;
+    uint32_t YsfxMouseButtons = 0;
+    int32_t YsfxMouseX = 0;
+    int32_t YsfxMouseY = 0;
+    double YsfxWheel = 0;
+    double YsfxHWheel = 0;
 
 protected:
     void paint(juce::Graphics &g) override;
     void resized() override;
     bool keyPressed(const juce::KeyPress &key) override;
     bool keyStateChanged(bool isKeyDown) override;
+    void mouseMove(const juce::MouseEvent &event) override;
+    void mouseDown(const juce::MouseEvent &event) override;
+    void mouseDrag(const juce::MouseEvent &event) override;
+    void mouseUp(const juce::MouseEvent &event) override;
+    void mouseWheelMove(const juce::MouseEvent &event, const juce::MouseWheelDetails &wheel) override;
 
 private:
     void updateBitmap();
+    void updateYsfxMouseStatus(const juce::MouseEvent &event);
 
 private:
     int m_gfxWidth = 0;

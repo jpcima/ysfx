@@ -95,6 +95,14 @@ void YsfxEditor::Impl::updateGfx()
 {
     ysfx_t *fx = m_proc->getYsfx();
     YsfxInfo::Ptr info = m_proc->getCurrentInfo();
+    YsfxGraphicsView *view = m_graphicsView.get();
+
+    ///
+    ysfx_gfx_send_mouse(fx, view->YsfxMouseMods, view->YsfxMouseX, view->YsfxMouseY, view->YsfxMouseButtons, view->YsfxWheel, view->YsfxHWheel);
+    view->YsfxWheel = 0;
+    view->YsfxHWheel = 0;
+
+    ///
 
     bool gfxWantRetina = ysfx_gfx_wants_retina(fx);
     m_graphicsView->configureGfx(info->gfxWidth, info->gfxHeight, gfxWantRetina);

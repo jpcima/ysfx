@@ -174,6 +174,33 @@ bool YsfxGraphicsView::keyStateChanged(bool isKeyDown)
     return true;
 }
 
+void YsfxGraphicsView::mouseMove(const juce::MouseEvent &event)
+{
+    updateYsfxMouseStatus(event);
+}
+
+void YsfxGraphicsView::mouseDown(const juce::MouseEvent &event)
+{
+    updateYsfxMouseStatus(event);
+}
+
+void YsfxGraphicsView::mouseDrag(const juce::MouseEvent &event)
+{
+    updateYsfxMouseStatus(event);
+}
+
+void YsfxGraphicsView::mouseUp(const juce::MouseEvent &event)
+{
+    updateYsfxMouseStatus(event);
+}
+
+void YsfxGraphicsView::mouseWheelMove(const juce::MouseEvent &event, const juce::MouseWheelDetails &wheel)
+{
+    updateYsfxMouseStatus(event);
+    YsfxWheel += wheel.deltaY;
+    YsfxHWheel += wheel.deltaX;
+}
+
 void YsfxGraphicsView::updateBitmap()
 {
     int w = m_gfxWidth;
@@ -197,4 +224,28 @@ void YsfxGraphicsView::updateBitmap()
 
     if (m_bitmap.getWidth() != w || m_bitmap.getHeight() != h)
         m_bitmap = juce::Image(juce::Image::ARGB, w, h, true);
+}
+
+void YsfxGraphicsView::updateYsfxMouseStatus(const juce::MouseEvent &event)
+{
+    YsfxMouseMods = 0;
+    if (event.mods.isShiftDown())
+        YsfxMouseMods |= ysfx_mod_shift;
+    if (event.mods.isCtrlDown())
+        YsfxMouseMods |= ysfx_mod_ctrl;
+    if (event.mods.isAltDown())
+        YsfxMouseMods |= ysfx_mod_alt;
+    if (event.mods.isCommandDown())
+        YsfxMouseMods |= ysfx_mod_super;
+
+    YsfxMouseButtons = 0;
+    if (event.mods.isLeftButtonDown())
+        YsfxMouseButtons |= ysfx_button_left;
+    if (event.mods.isMiddleButtonDown())
+        YsfxMouseButtons |= ysfx_button_middle;
+    if (event.mods.isRightButtonDown())
+        YsfxMouseButtons |= ysfx_button_right;
+
+    YsfxMouseX = event.x;
+    YsfxMouseY = event.y;
 }
