@@ -338,6 +338,8 @@ YSFX_API void ysfx_gfx_setup(ysfx_t *fx, ysfx_gfx_config_t *gc);
 YSFX_API bool ysfx_gfx_wants_retina(ysfx_t *fx);
 // push a key to the input queue
 YSFX_API void ysfx_gfx_add_key(ysfx_t *fx, uint32_t mods, uint32_t key, bool press);
+// send mouse information; position is relative to canvas; wheel should be in steps normalized to ±1.0
+YSFX_API void ysfx_gfx_send_mouse(ysfx_t *fx, uint32_t mods, int32_t xpos, int32_t ypos, uint32_t buttons, ysfx_real wheel, ysfx_real hwheel);
 // invoke @gfx to paint the graphics; returns whether the framer buffer is modified
 YSFX_API bool ysfx_gfx_run(ysfx_t *fx);
 
@@ -379,6 +381,12 @@ enum {
     ysfx_key_home,
     ysfx_key_end,
     ysfx_key_insert,
+};
+
+enum {
+    ysfx_button_left = 1 << 0,
+    ysfx_button_middle = 1 << 1,
+    ysfx_button_right = 1 << 2,
 };
 
 //------------------------------------------------------------------------------

@@ -1348,6 +1348,48 @@ void ysfx_gfx_add_key(ysfx_t *fx, uint32_t mods, uint32_t key, bool press)
 #endif
 }
 
+void ysfx_gfx_send_mouse(ysfx_t *fx, uint32_t mods, int32_t xpos, int32_t ypos, uint32_t buttons, ysfx_real wheel, ysfx_real hwheel)
+{
+#if !defined(YSFX_NO_GFX)
+    bool doinit = true;
+    ysfx_scoped_gfx_t scope{fx, doinit};
+
+    if (!fx->gfx.ready)
+        return;
+
+    *fx->var.mouse_x = (EEL_F)xpos;
+    *fx->var.mouse_y = (EEL_F)ypos;
+    *fx->var.mouse_wheel += 120 * wheel;
+    *fx->var.mouse_hwheel += 120 * hwheel;
+
+    uint32_t mouse_cap = 0;
+    if (mods & ysfx_mod_shift)
+        mouse_cap |= 8;
+    if (mods & ysfx_mod_ctrl)
+        mouse_cap |= 4;
+    if (mods & ysfx_mod_alt)
+        mouse_cap |= 16;
+    if (mods & ysfx_mod_super)
+        mouse_cap |= 32;
+    if (buttons & ysfx_button_left)
+        mouse_cap |= 1;
+    if (buttons & ysfx_button_middle)
+        mouse_cap |= 64;
+    if (buttons & ysfx_button_right)
+        mouse_cap |= 2;
+    *fx->var.mouse_cap = (EEL_F)mouse_cap;
+
+#else
+    (void)fx;
+    (void)mods;
+    (void)xpos;
+    (void)ypos;
+    (void)buttons;
+    (void)vwheel;
+    (void)hwheel;
+#endif
+}
+
 bool ysfx_gfx_run(ysfx_t *fx)
 {
 #if !defined(YSFX_NO_GFX)
