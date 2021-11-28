@@ -276,6 +276,11 @@ void ysfx_gfx_enter(ysfx_t *fx, bool doinit)
             state->lice.reset(lice);
             lice->m_framebuffer = new LICE_WrapperBitmap(framebuffer);
 
+            // load images from filenames
+            uint32_t numfiles = (uint32_t)fx->source.main->header.filenames.size();
+            for (uint32_t i = 0; i < numfiles; ++i)
+                lice->gfx_loadimg(fx, (int32_t)i, (EEL_F)i);
+
             fx->gfx.ready = true;
         }
     }
