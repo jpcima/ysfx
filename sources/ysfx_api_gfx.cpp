@@ -218,7 +218,12 @@ void ysfx_gfx_enter(ysfx_t *fx, bool doinit)
             *fx->var.gfx_dest = -1.0;
             *fx->var.mouse_wheel = 0.0;
             *fx->var.mouse_hwheel = 0.0;
-            // NOTE possibly others in the future, check eel_lice.h `resetVarsToStock`
+            // NOTE the above are according to eel_lice.h `resetVarsToStock`
+            //   it helps to reset a few more, especially for clearing
+            *fx->var.gfx_mode = 0;
+            *fx->var.gfx_clear = 0;
+            *fx->var.gfx_texth = 0;
+            *fx->var.mouse_cap = 0;
 
             // reset key state
             state->input_queue = {};
