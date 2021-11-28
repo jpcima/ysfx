@@ -16,6 +16,7 @@
 //
 
 #include "ysfx.hpp"
+#include "ysfx_config.hpp"
 #include "ysfx_api_gfx.hpp"
 #include "ysfx_eel_utils.hpp"
 #if !defined(YSFX_NO_GFX)
@@ -23,7 +24,9 @@
 #   define WDL_NO_DEFINE_MINMAX
 #   include "WDL/lice/lice.h"
 #   include "WDL/lice/lice_text.h"
+#   include "WDL/wdlstring.h"
 #endif
+#include <vector>
 #include <queue>
 #include <unordered_set>
 #include <memory>
@@ -50,6 +53,28 @@ struct ysfx_gfx_state_t {
     std::unordered_set<uint32_t> keys_pressed;
     ysfx_real scale = 0.0;
 };
+
+//------------------------------------------------------------------------------
+#if !defined(YSFX_NO_GFX)
+static bool eel_lice_get_filename_for_string(void *opaque, EEL_F idx, WDL_FastString *fs, int iswrite)
+{
+    if (iswrite)
+        return false; // this is neither supported nor used
+
+    ysfx_t *fx = (ysfx_t *)opaque;
+
+    std::string filepath;
+    if (!ysfx_find_data_file(fx, &idx, filepath))
+        return false;
+
+    if (fs) fs->Set(filepath.data(), (uint32_t)filepath.size());
+    return true;
+}
+
+#define EEL_LICE_GET_FILENAME_FOR_STRING(idx, fs, p)    \
+    eel_lice_get_filename_for_string(opaque, (idx), (fs), (p))
+
+#endif
 
 //------------------------------------------------------------------------------
 #if !defined(YSFX_NO_GFX)

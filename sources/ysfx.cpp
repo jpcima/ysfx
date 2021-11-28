@@ -1290,6 +1290,65 @@ void ysfx_read_vmem(ysfx_t *fx, uint32_t addr, ysfx_real *dest, uint32_t count)
         dest[i] = reader.read_next();
 }
 
+bool ysfx_find_data_file(ysfx_t *fx, EEL_F *file, std::string &result)
+{
+    // 3 possibilities for file
+    // - slider
+    // - index of filename
+    // - string
+
+    std::string filepart;
+
+    bool accept_absolute = false;
+    bool accept_relative = false;
+
+    int32_t index = ysfx_eel_round<int32_t>(*file);
+    uint32_t slideridx = ysfx_get_slider_of_var(fx, file);
+    ysfx_slider_t *slider = nullptr;
+
+    if (slideridx != ~(uint32_t)0)
+        slider = &fx->source.main->header.sliders[slideridx];
+
+    if (slider && !slider->path.empty()) {
+        int32_t value = ysfx_eel_round<int32_t>(*fx->var.slider[slideridx]);
+        if (value < 0 || (uint32_t)value >= slider->enum_names.size())
+            return -1;
+
+        filepart = slider->path + '/' + slider->enum_names[(uint32_t)value];
+        accept_relative = true;
+    }
+    else if (index >= 0 && (uint32_t)index < fx->source.main->header.filenames.size()) {
+        filepart = fx->source.main->header.filenames[(uint32_t)index];
+        accept_relative = true;
+    }
+    else if (ysfx_string_get(fx, *file, filepart)) {
+        accept_absolute = true;
+        accept_relative = true;
+    }
+    else
+        return -1;
+
+    std::vector<std::string> filecandidates;
+    filecandidates.reserve(2);
+
+    if (accept_absolute && !ysfx::path_is_relative(filepart.c_str()))
+        filecandidates.push_back(filepart);
+    else if (accept_relative) {
+        filecandidates.push_back(ysfx::path_directory(fx->source.main_file_path.c_str()) + filepart);
+        if (!fx->config->data_root.empty())
+            filecandidates.push_back(fx->config->data_root + filepart);
+    }
+
+    for (const std::string &filepath : filecandidates) {
+        if (ysfx::exists(filepath.c_str())) {
+            result.assign(filepath);
+            return true;
+        }
+    }
+
+    return false;
+}
+
 ysfx_file_type_t ysfx_detect_file_type(ysfx_t *fx, const char *path, void **fmtobj)
 {
     if (ysfx::path_has_suffix(path, "txt"))

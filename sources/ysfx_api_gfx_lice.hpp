@@ -848,8 +848,28 @@ EEL_F eel_lice_state::gfx_getdropfile(void *opaque, int np, EEL_F **parms)
 
 EEL_F eel_lice_state::gfx_loadimg(void *opaque, int img, EEL_F loadFrom)
 {
-  //TODO
-  return 0;
+#ifdef DYNAMIC_LICE
+  if (!__LICE_LoadImage || !LICE__Destroy) return 0.0;
+#endif
+
+  if (img >= 0 && img < m_gfx_images.GetSize()) 
+  {
+    WDL_FastString fs;
+    bool ok = EEL_LICE_GET_FILENAME_FOR_STRING(loadFrom,&fs,0);
+
+    if (ok && fs.GetLength())
+    {
+      LICE_IBitmap *bm = LICE_LoadImage(fs.Get(),NULL,false);
+      if (bm)
+      {
+        LICE__Destroy(m_gfx_images.Get()[img]);
+        m_gfx_images.Get()[img]=bm;
+        return img;
+      }
+    }
+  }
+  return -1.0;
+
 }
 
 EEL_F eel_lice_state::gfx_setimgdim(int img, EEL_F *w, EEL_F *h)

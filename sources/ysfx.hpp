@@ -173,4 +173,5 @@ ysfx_file_t *ysfx_get_file(ysfx_t *fx, uint32_t handle, std::unique_lock<ysfx::m
 int32_t ysfx_insert_file(ysfx_t *fx, ysfx_file_t *file);
 void ysfx_serialize(ysfx_t *fx);
 uint32_t ysfx_get_slider_of_var(ysfx_t *fx, EEL_F *var);
+bool ysfx_find_data_file(ysfx_t *fx, EEL_F *file, std::string &result);
 ysfx_file_type_t ysfx_detect_file_type(ysfx_t *fx, const char *path, void **fmtobj);

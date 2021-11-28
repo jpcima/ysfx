@@ -364,87 +364,40 @@ uint32_t ysfx_serializer_t::string(std::string &str)
 }
 
 //------------------------------------------------------------------------------
-static EEL_F NSEEL_CGEN_CALL ysfx_api_file_open(void *opaque, EEL_F *file)
+static EEL_F NSEEL_CGEN_CALL ysfx_api_file_open(void *opaque, EEL_F *file_)
 {
     ysfx_t *fx = (ysfx_t *)opaque;
 
-    // 3 possibilities for file
-    // - slider
-    // - index of filename
-    // - string
-
-    std::string filepart;
-
-    bool accept_absolute = false;
-    bool accept_relative = false;
-
-    int32_t index = ysfx_eel_round<int32_t>(*file);
-    uint32_t slideridx = ysfx_get_slider_of_var(fx, file);
-    ysfx_slider_t *slider = nullptr;
-
-    if (slideridx != ~(uint32_t)0)
-        slider = &fx->source.main->header.sliders[slideridx];
-
-    if (slider && !slider->path.empty()) {
-        int32_t value = ysfx_eel_round<int32_t>(*fx->var.slider[slideridx]);
-        if (value < 0 || (uint32_t)value >= slider->enum_names.size())
-            return -1;
-
-        filepart = slider->path + '/' + slider->enum_names[(uint32_t)value];
-        accept_relative = true;
-    }
-    else if (index >= 0 && (uint32_t)index < fx->source.main->header.filenames.size()) {
-        filepart = fx->source.main->header.filenames[(uint32_t)index];
-        accept_relative = true;
-    }
-    else if (ysfx_string_get(fx, *file, filepart)) {
-        accept_absolute = true;
-        accept_relative = true;
-    }
-    else
+    std::string filepath;
+    if (!ysfx_find_data_file(fx, file_, filepath))
         return -1;
 
-    std::vector<std::string> filecandidates;
-    if (accept_absolute && !ysfx::path_is_relative(filepart.c_str()))
-        filecandidates.push_back(filepart);
-    else if (accept_relative) {
-        filecandidates.push_back(ysfx::path_directory(fx->source.main_file_path.c_str()) + filepart);
-        if (!fx->config->data_root.empty())
-            filecandidates.push_back(fx->config->data_root + filepart);
+    void *fmtobj = nullptr;
+    ysfx_file_type_t ftype = ysfx_detect_file_type(fx, filepath.c_str(), &fmtobj);
+
+    ysfx_file_u file;
+    switch (ftype) {
+    case ysfx_file_type_txt:
+        file.reset(new ysfx_text_file_t(fx->vm.get(), filepath.c_str()));
+        break;
+    case ysfx_file_type_raw:
+        file.reset(new ysfx_raw_file_t(fx->vm.get(), filepath.c_str()));
+        break;
+    case ysfx_file_type_audio:
+        file.reset(new ysfx_audio_file_t(fx->vm.get(), *(ysfx_audio_format_t *)fmtobj, filepath.c_str()));
+        break;
+    case ysfx_file_type_none:
+        break;
+    default:
+        assert(false);
     }
 
-    for (const std::string &filepath : filecandidates) {
-        void *fmtobj = nullptr;
-
-        if (!ysfx::exists(filepath.c_str()))
-            continue;
-
-        ysfx_file_type_t ftype = ysfx_detect_file_type(fx, filepath.c_str(), &fmtobj);
-
-        ysfx_file_u file;
-        switch (ftype) {
-        case ysfx_file_type_txt:
-            file.reset(new ysfx_text_file_t(fx->vm.get(), filepath.c_str()));
-            break;
-        case ysfx_file_type_raw:
-            file.reset(new ysfx_raw_file_t(fx->vm.get(), filepath.c_str()));
-            break;
-        case ysfx_file_type_audio:
-            file.reset(new ysfx_audio_file_t(fx->vm.get(), *(ysfx_audio_format_t *)fmtobj, filepath.c_str()));
-            break;
-        case ysfx_file_type_none:
-            break;
-        default:
-            assert(false);
-        }
-
-        if (file) {
-            int32_t handle = ysfx_insert_file(fx, file.get());
-            if (handle == -1)
-                return -1;
-            (void)file.release();
-            return (EEL_F)(uint32_t)handle;
-        }
+    if (file) {
+        int32_t handle = ysfx_insert_file(fx, file.get());
+        if (handle == -1)
+            return -1;
+        (void)file.release();
+        return (EEL_F)(uint32_t)handle;
     }
 
     return -1;
