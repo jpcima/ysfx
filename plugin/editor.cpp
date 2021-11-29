@@ -121,7 +121,11 @@ void YsfxEditor::Impl::updateInfo()
     }
     m_parametersPanel->setParametersDisplayed(params);
 
-    m_graphicsView->setEffect(m_info->effect.get());
+    ysfx_t *fx = m_info->effect.get();
+    m_graphicsView->setEffect(fx);
+
+    bool hasGfx = ysfx_has_section(fx, ysfx_section_gfx);
+    switchEditor(hasGfx);
 
     m_mustResizeToGfx = true;
     relayoutUILater();
@@ -182,6 +186,7 @@ void YsfxEditor::Impl::switchEditor(bool showGfx)
 {
     juce::String text = showGfx ? TRANS("Graphics") : TRANS("Sliders");
     m_btnSwitchEditor->setButtonText(text);
+    m_btnSwitchEditor->setToggleState(showGfx, juce::dontSendNotification);
 
     relayoutUILater();
 }
