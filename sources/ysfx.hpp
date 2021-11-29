@@ -158,6 +158,8 @@ struct ysfx_s {
         std::atomic<bool> must_init{false};
     } gfx;
 #endif
+
+    std::atomic<uint32_t> ref_count{1};
 };
 
 void ysfx_unload_source(ysfx_t *fx);

@@ -72,6 +72,8 @@ typedef struct ysfx_audio_format_s ysfx_audio_format_t;
 YSFX_API ysfx_config_t *ysfx_config_new();
 // delete a configuration
 YSFX_API void ysfx_config_free(ysfx_config_t *config);
+// increase the reference counter
+YSFX_API void ysfx_config_add_ref(ysfx_config_t *config);
 // set the path of the import root, a folder usually named "Effects"
 YSFX_API void ysfx_set_import_root(ysfx_config_t *config, const char *root);
 // set the path of the data root, a folder usually named "Data"
@@ -103,6 +105,8 @@ typedef struct ysfx_s ysfx_t;
 YSFX_API ysfx_t *ysfx_new(ysfx_config_t *config);
 // delete an effect
 YSFX_API void ysfx_free(ysfx_t *fx);
+// increase the reference counter
+YSFX_API void ysfx_add_ref(ysfx_t *fx);
 
 // get the configuration
 YSFX_API ysfx_config_t *ysfx_get_config(ysfx_t *fx);

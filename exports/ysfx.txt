@@ -1,5 +1,6 @@
 ysfx_config_new
 ysfx_config_free
+ysfx_config_add_ref
 ysfx_set_import_root
 ysfx_set_data_root
 ysfx_get_import_root
@@ -12,6 +13,7 @@ ysfx_set_user_data
 ysfx_log_level_string
 ysfx_new
 ysfx_free
+ysfx_add_ref
 ysfx_get_config
 ysfx_load_file
 ysfx_unload

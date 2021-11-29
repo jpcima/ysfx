@@ -161,7 +161,16 @@ ysfx_t *ysfx_new(ysfx_config_t *config)
 
 void ysfx_free(ysfx_t *fx)
 {
-    delete fx;
+    if (!fx)
+        return;
+
+    if (fx->ref_count.fetch_sub(1, std::memory_order_acq_rel) == 1)
+        delete fx;
+}
+
+void ysfx_add_ref(ysfx_t *fx)
+{
+    fx->ref_count.fetch_add(1, std::memory_order_relaxed);
 }
 
 ysfx_config_t *ysfx_get_config(ysfx_t *fx)

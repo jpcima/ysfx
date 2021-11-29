@@ -31,8 +31,6 @@ struct ysfx_config_s {
     std::atomic<uint32_t> ref_count{1};
 };
 
-void ysfx_config_add_ref(ysfx_config_t *config);
-
 void ysfx_log(ysfx_config_t &conf, ysfx_log_level level, const char *message);
 void ysfx_logfv(ysfx_config_t &conf, ysfx_log_level level, const char *format, va_list ap);
 #if defined(__GNUC__)
