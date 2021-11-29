@@ -70,6 +70,7 @@ target_include_directories(ysfx-private
 target_link_libraries(ysfx-private
     PUBLIC
         ysfx::eel2
+        eel2nasm
         ysfx::wdl-base
         ysfx::dr_libs)
 add_library(ysfx::ysfx-private ALIAS ysfx-private)
@@ -89,6 +90,7 @@ target_include_directories(ysfx PUBLIC "include")
 target_link_libraries(ysfx PRIVATE
     ysfx::ysfx-private
     ysfx::eel2
+    eel2nasm
     ysfx::wdl-base)
 if(YSFX_GFX)
     target_link_libraries(ysfx PUBLIC ysfx::lice)
