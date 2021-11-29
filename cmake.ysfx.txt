@@ -21,7 +21,7 @@
 #    This target is adequate for unit-testing.
 # ------------------------------------------------------------------------------
 add_library(ysfx-private
-    STATIC
+    OBJECT
         "sources/ysfx.cpp"
         "sources/ysfx.hpp"
         "sources/ysfx_config.cpp"
@@ -70,6 +70,7 @@ target_include_directories(ysfx-private
 target_link_libraries(ysfx-private
     PUBLIC
         ysfx::eel2
+        ysfx::wdl-base
         ysfx::dr_libs)
 add_library(ysfx::ysfx-private ALIAS ysfx-private)
 
@@ -83,11 +84,13 @@ endif()
 #    A ysfx target which gives access to the public interface.
 #    This target is adequate for normal use.
 # ------------------------------------------------------------------------------
-add_empty_static_library(ysfx)
-target_include_directories(ysfx
-    PUBLIC
-        "include")
-target_link_libraries(ysfx
-    PRIVATE
-        ysfx::ysfx-private)
+add_library(ysfx STATIC)
+target_include_directories(ysfx PUBLIC "include")
+target_link_libraries(ysfx PRIVATE
+    ysfx::ysfx-private
+    ysfx::eel2
+    ysfx::wdl-base)
+if(YSFX_GFX)
+    target_link_libraries(ysfx PUBLIC ysfx::lice)
+endif()
 add_library(ysfx::ysfx ALIAS ysfx)

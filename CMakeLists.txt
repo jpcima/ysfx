@@ -34,7 +34,6 @@ option(YSFX_SKIP_CHECKSUM "Skip the checksum" OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 include(BuildType)
-include(EmptyStaticLibrary)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

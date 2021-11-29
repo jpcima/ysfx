@@ -24,7 +24,7 @@ endif()
 
 # ysfx::wdl-base
 # ------------------------------------------------------------------------------
-add_library(wdl-base STATIC "thirdparty/WDL/source/WDL/fft.c")
+add_library(wdl-base OBJECT "thirdparty/WDL/source/WDL/fft.c")
 if(WIN32)
     target_sources(wdl-base PRIVATE "thirdparty/WDL/source/WDL/win32_utf8.c")
 endif()
@@ -42,7 +42,7 @@ add_library(ysfx::wdl-base ALIAS wdl-base)
 # ------------------------------------------------------------------------------
 if(YSFX_GFX)
     add_library(lice
-        STATIC
+        OBJECT
             "thirdparty/WDL/source/WDL/lice/lice.cpp"
             "thirdparty/WDL/source/WDL/lice/lice_arc.cpp"
             "thirdparty/WDL/source/WDL/lice/lice_colorspace.cpp"
@@ -52,6 +52,12 @@ if(YSFX_GFX)
             "thirdparty/WDL/source/WDL/lice/lice_texgen.cpp"
             "thirdparty/WDL/source/WDL/lice/lice_text.cpp"
             "thirdparty/WDL/source/WDL/lice/lice_textnew.cpp")
+    target_link_libraries(lice
+        PUBLIC
+            ysfx::wdl-base
+        PRIVATE
+            ysfx::dl
+            Threads::Threads)
     add_library(ysfx::lice ALIAS lice)
 
     # custom image loaders
@@ -65,13 +71,7 @@ if(YSFX_GFX)
             "sources/lice_stb/lice_stb_jpg.cpp"
             "sources/lice_stb/lice_stb_png.cpp"
             "sources/lice_stb/lice_stb_write.cpp")
-    target_link_libraries(lice
-        PUBLIC
-            ysfx::wdl-base
-        PRIVATE
-            ysfx::stb
-            ysfx::dl
-            Threads::Threads)
+    target_link_libraries(lice PRIVATE ysfx::stb)
 
     # SWELL
     if(NOT WIN32)
@@ -129,7 +129,7 @@ endif()
 # ysfx::eel2
 # ------------------------------------------------------------------------------
 add_library(eel2
-    STATIC
+    OBJECT
         "thirdparty/WDL/source/WDL/eel2/nseel-caltab.c"
         "thirdparty/WDL/source/WDL/eel2/nseel-cfunc.c"
         "thirdparty/WDL/source/WDL/eel2/nseel-compiler.c"
