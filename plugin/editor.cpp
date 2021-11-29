@@ -110,7 +110,7 @@ void YsfxEditor::Impl::updateGfx()
     YsfxGraphicsView *view = m_graphicsView.get();
 
     ///
-    ysfx_gfx_send_mouse(fx, view->YsfxMouseMods, view->YsfxMouseX, view->YsfxMouseY, view->YsfxMouseButtons, view->YsfxWheel, view->YsfxHWheel);
+    ysfx_gfx_update_mouse(fx, view->YsfxMouseMods, view->YsfxMouseX, view->YsfxMouseY, view->YsfxMouseButtons, view->YsfxWheel, view->YsfxHWheel);
     view->YsfxWheel = 0;
     view->YsfxHWheel = 0;
 

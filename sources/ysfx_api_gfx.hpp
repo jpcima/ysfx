@@ -29,7 +29,7 @@ void ysfx_gfx_state_set_bitmap(ysfx_gfx_state_t *state, uint8_t *data, uint32_t 
 void ysfx_gfx_state_set_scale_factor(ysfx_gfx_state_t *state, ysfx_real scale);
 bool ysfx_gfx_state_is_dirty(ysfx_gfx_state_t *state);
 void ysfx_gfx_state_add_key(ysfx_gfx_state_t *state, uint32_t mods, uint32_t key, bool press);
-void ysfx_gfx_state_send_mouse(ysfx_gfx_state_t *state, uint32_t mods, int xpos, int ypos, uint32_t buttons, int wheel, int hwheel);
+void ysfx_gfx_state_update_mouse(ysfx_gfx_state_t *state, uint32_t mods, int xpos, int ypos, uint32_t buttons, int wheel, int hwheel);
 
 //------------------------------------------------------------------------------
 void ysfx_gfx_enter(ysfx_t *fx, bool doinit);

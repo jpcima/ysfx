@@ -67,5 +67,5 @@ ysfx_read_vmem
 ysfx_gfx_setup
 ysfx_gfx_wants_retina
 ysfx_gfx_add_key
-ysfx_gfx_send_mouse
+ysfx_gfx_update_mouse
 ysfx_gfx_run

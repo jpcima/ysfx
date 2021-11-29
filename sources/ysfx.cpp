@@ -1417,7 +1417,7 @@ void ysfx_gfx_add_key(ysfx_t *fx, uint32_t mods, uint32_t key, bool press)
 #endif
 }
 
-void ysfx_gfx_send_mouse(ysfx_t *fx, uint32_t mods, int32_t xpos, int32_t ypos, uint32_t buttons, ysfx_real wheel, ysfx_real hwheel)
+void ysfx_gfx_update_mouse(ysfx_t *fx, uint32_t mods, int32_t xpos, int32_t ypos, uint32_t buttons, ysfx_real wheel, ysfx_real hwheel)
 {
 #if !defined(YSFX_NO_GFX)
     bool doinit = true;
