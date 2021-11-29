@@ -116,7 +116,6 @@ if(YSFX_GFX)
             "thirdparty/WDL/source/WDL/lice/lice_texgen.cpp"
             "thirdparty/WDL/source/WDL/lice/lice_text.cpp"
             "thirdparty/WDL/source/WDL/lice/lice_textnew.cpp")
-    target_link_libraries(lice PUBLIC ysfx::swell)
     add_library(ysfx::lice ALIAS lice)
 
     # custom image loaders
@@ -130,11 +129,65 @@ if(YSFX_GFX)
             "sources/lice_stb/lice_stb_jpg.cpp"
             "sources/lice_stb/lice_stb_png.cpp"
             "sources/lice_stb/lice_stb_write.cpp")
-    target_link_libraries(lice PRIVATE ysfx::stb)
+    target_link_libraries(lice
+        PUBLIC
+            ysfx::wdl-base
+        PRIVATE
+            ysfx::stb
+            ysfx::dl
+            Threads::Threads)
 
-    # lice and swell codependence
-    target_link_libraries(lice PUBLIC ysfx::swell)
-    target_link_libraries(swell PUBLIC ysfx::lice)
+    # SWELL
+    if(NOT WIN32)
+        target_sources(lice
+            PRIVATE
+                "thirdparty/WDL/source/WDL/swell/swell-ini.cpp"
+                "thirdparty/WDL/source/WDL/swell/swell.cpp")
+        if(NOT APPLE)
+            target_sources(lice
+                PRIVATE
+                    "thirdparty/WDL/source/WDL/swell/swell-appstub-generic.cpp"
+                    "thirdparty/WDL/source/WDL/swell/swell-dlg-generic.cpp"
+                    "thirdparty/WDL/source/WDL/swell/swell-gdi-generic.cpp"
+                    "thirdparty/WDL/source/WDL/swell/swell-gdi-lice.cpp"
+                    "thirdparty/WDL/source/WDL/swell/swell-generic-gdk.cpp"
+                    "thirdparty/WDL/source/WDL/swell/swell-generic-headless.cpp"
+                    "thirdparty/WDL/source/WDL/swell/swell-kb-generic.cpp"
+                    "thirdparty/WDL/source/WDL/swell/swell-menu-generic.cpp"
+                    "thirdparty/WDL/source/WDL/swell/swell-misc-generic.cpp"
+                    "thirdparty/WDL/source/WDL/swell/swell-miscdlg-generic.cpp"
+                    "thirdparty/WDL/source/WDL/swell/swell-modstub-generic.cpp"
+                    "thirdparty/WDL/source/WDL/swell/swell-wnd-generic.cpp")
+                target_compile_definitions(lice PUBLIC "SWELL_LICE_GDI")
+                if(TARGET Fontconfig::Fontconfig)
+                    target_compile_definitions(lice PUBLIC "SWELL_FONTCONFIG")
+                    target_link_libraries(lice PRIVATE Fontconfig::Fontconfig)
+                endif()
+                if(TARGET Freetype::Freetype)
+                    target_compile_definitions(lice PUBLIC "SWELL_FREETYPE")
+                    target_link_libraries(lice PRIVATE Freetype::Freetype)
+                endif()
+        else()
+            target_sources(lice
+                PRIVATE
+                    "thirdparty/WDL/source/WDL/swell/swell-appstub.mm"
+                    "thirdparty/WDL/source/WDL/swell/swell-dlg.mm"
+                    "thirdparty/WDL/source/WDL/swell/swell-gdi.mm"
+                    "thirdparty/WDL/source/WDL/swell/swell-kb.mm"
+                    "thirdparty/WDL/source/WDL/swell/swell-menu.mm"
+                    "thirdparty/WDL/source/WDL/swell/swell-misc.mm"
+                    "thirdparty/WDL/source/WDL/swell/swell-miscdlg.mm"
+                    "thirdparty/WDL/source/WDL/swell/swell-modstub.mm"
+                    "thirdparty/WDL/source/WDL/swell/swell-wnd.mm"
+                    "thirdparty/WDL/source/WDL/swell/swellappmain.mm")
+            target_link_libraries(lice
+                PRIVATE
+                    Apple::Cocoa
+                    Apple::Carbon
+                    Apple::Foundation
+                    Apple::Metal)
+        endif()
+    endif()
 endif()
 
 # ysfx::eel2
