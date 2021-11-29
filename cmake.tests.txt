@@ -19,7 +19,7 @@
 include(CTest)
 find_package(SndFile)
 
-# ysfx::catch
+# catch
 # ------------------------------------------------------------------------------
 
 include(FetchContent)
@@ -35,12 +35,11 @@ endif()
 
 add_library(catch INTERFACE)
 target_include_directories(catch INTERFACE "${catch_SOURCE_DIR}/single_include/catch2")
-add_library(ysfx::catch ALIAS catch)
 
 list(APPEND CMAKE_MODULE_PATH "${catch_SOURCE_DIR}/contrib")
 include(Catch)
 
-# ysfx::tests
+# tests
 # ------------------------------------------------------------------------------
 
 add_executable(ysfx_tests
@@ -57,13 +56,13 @@ add_executable(ysfx_tests
     "tests/ysfx_test_main.cpp")
 target_link_libraries(ysfx_tests
     PRIVATE
-        ysfx::ysfx-private
-        ysfx::eel2
+        ysfx-private
+        eel2
         eel2nasm
-        ysfx::wdl-base
-        ysfx::catch)
+        wdl-base
+        catch)
 if(YSFX_GFX)
-    target_link_libraries(ysfx_tests PUBLIC ysfx::lice)
+    target_link_libraries(ysfx_tests PUBLIC lice)
 endif()
 if(TARGET SndFile::sndfile)
     target_compile_definitions(ysfx_tests

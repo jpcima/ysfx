@@ -22,7 +22,7 @@ if(NOT YSFX_PORTABLE AND MSVC AND MSVC_C_ARCHITECTURE_ID STREQUAL "x64")
     endif()
 endif()
 
-# ysfx::wdl-base
+# wdl-base
 # ------------------------------------------------------------------------------
 add_library(wdl-base OBJECT "thirdparty/WDL/source/WDL/fft.c")
 if(WIN32)
@@ -36,9 +36,8 @@ if(MSVC)
     target_compile_definitions(wdl-base PRIVATE "_CRT_NONSTDC_NO_WARNINGS")
 endif()
 target_include_directories(wdl-base PUBLIC "thirdparty/WDL/source")
-add_library(ysfx::wdl-base ALIAS wdl-base)
 
-# ysfx::lice
+# lice
 # ------------------------------------------------------------------------------
 if(YSFX_GFX)
     add_library(lice
@@ -54,11 +53,10 @@ if(YSFX_GFX)
             "thirdparty/WDL/source/WDL/lice/lice_textnew.cpp")
     target_link_libraries(lice
         PUBLIC
-            ysfx::wdl-base
+            wdl-base
         PRIVATE
-            ysfx::dl
+            dl
             Threads::Threads)
-    add_library(ysfx::lice ALIAS lice)
 
     # custom image loaders
     target_sources(lice
@@ -71,7 +69,7 @@ if(YSFX_GFX)
             "sources/lice_stb/lice_stb_jpg.cpp"
             "sources/lice_stb/lice_stb_png.cpp"
             "sources/lice_stb/lice_stb_write.cpp")
-    target_link_libraries(lice PRIVATE ysfx::stb)
+    target_link_libraries(lice PRIVATE stb)
 
     # SWELL
     if(NOT WIN32)
@@ -125,7 +123,7 @@ if(YSFX_GFX)
     endif()
 endif()
 
-# ysfx::eel2
+# eel2
 # ------------------------------------------------------------------------------
 add_library(eel2
     OBJECT
@@ -161,10 +159,9 @@ if(MSVC)
 endif()
 target_link_libraries(eel2
     PUBLIC
-        ysfx::wdl-base
+        wdl-base
     PRIVATE
         Threads::Threads)
-add_library(ysfx::eel2 ALIAS eel2)
 
 if(NOT YSFX_SKIP_CHECKSUM)
     # Verify if the reference ASM file has been modified.

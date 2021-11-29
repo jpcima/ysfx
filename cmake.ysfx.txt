@@ -16,7 +16,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-# ysfx::ysfx-private
+# ysfx-private
 #    A ysfx target which gives access to the internals.
 #    This target is adequate for unit-testing.
 # ------------------------------------------------------------------------------
@@ -69,14 +69,13 @@ target_include_directories(ysfx-private
         "sources")
 target_link_libraries(ysfx-private
     PUBLIC
-        ysfx::eel2
+        eel2
         eel2nasm
-        ysfx::wdl-base
-        ysfx::dr_libs)
-add_library(ysfx::ysfx-private ALIAS ysfx-private)
+        wdl-base
+        dr_libs)
 
 if(YSFX_GFX)
-    target_link_libraries(ysfx-private PUBLIC ysfx::lice)
+    target_link_libraries(ysfx-private PUBLIC lice)
 else()
     target_compile_definitions(ysfx-private PUBLIC "YSFX_NO_GFX")
 endif()
@@ -88,11 +87,11 @@ endif()
 add_library(ysfx STATIC)
 target_include_directories(ysfx PUBLIC "include")
 target_link_libraries(ysfx PRIVATE
-    ysfx::ysfx-private
-    ysfx::eel2
+    ysfx-private
+    eel2
     eel2nasm
-    ysfx::wdl-base)
+    wdl-base)
 if(YSFX_GFX)
-    target_link_libraries(ysfx PUBLIC ysfx::lice)
+    target_link_libraries(ysfx PUBLIC lice)
 endif()
 add_library(ysfx::ysfx ALIAS ysfx)

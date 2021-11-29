@@ -51,7 +51,7 @@ if(NOT WIN32 AND NOT APPLE)
     endif()
 endif()
 
-# ysfx::dl
+# dl
 # ------------------------------------------------------------------------------
 add_library(dl INTERFACE)
 if(NOT WIN32)
@@ -60,16 +60,13 @@ if(NOT WIN32)
         target_link_libraries(dl INTERFACE "${DL_LIBRARY}")
     endif()
 endif()
-add_library(ysfx::dl ALIAS dl)
 
-# ysfx::dr_libs
+# dr_libs
 # ------------------------------------------------------------------------------
 add_library(dr_libs INTERFACE)
 target_include_directories(dr_libs INTERFACE "thirdparty/dr_libs")
-add_library(ysfx::dr_libs ALIAS dr_libs)
 
-# ysfx::stb
+# stb
 # ------------------------------------------------------------------------------
 add_library(stb INTERFACE)
 target_include_directories(stb INTERFACE "thirdparty/stb")
-add_library(ysfx::stb ALIAS stb)
