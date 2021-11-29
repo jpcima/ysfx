@@ -446,6 +446,7 @@ void ysfx_unload_code(ysfx_t *fx)
     NSEEL_code_compile_ex(vm, nullptr, 0, NSEEL_CODE_COMPILE_FLAG_COMMONFUNCS_RESET);
     NSEEL_VM_remove_unused_vars(vm);
     NSEEL_VM_remove_all_nonreg_vars(vm);
+    NSEEL_VM_freeRAM(vm);
 }
 
 void ysfx_unload(ysfx_t *fx)
