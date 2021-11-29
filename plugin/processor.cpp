@@ -19,6 +19,7 @@
 #include "editor.h"
 #include "parameter.h"
 #include "info.h"
+#include "utility/audio_processor_suspender.h"
 #include "utility/rt_semaphore.h"
 #include "ysfx.h"
 #include <atomic>
@@ -43,15 +44,6 @@ struct YsfxProcessor::Impl : public juce::AudioProcessorListener {
     void syncSlidersToParameters();
     void syncParameterToSlider(int index);
     void syncSliderToParameter(int index);
-
-    //==========================================================================
-    class Suspender {
-    public:
-        Suspender(juce::AudioProcessor &p) : m_p(p) { p.suspendProcessing(true); }
-        ~Suspender() { m_p.suspendProcessing(false); }
-    private:
-        juce::AudioProcessor &m_p;
-    };
 
     //==========================================================================
     struct LoadRequest : public std::enable_shared_from_this<LoadRequest> {
@@ -492,8 +484,8 @@ void YsfxProcessor::Impl::Background::run()
     while (m_sema.wait(), m_running.load(std::memory_order_relaxed)) {
         if (LoadRequest::Ptr loadRequest = std::atomic_exchange(&m_impl->m_loadRequest, LoadRequest::Ptr{})) {
             {
-                Suspender sus(*m_impl->m_self);
-                juce::ScopedLock lock(m_impl->m_self->getCallbackLock());
+                AudioProcessorSuspender sus{*m_impl->m_self};
+                sus.lockCallbacks();
                 //
                 ysfx_t *fx = m_impl->m_fx.get();
                 ysfx_config_t *config = ysfx_get_config(fx);

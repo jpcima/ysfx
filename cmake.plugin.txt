@@ -54,6 +54,7 @@ target_sources(ysfx_plugin
         "plugin/components/parameters_panel.h"
         "plugin/components/graphics_view.cpp"
         "plugin/components/graphics_view.h"
+        "plugin/utility/audio_processor_suspender.h"
         "plugin/utility/functional_timer.h"
         "plugin/utility/rt_semaphore.cpp"
         "plugin/utility/rt_semaphore.h")
