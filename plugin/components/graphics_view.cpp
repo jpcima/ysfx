@@ -25,8 +25,6 @@
 YsfxGraphicsView::YsfxGraphicsView()
 {
     setWantsKeyboardFocus(true);
-
-    m_gfxTimer.reset(FunctionalTimer::create([this]() { updateGfx(); }));
 }
 
 void YsfxGraphicsView::setEffect(ysfx_t *fx)
@@ -35,40 +33,45 @@ void YsfxGraphicsView::setEffect(ysfx_t *fx)
         return;
 
     m_fx.reset(fx);
-    if (!fx) {
-        m_gfxTimer->stopTimer();
+    if (fx)
+        ysfx_add_ref(fx);
+
+    if (!fx || !ysfx_has_section(fx, ysfx_section_gfx)) {
+        m_gfxTimer.reset();
         repaint();
     }
     else {
-        ysfx_add_ref(fx);
+        m_gfxTimer.reset(FunctionalTimer::create([this]() { updateGfx(); }));
         m_gfxTimer->startTimerHz(30);
     }
 }
 
 void YsfxGraphicsView::paint(juce::Graphics &g)
 {
-    juce::Point<int> off = getDisplayOffset();
+    ysfx_t *fx = m_fx.get();
 
-    if (m_bitmapScale == 1)
-        g.drawImageAt(m_bitmap, off.x, off.y);
-    else {
-        juce::Rectangle<int> dest{off.x, off.y, m_bitmapUnscaledWidth, m_bitmapUnscaledHeight};
-        g.drawImage(m_bitmap, dest.toFloat());
+    if (fx && ysfx_has_section(fx, ysfx_section_gfx)) {
+        juce::Point<int> off = getDisplayOffset();
+
+        if (m_bitmapScale == 1)
+            g.drawImageAt(m_bitmap, off.x, off.y);
+        else {
+            juce::Rectangle<int> dest{off.x, off.y, m_bitmapUnscaledWidth, m_bitmapUnscaledHeight};
+            g.drawImage(m_bitmap, dest.toFloat());
+        }
     }
+    else {
+        juce::Rectangle<int> bounds = getLocalBounds();
 
-    // TODO draw a placeholder thing if the effect does not have @gfx
-#if 0
-    juce::Rectangle<int> bounds = getLocalBounds();
+        g.setColour(juce::Colours::white);
+        g.drawRect(bounds);
 
-    g.setColour(juce::Colours::white);
-    g.drawRect(bounds);
+        juce::Font font;
+        font.setHeight(32.0f);
 
-    juce::Font font;
-    font.setHeight(32.0f);
-
-    g.setFont(font);
-    g.drawText(TRANS("Graphics not implemented"), bounds, juce::Justification::centred);
-#endif
+        g.setFont(font);
+        g.drawText(TRANS("No graphics"), bounds, juce::Justification::centred);
+    }
 }
 
 void YsfxGraphicsView::resized()
