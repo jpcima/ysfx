@@ -27,6 +27,7 @@ public:
     void configureGfx(int gfxWidth, int gfxHeight, bool gfxWantRetina);
     juce::Image &getBitmap() { return m_bitmap; }
     double getBitmapScale() const { return m_bitmapScale; }
+    juce::Point<int> getDisplayOffset() const;
 
     std::function<void(uint32_t, uint32_t)> OnYsfxKeyPressed;
     std::function<void(uint32_t, uint32_t)> OnYsfxKeyReleased;

@@ -40,10 +40,12 @@ void YsfxGraphicsView::configureGfx(int gfxWidth, int gfxHeight, bool gfxWantRet
 
 void YsfxGraphicsView::paint(juce::Graphics &g)
 {
+    juce::Point<int> off = getDisplayOffset();
+
     if (m_bitmapScale == 1)
-        g.drawImageAt(m_bitmap, 0, 0);
+        g.drawImageAt(m_bitmap, off.x, off.y);
     else {
-        juce::Rectangle<int> dest{0, 0, m_bitmapUnscaledWidth, m_bitmapUnscaledHeight};
+        juce::Rectangle<int> dest{off.x, off.y, m_bitmapUnscaledWidth, m_bitmapUnscaledHeight};
         g.drawImage(m_bitmap, dest.toFloat());
     }
 
@@ -246,6 +248,20 @@ void YsfxGraphicsView::updateYsfxMouseStatus(const juce::MouseEvent &event)
     if (event.mods.isRightButtonDown())
         YsfxMouseButtons |= ysfx_button_right;
 
-    YsfxMouseX = juce::roundToInt(event.x * m_bitmapScale);
-    YsfxMouseY = juce::roundToInt(event.y * m_bitmapScale);
+    juce::Point<int> off = getDisplayOffset();
+    YsfxMouseX = juce::roundToInt((event.x - off.x) * m_bitmapScale);
+    YsfxMouseY = juce::roundToInt((event.y - off.y) * m_bitmapScale);
+}
+
+juce::Point<int> YsfxGraphicsView::getDisplayOffset() const
+{
+    int w = getWidth();
+    int h = getHeight();
+    int bw = m_bitmapUnscaledWidth;
+    int bh = m_bitmapUnscaledHeight;
+
+    juce::Point<int> pt;
+    pt.x = (bw < w) ? ((w - bw) / 2) : 0;
+    pt.y = (bh < h) ? ((h - bh) / 2) : 0;
+    return pt;
 }

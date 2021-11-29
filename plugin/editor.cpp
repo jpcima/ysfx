@@ -35,6 +35,7 @@ struct YsfxEditor::Impl {
     std::unique_ptr<juce::FileChooser> m_fileChooser;
     std::unique_ptr<juce::PopupMenu> m_recentFilesPopup;
     bool m_fileChooserActive = false;
+    bool m_mustResizeToGfx = true;
 
     //==========================================================================
     void updateInfo();
@@ -61,7 +62,11 @@ struct YsfxEditor::Impl {
     void createUI();
     void connectUI();
     void relayoutUI();
+    void relayoutUILater();
 };
+
+static const int defaultEditorWidth = 800;
+static const int defaultEditorHeight = 600;
 
 YsfxEditor::YsfxEditor(YsfxProcessor &proc)
     : juce::AudioProcessorEditor(proc),
@@ -71,11 +76,11 @@ YsfxEditor::YsfxEditor(YsfxProcessor &proc)
     m_impl->m_proc = &proc;
     m_impl->m_info = proc.getCurrentInfo();
 
-    setSize(800, 600);
+    setSize(defaultEditorWidth, defaultEditorHeight);
     setResizable(true, true);
     m_impl->createUI();
     m_impl->connectUI();
-    m_impl->relayoutUI();
+    m_impl->relayoutUILater();
 
     m_impl->updateInfo();
 }
@@ -86,12 +91,7 @@ YsfxEditor::~YsfxEditor()
 
 void YsfxEditor::resized()
 {
-    juce::Timer *timer = m_impl->m_relayoutTimer.get();
-    if (!timer) {
-        timer = FunctionalTimer::create([this]() { m_impl->relayoutUI(); });
-        m_impl->m_relayoutTimer.reset(timer);
-    }
-    timer->startTimer(0);
+    m_impl->relayoutUILater();
 }
 
 void YsfxEditor::Impl::grabInfoAndUpdate()
@@ -154,7 +154,9 @@ void YsfxEditor::Impl::updateInfo()
             params.add(m_proc->getYsfxParameter((int)i));
     }
     m_parametersPanel->setParametersDisplayed(params);
-    m_parametersPanel->setSize(m_centerViewPort->getWidth(), m_parametersPanel->getRecommendedHeight(m_centerViewPort->getHeight()));
+
+    m_mustResizeToGfx = true;
+    relayoutUILater();
 }
 
 void YsfxEditor::Impl::chooseFileAndLoad()
@@ -213,7 +215,7 @@ void YsfxEditor::Impl::switchEditor(bool showGfx)
     juce::String text = showGfx ? TRANS("Graphics") : TRANS("Sliders");
     m_btnSwitchEditor->setButtonText(text);
 
-    relayoutUI();
+    relayoutUILater();
 }
 
 juce::RecentlyOpenedFilesList YsfxEditor::Impl::loadRecentFiles()
@@ -297,6 +299,13 @@ void YsfxEditor::Impl::connectUI()
 
 void YsfxEditor::Impl::relayoutUI()
 {
+    if (m_mustResizeToGfx) {
+        int w = juce::jmax(defaultEditorWidth, m_info->gfxWidth + 10);
+        int h = juce::jmax(defaultEditorHeight, m_info->gfxHeight + 50 + 10);
+        m_self->setSize(w, h);
+        m_mustResizeToGfx = false;
+    }
+
     juce::Rectangle<int> temp;
     const juce::Rectangle<int> bounds = m_self->getLocalBounds();
 
@@ -329,4 +338,11 @@ void YsfxEditor::Impl::relayoutUI()
 
     if (m_relayoutTimer)
         m_relayoutTimer->stopTimer();
+}
+
+void YsfxEditor::Impl::relayoutUILater()
+{
+    if (!m_relayoutTimer)
+        m_relayoutTimer.reset(FunctionalTimer::create([this]() { relayoutUI(); }));
+    m_relayoutTimer->startTimer(0);
 }
