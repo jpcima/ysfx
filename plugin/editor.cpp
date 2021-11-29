@@ -31,6 +31,7 @@ struct YsfxEditor::Impl {
     YsfxInfo::Ptr m_info;
     std::unique_ptr<juce::Timer> m_infoTimer;
     std::unique_ptr<juce::Timer> m_gfxTimer;
+    std::unique_ptr<juce::Timer> m_relayoutTimer;
     std::unique_ptr<juce::FileChooser> m_fileChooser;
     std::unique_ptr<juce::PopupMenu> m_recentFilesPopup;
     bool m_fileChooserActive = false;
@@ -71,6 +72,7 @@ YsfxEditor::YsfxEditor(YsfxProcessor &proc)
     m_impl->m_info = proc.getCurrentInfo();
 
     setSize(800, 600);
+    setResizable(true, true);
     m_impl->createUI();
     m_impl->connectUI();
     m_impl->relayoutUI();
@@ -80,6 +82,16 @@ YsfxEditor::YsfxEditor(YsfxProcessor &proc)
 
 YsfxEditor::~YsfxEditor()
 {
+}
+
+void YsfxEditor::resized()
+{
+    juce::Timer *timer = m_impl->m_relayoutTimer.get();
+    if (!timer) {
+        timer = FunctionalTimer::create([this]() { m_impl->relayoutUI(); });
+        m_impl->m_relayoutTimer.reset(timer);
+    }
+    timer->startTimer(0);
 }
 
 void YsfxEditor::Impl::grabInfoAndUpdate()
@@ -314,4 +326,7 @@ void YsfxEditor::Impl::relayoutUI()
     }
 
     m_centerViewPort->setViewedComponent(viewed, false);
+
+    if (m_relayoutTimer)
+        m_relayoutTimer->stopTimer();
 }

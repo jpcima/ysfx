@@ -23,7 +23,10 @@ class YsfxProcessor;
 class YsfxEditor : public juce::AudioProcessorEditor {
 public:
     explicit YsfxEditor(YsfxProcessor &proc);
-    ~YsfxEditor();
+    ~YsfxEditor() override;
+
+protected:
+    void resized() override;
 
 private:
     struct Impl;
