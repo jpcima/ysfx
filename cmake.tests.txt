@@ -59,6 +59,7 @@ target_link_libraries(ysfx_tests
     PRIVATE
         ysfx::ysfx-private
         ysfx::eel2
+        eel2nasm
         ysfx::wdl-base
         ysfx::catch)
 if(YSFX_GFX)

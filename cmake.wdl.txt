@@ -137,13 +137,14 @@ add_library(eel2
         "thirdparty/WDL/source/WDL/eel2/nseel-lextab.c"
         "thirdparty/WDL/source/WDL/eel2/nseel-ram.c"
         "thirdparty/WDL/source/WDL/eel2/nseel-yylex.c")
+add_library(eel2nasm OBJECT IMPORTED)
 if(YSFX_PORTABLE)
     target_compile_definitions(eel2 PUBLIC "EEL_TARGET_PORTABLE")
 else()
     if(NOT MSVC)
         target_sources(eel2 PRIVATE "sources/eel2-gas/sources/asm-nseel-x64-sse.S")
     elseif(MSVC_C_ARCHITECTURE_ID STREQUAL "x64")
-        target_sources(eel2 PRIVATE "asm-nseel-x64-sse.obj")
+        set_property(TARGET eel2nasm PROPERTY IMPORTED_OBJECTS "${CMAKE_CURRENT_BINARY_DIR}/asm-nseel-x64-sse.obj")
         add_custom_command(
             OUTPUT "asm-nseel-x64-sse.obj"
             COMMAND "${NASM_PROGRAM}" "-f" "win64" "-o" "${CMAKE_CURRENT_BINARY_DIR}/asm-nseel-x64-sse.obj" "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/WDL/source/WDL/eel2/asm-nseel-x64-sse.asm"
