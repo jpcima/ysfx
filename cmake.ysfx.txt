@@ -95,3 +95,26 @@ if(YSFX_GFX)
     target_link_libraries(ysfx PUBLIC lice)
 endif()
 add_library(ysfx::ysfx ALIAS ysfx)
+
+# generate the function export list
+add_custom_command(
+    OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/exports/ysfx.txt"
+    COMMAND "${CMAKE_COMMAND}" "-P" "${PROJECT_SOURCE_DIR}/cmake/ExtractYsfxExports.cmake"
+    DEPENDS "${PROJECT_SOURCE_DIR}/cmake/ExtractYsfxExports.cmake"
+    DEPENDS "include/ysfx.h"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+add_custom_target(ysfx-api DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/exports/ysfx.txt")
+add_dependencies(ysfx ysfx-api)
+
+# strip the static library, to keep API symbols only (on supported platforms)
+if(YSFX_DEEP_STRIP OR CMAKE_BUILD_TYPE STREQUAL "Release")
+    if(NOT APPLE AND NOT WIN32)
+        if(OBJCOPY_PROGRAM AND RANLIB_PROGRAM)
+            add_custom_command(
+                TARGET ysfx POST_BUILD
+                COMMAND "${OBJCOPY_PROGRAM}" "--keep-symbols=${CMAKE_CURRENT_SOURCE_DIR}/exports/ysfx.txt" "--strip-all" "$<TARGET_FILE:ysfx>"
+                COMMAND "${RANLIB_PROGRAM}" "$<TARGET_FILE:ysfx>"
+                VERBATIM)
+        endif()
+    endif()
+endif()

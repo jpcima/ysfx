@@ -22,6 +22,19 @@ find_package(Threads REQUIRED)
 # ------------------------------------------------------------------------------
 find_program(NASM_PROGRAM "nasm")
 
+# binutils
+# ------------------------------------------------------------------------------
+if(NOT APPLE AND NOT WIN32)
+    find_program(OBJCOPY_PROGRAM "objcopy")
+    find_program(RANLIB_PROGRAM "ranlib")
+    if(NOT OBJCOPY_PROGRAM)
+        message(WARNING "objcopy is missing, library cleanup will be skipped")
+    endif()
+    if(NOT RANLIB_PROGRAM)
+        message(WARNING "ranlib is missing, library cleanup will be skipped")
+    endif()
+endif()
+
 # Apple frameworks
 # ------------------------------------------------------------------------------
 

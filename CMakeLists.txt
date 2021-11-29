@@ -31,6 +31,7 @@ option(YSFX_PLUGIN "Build audio plugin" "${YSFX_BUILD_FROM_HERE}")
 option(YSFX_TESTS "Build unit tests" OFF)
 option(YSFX_TOOLS "Build tools" OFF)
 option(YSFX_SKIP_CHECKSUM "Skip the checksum" OFF)
+option(YSFX_DEEP_STRIP "Strip the library clean of non-API symbols (if platform supports)" OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 include(BuildType)
