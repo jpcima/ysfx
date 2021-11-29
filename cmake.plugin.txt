@@ -25,7 +25,7 @@ FetchContent_Declare(juce
 FetchContent_GetProperties(juce)
 if(NOT juce_POPULATED)
   FetchContent_Populate(juce)
-  add_subdirectory("${juce_SOURCE_DIR}" "${juce_BINARY_DIR}")
+  add_subdirectory("${juce_SOURCE_DIR}" "${juce_BINARY_DIR}" EXCLUDE_FROM_ALL)
 endif()
 
 juce_add_plugin(ysfx_plugin

@@ -21,3 +21,6 @@ add_executable(ysfx_tool
 target_link_libraries(ysfx_tool
     PRIVATE
         ysfx::ysfx)
+install(
+    TARGETS ysfx_tool
+    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")

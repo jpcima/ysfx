@@ -96,6 +96,8 @@ if(YSFX_GFX)
 endif()
 add_library(ysfx::ysfx ALIAS ysfx)
 
+set_property(TARGET ysfx PROPERTY PUBLIC_HEADER "include/ysfx.h")
+
 # generate the function export list
 add_custom_command(
     OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/exports/ysfx.txt"
@@ -118,3 +120,9 @@ if(YSFX_DEEP_STRIP OR CMAKE_BUILD_TYPE STREQUAL "Release")
         endif()
     endif()
 endif()
+
+# install
+install(
+    TARGETS ysfx
+    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
