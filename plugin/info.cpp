@@ -56,6 +56,8 @@ YsfxInfo::YsfxInfo()
 YsfxInfo::Ptr YsfxInfo::extractFrom(ysfx_t *fx)
 {
     YsfxInfo::Ptr info{new YsfxInfo};
+    ysfx_add_ref(fx);
+    info->effect.reset(fx);
     info->name = juce::CharPointer_UTF8(ysfx_get_name(fx));
     info->path = juce::CharPointer_UTF8(ysfx_get_file_path(fx));
     info->isLoaded = ysfx_is_loaded(fx);

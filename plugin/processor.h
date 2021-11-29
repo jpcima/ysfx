@@ -28,7 +28,6 @@ public:
     YsfxProcessor();
     ~YsfxProcessor() override;
 
-    ysfx_t *getYsfx();
     YsfxParameter *getYsfxParameter(int sliderIndex);
     void loadJsfxFile(const juce::String &filePath, ysfx_state_t *initialState, bool async);
     YsfxInfo::Ptr getCurrentInfo();

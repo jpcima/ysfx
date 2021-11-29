@@ -16,6 +16,7 @@
 //
 
 #pragma once
+#include "ysfx.h"
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <functional>
 #include <list>
@@ -23,20 +24,7 @@
 class YsfxGraphicsView : public juce::Component {
 public:
     YsfxGraphicsView();
-
-    void configureGfx(int gfxWidth, int gfxHeight, bool gfxWantRetina);
-    juce::Image &getBitmap() { return m_bitmap; }
-    double getBitmapScale() const { return m_bitmapScale; }
-    juce::Point<int> getDisplayOffset() const;
-
-    std::function<void(uint32_t, uint32_t)> OnYsfxKeyPressed;
-    std::function<void(uint32_t, uint32_t)> OnYsfxKeyReleased;
-    uint32_t YsfxMouseMods = 0;
-    uint32_t YsfxMouseButtons = 0;
-    int32_t YsfxMouseX = 0;
-    int32_t YsfxMouseY = 0;
-    double YsfxWheel = 0;
-    double YsfxHWheel = 0;
+    void setEffect(ysfx_t *fx);
 
 protected:
     void paint(juce::Graphics &g) override;
@@ -50,10 +38,19 @@ protected:
     void mouseWheelMove(const juce::MouseEvent &event, const juce::MouseWheelDetails &wheel) override;
 
 private:
+    void configureGfx(int gfxWidth, int gfxHeight, bool gfxWantRetina);
+    juce::Image &getBitmap() { return m_bitmap; }
+    double getBitmapScale() const { return m_bitmapScale; }
+    juce::Point<int> getDisplayOffset() const;
+
+    void updateGfx();
     void updateBitmap();
     void updateYsfxMouseStatus(const juce::MouseEvent &event);
 
 private:
+    ysfx_u m_fx;
+    std::unique_ptr<juce::Timer> m_gfxTimer;
+
     int m_gfxWidth = 0;
     int m_gfxHeight = 0;
     bool m_wantRetina = false;
@@ -69,4 +66,11 @@ private:
     };
 
     std::list<KeyPressed> m_keysPressed;
+
+    uint32_t m_ysfxMouseMods = 0;
+    uint32_t m_ysfxMouseButtons = 0;
+    int32_t m_ysfxMouseX = 0;
+    int32_t m_ysfxMouseY = 0;
+    double m_ysfxWheel = 0;
+    double m_ysfxHWheel = 0;
 };

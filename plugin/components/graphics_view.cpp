@@ -16,6 +16,7 @@
 //
 
 #include "graphics_view.h"
+#include "utility/functional_timer.h"
 #include <ysfx.h>
 #include <map>
 #include <cmath>
@@ -24,18 +25,24 @@
 YsfxGraphicsView::YsfxGraphicsView()
 {
     setWantsKeyboardFocus(true);
+
+    m_gfxTimer.reset(FunctionalTimer::create([this]() { updateGfx(); }));
 }
 
-void YsfxGraphicsView::configureGfx(int gfxWidth, int gfxHeight, bool gfxWantRetina)
+void YsfxGraphicsView::setEffect(ysfx_t *fx)
 {
-    if (m_gfxWidth == gfxWidth && m_gfxHeight == gfxHeight && m_wantRetina == gfxWantRetina)
+    if (m_fx.get() == fx)
         return;
 
-    m_gfxWidth = gfxWidth;
-    m_gfxHeight = gfxHeight;
-    m_wantRetina = gfxWantRetina;
-
-    updateBitmap();
+    m_fx.reset(fx);
+    if (!fx) {
+        m_gfxTimer->stopTimer();
+        repaint();
+    }
+    else {
+        ysfx_add_ref(fx);
+        m_gfxTimer->startTimerHz(30);
+    }
 }
 
 void YsfxGraphicsView::paint(juce::Graphics &g)
@@ -151,8 +158,7 @@ bool YsfxGraphicsView::keyPressed(const juce::KeyPress &key)
     translateKeyPress(key, kp.ykey, kp.ymods);
 
     m_keysPressed.push_back(kp);
-    if (OnYsfxKeyPressed)
-        OnYsfxKeyPressed(kp.ykey, kp.ymods);
+    ysfx_gfx_add_key(m_fx.get(), kp.ymods, kp.ykey, true);
 
     return true;
 }
@@ -167,8 +173,7 @@ bool YsfxGraphicsView::keyStateChanged(bool isKeyDown)
             else {
                 m_keysPressed.erase(it++);
                 kp.ymods = translateModifiers(juce::ModifierKeys::getCurrentModifiers());
-                if (OnYsfxKeyReleased)
-                    OnYsfxKeyReleased(kp.ykey, kp.ymods);
+                ysfx_gfx_add_key(m_fx.get(), kp.ymods, kp.ykey, false);
             }
         }
     }
@@ -199,8 +204,57 @@ void YsfxGraphicsView::mouseUp(const juce::MouseEvent &event)
 void YsfxGraphicsView::mouseWheelMove(const juce::MouseEvent &event, const juce::MouseWheelDetails &wheel)
 {
     updateYsfxMouseStatus(event);
-    YsfxWheel += wheel.deltaY;
-    YsfxHWheel += wheel.deltaX;
+    m_ysfxWheel += wheel.deltaY;
+    m_ysfxHWheel += wheel.deltaX;
+}
+
+void YsfxGraphicsView::configureGfx(int gfxWidth, int gfxHeight, bool gfxWantRetina)
+{
+    if (m_gfxWidth == gfxWidth && m_gfxHeight == gfxHeight && m_wantRetina == gfxWantRetina)
+        return;
+
+    m_gfxWidth = gfxWidth;
+    m_gfxHeight = gfxHeight;
+    m_wantRetina = gfxWantRetina;
+
+    updateBitmap();
+}
+
+void YsfxGraphicsView::updateGfx()
+{
+    ysfx_t *fx = m_fx.get();
+
+    ///
+    ysfx_gfx_update_mouse(fx, m_ysfxMouseMods, m_ysfxMouseX, m_ysfxMouseY, m_ysfxMouseButtons, m_ysfxWheel, m_ysfxHWheel);
+    m_ysfxWheel = 0;
+    m_ysfxHWheel = 0;
+
+    ///
+    uint32_t gfxDim[2] = {};
+    ysfx_get_gfx_dim(fx, gfxDim);
+
+    bool gfxWantRetina = ysfx_gfx_wants_retina(fx);
+    configureGfx((int)gfxDim[0], (int)gfxDim[1], gfxWantRetina);
+
+    juce::Image &bitmap = getBitmap();
+    bool mustRepaint;
+
+    {
+        juce::Image::BitmapData bdata{bitmap, juce::Image::BitmapData::readWrite};
+
+        ysfx_gfx_config_t gc{};
+        gc.pixel_width = (uint32_t)bdata.width;
+        gc.pixel_height = (uint32_t)bdata.height;
+        gc.pixel_stride = (uint32_t)bdata.lineStride;
+        gc.pixels = bdata.data;
+        gc.scale_factor = getBitmapScale();
+        ysfx_gfx_setup(fx, &gc);
+
+        mustRepaint = ysfx_gfx_run(fx);
+    }
+
+    if (mustRepaint)
+        repaint();
 }
 
 void YsfxGraphicsView::updateBitmap()
@@ -230,27 +284,27 @@ void YsfxGraphicsView::updateBitmap()
 
 void YsfxGraphicsView::updateYsfxMouseStatus(const juce::MouseEvent &event)
 {
-    YsfxMouseMods = 0;
+    m_ysfxMouseMods = 0;
     if (event.mods.isShiftDown())
-        YsfxMouseMods |= ysfx_mod_shift;
+        m_ysfxMouseMods |= ysfx_mod_shift;
     if (event.mods.isCtrlDown())
-        YsfxMouseMods |= ysfx_mod_ctrl;
+        m_ysfxMouseMods |= ysfx_mod_ctrl;
     if (event.mods.isAltDown())
-        YsfxMouseMods |= ysfx_mod_alt;
+        m_ysfxMouseMods |= ysfx_mod_alt;
     if (event.mods.isCommandDown())
-        YsfxMouseMods |= ysfx_mod_super;
+        m_ysfxMouseMods |= ysfx_mod_super;
 
-    YsfxMouseButtons = 0;
+    m_ysfxMouseButtons = 0;
     if (event.mods.isLeftButtonDown())
-        YsfxMouseButtons |= ysfx_button_left;
+        m_ysfxMouseButtons |= ysfx_button_left;
     if (event.mods.isMiddleButtonDown())
-        YsfxMouseButtons |= ysfx_button_middle;
+        m_ysfxMouseButtons |= ysfx_button_middle;
     if (event.mods.isRightButtonDown())
-        YsfxMouseButtons |= ysfx_button_right;
+        m_ysfxMouseButtons |= ysfx_button_right;
 
     juce::Point<int> off = getDisplayOffset();
-    YsfxMouseX = juce::roundToInt((event.x - off.x) * m_bitmapScale);
-    YsfxMouseY = juce::roundToInt((event.y - off.y) * m_bitmapScale);
+    m_ysfxMouseX = juce::roundToInt((event.x - off.x) * m_bitmapScale);
+    m_ysfxMouseY = juce::roundToInt((event.y - off.y) * m_bitmapScale);
 }
 
 juce::Point<int> YsfxGraphicsView::getDisplayOffset() const

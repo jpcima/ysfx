@@ -92,6 +92,8 @@ YsfxProcessor::YsfxProcessor()
 
     ysfx_t *fx = ysfx_new(config.get());
     m_impl->m_fx.reset(fx);
+    YsfxInfo::Ptr info{YsfxInfo::extractFrom(fx)};
+    std::atomic_store(&m_impl->m_info, info);
 
     ///
     ysfx_time_info_t &timeInfo = m_impl->m_timeInfo;
@@ -120,11 +122,6 @@ YsfxProcessor::~YsfxProcessor()
 
     ///
     m_impl->m_background->shutdown();
-}
-
-ysfx_t *YsfxProcessor::getYsfx()
-{
-    return m_impl->m_fx.get();
 }
 
 YsfxParameter *YsfxProcessor::getYsfxParameter(int sliderIndex)
@@ -157,9 +154,10 @@ YsfxInfo::Ptr YsfxProcessor::getCurrentInfo()
 //==============================================================================
 void YsfxProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
-    juce::ScopedLock lock(getCallbackLock());
-    ysfx_t *fx = m_impl->m_fx.get();
+    AudioProcessorSuspender sus(*this);
+    sus.lockCallbacks();
 
+    ysfx_t *fx = m_impl->m_fx.get();
     ysfx_set_sample_rate(fx, sampleRate);
     ysfx_set_block_size(fx, (uint32_t)samplesPerBlock);
 
@@ -289,7 +287,8 @@ void YsfxProcessor::getStateInformation(juce::MemoryBlock &destData)
     ysfx_state_u state;
 
     {
-        const juce::ScopedLock lock(getCallbackLock());
+        AudioProcessorSuspender sus(*this);
+        sus.lockCallbacks();
         ysfx_t *fx = m_impl->m_fx.get();
         path = juce::CharPointer_UTF8(ysfx_get_file_path(fx));
         state.reset(ysfx_save_state(fx));
@@ -487,11 +486,11 @@ void YsfxProcessor::Impl::Background::run()
                 AudioProcessorSuspender sus{*m_impl->m_self};
                 sus.lockCallbacks();
                 //
-                ysfx_t *fx = m_impl->m_fx.get();
-                ysfx_config_t *config = ysfx_get_config(fx);
-                ysfx_set_import_root(config, "");
-                ysfx_set_data_root(config, "");
-                ysfx_guess_file_roots(config, loadRequest->filePath.toRawUTF8());
+                ysfx_config_u config{ysfx_config_new()};
+                ysfx_register_builtin_audio_formats(config.get());
+                ysfx_guess_file_roots(config.get(), loadRequest->filePath.toRawUTF8());
+                ysfx_t *fx = ysfx_new(config.get());
+                m_impl->m_fx.reset(fx);
                 //
                 uint32_t loadopts = 0;
                 uint32_t compileopts = 0;

@@ -30,7 +30,6 @@ struct YsfxEditor::Impl {
     YsfxProcessor *m_proc = nullptr;
     YsfxInfo::Ptr m_info;
     std::unique_ptr<juce::Timer> m_infoTimer;
-    std::unique_ptr<juce::Timer> m_gfxTimer;
     std::unique_ptr<juce::Timer> m_relayoutTimer;
     std::unique_ptr<juce::FileChooser> m_fileChooser;
     std::unique_ptr<juce::PopupMenu> m_recentFilesPopup;
@@ -40,7 +39,6 @@ struct YsfxEditor::Impl {
     //==========================================================================
     void updateInfo();
     void grabInfoAndUpdate();
-    void updateGfx();
     void chooseFileAndLoad();
     void loadFile(const juce::File &file);
     void popupRecentFiles();
@@ -103,43 +101,6 @@ void YsfxEditor::Impl::grabInfoAndUpdate()
     }
 }
 
-void YsfxEditor::Impl::updateGfx()
-{
-    ysfx_t *fx = m_proc->getYsfx();
-    YsfxInfo::Ptr info = m_proc->getCurrentInfo();
-    YsfxGraphicsView *view = m_graphicsView.get();
-
-    ///
-    ysfx_gfx_update_mouse(fx, view->YsfxMouseMods, view->YsfxMouseX, view->YsfxMouseY, view->YsfxMouseButtons, view->YsfxWheel, view->YsfxHWheel);
-    view->YsfxWheel = 0;
-    view->YsfxHWheel = 0;
-
-    ///
-
-    bool gfxWantRetina = ysfx_gfx_wants_retina(fx);
-    m_graphicsView->configureGfx(info->gfxWidth, info->gfxHeight, gfxWantRetina);
-
-    juce::Image &bitmap = m_graphicsView->getBitmap();
-    bool mustRepaint;
-
-    {
-        juce::Image::BitmapData bdata{bitmap, juce::Image::BitmapData::readWrite};
-
-        ysfx_gfx_config_t gc{};
-        gc.pixel_width = (uint32_t)bdata.width;
-        gc.pixel_height = (uint32_t)bdata.height;
-        gc.pixel_stride = (uint32_t)bdata.lineStride;
-        gc.pixels = bdata.data;
-        gc.scale_factor = m_graphicsView->getBitmapScale();
-        ysfx_gfx_setup(fx, &gc);
-
-        mustRepaint = ysfx_gfx_run(fx);
-    }
-
-    if (mustRepaint)
-        m_graphicsView->repaint();
-}
-
 void YsfxEditor::Impl::updateInfo()
 {
     if (m_info->path.isNotEmpty())
@@ -154,6 +115,8 @@ void YsfxEditor::Impl::updateInfo()
             params.add(m_proc->getYsfxParameter((int)i));
     }
     m_parametersPanel->setParametersDisplayed(params);
+
+    m_graphicsView->setEffect(m_info->effect.get());
 
     m_mustResizeToGfx = true;
     relayoutUILater();
@@ -283,18 +246,6 @@ void YsfxEditor::Impl::connectUI()
 
     m_infoTimer.reset(FunctionalTimer::create([this]() { grabInfoAndUpdate(); }));
     m_infoTimer->startTimer(100);
-
-    m_gfxTimer.reset(FunctionalTimer::create([this]() { updateGfx(); }));
-    m_gfxTimer->startTimerHz(30);
-
-    m_graphicsView->OnYsfxKeyPressed = [this](uint32_t ykey, uint32_t ymods) {
-        ysfx_t *fx = m_proc->getYsfx();
-        ysfx_gfx_add_key(fx, ymods, ykey, true);
-    };
-    m_graphicsView->OnYsfxKeyReleased = [this](uint32_t ykey, uint32_t ymods) {
-        ysfx_t *fx = m_proc->getYsfx();
-        ysfx_gfx_add_key(fx, ymods, ykey, false);
-    };
 }
 
 void YsfxEditor::Impl::relayoutUI()

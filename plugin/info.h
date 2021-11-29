@@ -34,6 +34,7 @@ struct YsfxSliderInfo : public std::enable_shared_from_this<YsfxSliderInfo> {
 };
 
 struct YsfxInfo : public std::enable_shared_from_this<YsfxInfo> {
+    ysfx_u effect;
     juce::String name;
     juce::String path;
     bool isLoaded = false;
