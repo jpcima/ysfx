@@ -151,9 +151,6 @@ else()
     endif()
 endif()
 target_compile_definitions(eel2
-    PUBLIC
-        "EELSCRIPT_NO_NET"
-        "EELSCRIPT_NO_LICE"
     PRIVATE
         "NSEEL_ATOF=nseel_atof")
 if(NOT WIN32)
