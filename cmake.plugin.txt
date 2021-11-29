@@ -46,6 +46,8 @@ target_sources(ysfx_plugin
         "plugin/processor.h"
         "plugin/editor.cpp"
         "plugin/editor.h"
+        "plugin/lookandfeel.cpp"
+        "plugin/lookandfeel.h"
         "plugin/parameter.cpp"
         "plugin/parameter.h"
         "plugin/info.cpp"

@@ -16,6 +16,7 @@
 //
 
 #include "editor.h"
+#include "lookandfeel.h"
 #include "processor.h"
 #include "parameter.h"
 #include "info.h"
@@ -73,6 +74,10 @@ YsfxEditor::YsfxEditor(YsfxProcessor &proc)
     m_impl->m_self = this;
     m_impl->m_proc = &proc;
     m_impl->m_info = proc.getCurrentInfo();
+
+    static YsfxLookAndFeel lnf;
+    setLookAndFeel(&lnf);
+    juce::LookAndFeel::setDefaultLookAndFeel(&lnf);
 
     setSize(defaultEditorWidth, defaultEditorHeight);
     setResizable(true, true);
