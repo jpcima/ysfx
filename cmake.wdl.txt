@@ -114,8 +114,7 @@ if(YSFX_GFX)
                     "thirdparty/WDL/source/WDL/swell/swell-misc.mm"
                     "thirdparty/WDL/source/WDL/swell/swell-miscdlg.mm"
                     "thirdparty/WDL/source/WDL/swell/swell-modstub.mm"
-                    "thirdparty/WDL/source/WDL/swell/swell-wnd.mm"
-                    "thirdparty/WDL/source/WDL/swell/swellappmain.mm")
+                    "thirdparty/WDL/source/WDL/swell/swell-wnd.mm")
             target_link_libraries(lice
                 PRIVATE
                     Apple::Cocoa
