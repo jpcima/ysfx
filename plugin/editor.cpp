@@ -265,7 +265,7 @@ void YsfxEditor::Impl::createUI()
     m_codeWindow->setResizable(true, false);
     m_codeWindow->setContentNonOwned(m_ideView.get(), true);
     m_ideView->setVisible(true);
-    m_ideView->setSize(800, 600);
+    m_ideView->setSize(1000, 600);
 }
 
 void YsfxEditor::Impl::connectUI()
