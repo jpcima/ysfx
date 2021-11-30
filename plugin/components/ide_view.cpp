@@ -80,8 +80,8 @@ void YsfxIDEView::Impl::setupNewFx()
 {
     ysfx_t *fx = m_fx.get();
 
+    juce::String oldContent = m_document->getAllContent();
     m_document->replaceAllContent(juce::String{});
-    m_editor->moveCaretToTop(false);
 
     if (!fx) {
         //
@@ -97,6 +97,9 @@ void YsfxIDEView::Impl::setupNewFx()
 
         m_editor->setReadOnly(false);
     }
+
+    if (m_document->getAllContent() != oldContent)
+        m_editor->moveCaretToTop(false);
 }
 
 void YsfxIDEView::Impl::saveCurrentFile()
