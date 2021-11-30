@@ -65,6 +65,7 @@ struct YsfxProcessor::Impl : public juce::AudioProcessorListener {
         void wakeUp();
     private:
         void run();
+        void processLoadRequest(LoadRequest &req);
         Impl *m_impl = nullptr;
         RTSemaphore m_sema;
         std::atomic<bool> m_running{};
@@ -481,38 +482,45 @@ void YsfxProcessor::Impl::Background::wakeUp()
 void YsfxProcessor::Impl::Background::run()
 {
     while (m_sema.wait(), m_running.load(std::memory_order_relaxed)) {
-        if (LoadRequest::Ptr loadRequest = std::atomic_exchange(&m_impl->m_loadRequest, LoadRequest::Ptr{})) {
-            {
-                AudioProcessorSuspender sus{*m_impl->m_self};
-                sus.lockCallbacks();
-                //
-                ysfx_config_u config{ysfx_config_new()};
-                ysfx_register_builtin_audio_formats(config.get());
-                ysfx_guess_file_roots(config.get(), loadRequest->filePath.toRawUTF8());
-                ysfx_t *fx = ysfx_new(config.get());
-                m_impl->m_fx.reset(fx);
-                //
-                uint32_t loadopts = 0;
-                uint32_t compileopts = 0;
-                ysfx_load_file(fx, loadRequest->filePath.toRawUTF8(), loadopts);
-                ysfx_compile(fx, compileopts);
-                //
-                if (loadRequest->initialState)
-                    ysfx_load_state(fx, loadRequest->initialState.get());
-                //
-                YsfxInfo::Ptr info{YsfxInfo::extractFrom(fx)};
-                std::atomic_store(&m_impl->m_info, info);
-                //
-                for (uint32_t i = 0; i < ysfx_max_sliders; ++i)
-                    m_impl->m_self->getYsfxParameter((int)i)->setInfo(*info->sliders[i]);
-                //
-                m_impl->syncSlidersToParameters();
-            }
-            std::lock_guard<std::mutex> lock(loadRequest->completionMutex);
-            loadRequest->completion = true;
-            loadRequest->completionVariable.notify_one();
-        }
+        if (LoadRequest::Ptr loadRequest = std::atomic_exchange(&m_impl->m_loadRequest, LoadRequest::Ptr{}))
+            processLoadRequest(*loadRequest);
     }
+}
+
+void YsfxProcessor::Impl::Background::processLoadRequest(LoadRequest &req)
+{
+    ysfx_config_u config{ysfx_config_new()};
+    ysfx_register_builtin_audio_formats(config.get());
+    ysfx_guess_file_roots(config.get(), req.filePath.toRawUTF8());
+
+    ysfx_t *fx = ysfx_new(config.get());
+    ysfx_u fxRef{fx};
+
+    uint32_t loadopts = 0;
+    uint32_t compileopts = 0;
+    ysfx_load_file(fx, req.filePath.toRawUTF8(), loadopts);
+    ysfx_compile(fx, compileopts);
+
+    if (req.initialState)
+        ysfx_load_state(fx, req.initialState.get());
+
+    YsfxInfo::Ptr info{YsfxInfo::extractFrom(fx)};
+
+    {
+        AudioProcessorSuspender sus{*m_impl->m_self};
+        sus.lockCallbacks();
+        m_impl->m_fx = std::move(fxRef);
+        std::atomic_store(&m_impl->m_info, info);
+
+        for (uint32_t i = 0; i < ysfx_max_sliders; ++i)
+            m_impl->m_self->getYsfxParameter((int)i)->setInfo(*info->sliders[i]);
+
+        m_impl->syncSlidersToParameters();
+    }
+
+    std::lock_guard<std::mutex> lock(req.completionMutex);
+    req.completion = true;
+    req.completionVariable.notify_one();
 }
 
 //==============================================================================
