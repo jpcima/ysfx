@@ -36,6 +36,19 @@ enum {
 };
 
 //------------------------------------------------------------------------------
+static thread_local ysfx_thread_id_t ysfx_thread_id;
+
+ysfx_thread_id_t ysfx_get_thread_id()
+{
+    return ysfx_thread_id;
+}
+
+void ysfx_set_thread_id(ysfx_thread_id_t id)
+{
+    ysfx_thread_id = id;
+}
+
+//------------------------------------------------------------------------------
 struct ysfx_api_initializer {
 private:
     ysfx_api_initializer();
@@ -1006,6 +1019,8 @@ uint32_t ysfx_get_slider_change_type(ysfx_t *fx, uint32_t index)
 template <class Real>
 void ysfx_process_generic(ysfx_t *fx, const Real *const *ins, Real *const *outs, uint32_t num_ins, uint32_t num_outs, uint32_t num_frames)
 {
+    ysfx_set_thread_id(ysfx_thread_id_dsp);
+
     // prepare MIDI input for reading, output for writing
     assert(fx->midi.in->read_pos == 0);
     ysfx_midi_clear(fx->midi.out.get());
@@ -1072,6 +1087,8 @@ void ysfx_process_generic(ysfx_t *fx, const Real *const *ins, Real *const *outs,
     // prepare MIDI input for writing, output for reading
     assert(fx->midi.out->read_pos == 0);
     ysfx_midi_clear(fx->midi.in.get());
+
+    ysfx_set_thread_id(ysfx_thread_id_none);
 }
 
 void ysfx_process_float(ysfx_t *fx, const float *const *ins, float *const *outs, uint32_t num_ins, uint32_t num_outs, uint32_t num_frames)

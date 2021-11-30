@@ -126,6 +126,9 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_slider_show(void *opaque, EEL_F *mask_or_s
 
 static EEL_F NSEEL_CGEN_CALL ysfx_api_midisend(void *opaque, INT_PTR np, EEL_F **parms)
 {
+    if (ysfx_get_thread_id() != ysfx_thread_id_dsp)
+        return 0;
+
     int32_t offset;
     uint8_t msg1;
     uint8_t msg2;
@@ -176,6 +179,9 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_midisend(void *opaque, INT_PTR np, EEL_F *
 
 static EEL_F NSEEL_CGEN_CALL ysfx_api_midisend_buf(void *opaque, EEL_F *offset_, EEL_F *buf_, EEL_F *len_)
 {
+    if (ysfx_get_thread_id() != ysfx_thread_id_dsp)
+        return 0;
+
     int32_t offset = ysfx_eel_round<int32_t>(*offset_);
     int32_t buf = ysfx_eel_round<int32_t>(*buf_);
     int32_t len = ysfx_eel_round<int32_t>(*len_);
@@ -206,6 +212,9 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_midisend_buf(void *opaque, EEL_F *offset_,
 
 static EEL_F NSEEL_CGEN_CALL ysfx_api_midisend_str(void *opaque, EEL_F *offset_, EEL_F *str_)
 {
+    if (ysfx_get_thread_id() != ysfx_thread_id_dsp)
+        return 0;
+
     int32_t offset = ysfx_eel_round<int32_t>(*offset_);
 
     if (offset < 0)
@@ -244,6 +253,9 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_midisend_str(void *opaque, EEL_F *offset_,
 
 static EEL_F NSEEL_CGEN_CALL ysfx_api_midisyx(void *opaque, EEL_F *offset_, EEL_F *buf_, EEL_F *len_)
 {
+    if (ysfx_get_thread_id() != ysfx_thread_id_dsp)
+        return 0;
+
     int32_t offset = ysfx_eel_round<int32_t>(*offset_);
     int32_t buf = ysfx_eel_round<int32_t>(*buf_);
     int32_t len = ysfx_eel_round<int32_t>(*len_);
@@ -284,6 +296,9 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_midisyx(void *opaque, EEL_F *offset_, EEL_
 
 static EEL_F NSEEL_CGEN_CALL ysfx_api_midirecv(void *opaque, INT_PTR np, EEL_F **parms)
 {
+    if (ysfx_get_thread_id() != ysfx_thread_id_dsp)
+        return 0;
+
     ysfx_t *fx = REAPER_GET_INTERFACE(opaque);
     uint32_t bus = ysfx_current_midi_bus(fx);
 
@@ -327,6 +342,9 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_midirecv(void *opaque, INT_PTR np, EEL_F *
 
 static EEL_F NSEEL_CGEN_CALL ysfx_api_midirecv_buf(void *opaque, EEL_F *offset_, EEL_F *buf_, EEL_F *recvlen_)
 {
+    if (ysfx_get_thread_id() != ysfx_thread_id_dsp)
+        return 0;
+
     ysfx_t *fx = REAPER_GET_INTERFACE(opaque);
     NSEEL_VMCTX vm = fx->vm.get();
 
@@ -359,6 +377,9 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_midirecv_buf(void *opaque, EEL_F *offset_,
 
 static EEL_F NSEEL_CGEN_CALL ysfx_api_midirecv_str(void *opaque, EEL_F *offset_, EEL_F *str_)
 {
+    if (ysfx_get_thread_id() != ysfx_thread_id_dsp)
+        return 0;
+
     ysfx_t *fx = REAPER_GET_INTERFACE(opaque);
 
     uint32_t bus = ysfx_current_midi_bus(fx);

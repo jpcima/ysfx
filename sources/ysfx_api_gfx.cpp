@@ -47,7 +47,6 @@ class eel_lice_state;
 struct ysfx_gfx_state_t {
     ysfx_gfx_state_t(ysfx_t *fx);
     ~ysfx_gfx_state_t();
-    std::atomic<std::thread::id> gfx_thread_id;
     std::unique_ptr<eel_lice_state> lice;
     std::queue<uint32_t> input_queue;
     std::unordered_set<uint32_t> keys_pressed;
@@ -179,11 +178,6 @@ void ysfx_gfx_state_free(ysfx_gfx_state_t *state)
     delete state;
 }
 
-void ysfx_gfx_state_set_thread(ysfx_gfx_state_t *state, std::thread::id id)
-{
-    state->gfx_thread_id.store(id, std::memory_order_relaxed);
-}
-
 void ysfx_gfx_state_set_bitmap(ysfx_gfx_state_t *state, uint8_t *data, uint32_t w, uint32_t h, uint32_t stride)
 {
     if (stride == 0)
@@ -285,23 +279,26 @@ void ysfx_gfx_enter(ysfx_t *fx, bool doinit)
         }
     }
 
-    ysfx_gfx_state_set_thread(state, std::this_thread::get_id());
+    ysfx_set_thread_id(ysfx_thread_id_gfx);
 }
 
 void ysfx_gfx_leave(ysfx_t *fx)
 {
+    ysfx_set_thread_id(ysfx_thread_id_none);
+
     fx->gfx.mutex.unlock();
 }
 
 ysfx_gfx_state_t *ysfx_gfx_get_context(ysfx_t *fx)
 {
-    // NOTE: make sure that this will be used from the @gfx thread only
     if (!fx)
         return nullptr;
-    ysfx_gfx_state_t *state = fx->gfx.state.get();
-    if (state->gfx_thread_id.load(std::memory_order_relaxed) != std::this_thread::get_id())
+
+    // NOTE: make sure that this will be used from the @gfx thread only
+    if (ysfx_get_thread_id() != ysfx_thread_id_gfx)
         return nullptr;
-    return state;
+
+    return fx->gfx.state.get();
 }
 
 void ysfx_gfx_prepare(ysfx_t *fx)

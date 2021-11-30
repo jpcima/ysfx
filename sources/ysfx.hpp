@@ -45,6 +45,12 @@ enum ysfx_file_type_t {
     ysfx_file_type_audio,
 };
 
+enum ysfx_thread_id_t {
+    ysfx_thread_id_none,
+    ysfx_thread_id_dsp,
+    ysfx_thread_id_gfx,
+};
+
 struct ysfx_s {
     ysfx_config_u config;
     eel_string_context_state_u string_ctx;
@@ -162,6 +168,8 @@ struct ysfx_s {
     std::atomic<uint32_t> ref_count{1};
 };
 
+ysfx_thread_id_t ysfx_get_thread_id();
+void ysfx_set_thread_id(ysfx_thread_id_t id);
 void ysfx_unload_source(ysfx_t *fx);
 void ysfx_unload_code(ysfx_t *fx);
 void ysfx_first_init(ysfx_t *fx);
