@@ -18,6 +18,7 @@
 #pragma once
 #include "ysfx.h"
 #include <juce_gui_basics/juce_gui_basics.h>
+#include <functional>
 #include <memory>
 
 class YsfxIDEView : public juce::Component {
@@ -25,6 +26,8 @@ public:
     YsfxIDEView();
     ~YsfxIDEView() override;
     void setEffect(ysfx_t *fx);
+
+    std::function<void(const juce::File &)> onFileSaved;
 
 protected:
     void resized() override;

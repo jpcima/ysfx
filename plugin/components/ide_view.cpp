@@ -25,10 +25,12 @@ struct YsfxIDEView::Impl {
     std::unique_ptr<juce::CodeDocument> m_document;
     std::unique_ptr<juce::CodeTokeniser> m_tokenizer;
     std::unique_ptr<juce::CodeEditorComponent> m_editor;
+    std::unique_ptr<juce::TextButton> m_btnSave;
     std::unique_ptr<juce::Timer> m_relayoutTimer;
 
     //==========================================================================
     void setupNewFx();
+    void saveCurrentFile();
 
     //==========================================================================
     void createUI();
@@ -83,6 +85,7 @@ void YsfxIDEView::Impl::setupNewFx()
 
     if (!fx) {
         //
+        m_editor->setReadOnly(true);
     }
     else {
         juce::File file{juce::CharPointer_UTF8{ysfx_get_file_path(fx)}};
@@ -91,25 +94,73 @@ void YsfxIDEView::Impl::setupNewFx()
             if (fileStream.openedOk())
                 m_document->loadFromStream(fileStream);
         }
+
+        m_editor->setReadOnly(false);
     }
+}
+
+void YsfxIDEView::Impl::saveCurrentFile()
+{
+    ysfx_t *fx = m_fx.get();
+    if (!fx)
+        return;
+
+    bool success = false;
+    juce::File file{juce::CharPointer_UTF8{ysfx_get_file_path(fx)}};
+
+    const juce::String content = m_document->getAllContent();
+    {
+        juce::FileOutputStream stream{file};
+        success = stream.openedOk() &&
+            stream.setPosition(0) && stream.truncate().wasOk() &&
+            stream.write(content.toRawUTF8(), content.getNumBytesAsUTF8()) &&
+            (stream.flush(), stream.getStatus().wasOk());
+    }
+
+    if (!success) {
+        juce::AlertWindow::showAsync(
+            juce::MessageBoxOptions{}
+            .withAssociatedComponent(m_self)
+            .withIconType(juce::MessageBoxIconType::WarningIcon)
+            .withTitle(TRANS("Error"))
+            .withButton(TRANS("OK"))
+            .withMessage(TRANS("Could not save the JSFX document.")),
+            nullptr);
+        return;
+    }
+
+    if (m_self->onFileSaved)
+        m_self->onFileSaved(file);
 }
 
 void YsfxIDEView::Impl::createUI()
 {
     m_editor.reset(new juce::CodeEditorComponent(*m_document, m_tokenizer.get()));
     m_self->addAndMakeVisible(*m_editor);
+    m_btnSave.reset(new juce::TextButton(TRANS("Save")));
+    m_btnSave->addShortcut(juce::KeyPress('s', juce::ModifierKeys::ctrlModifier, 0));
+    m_self->addAndMakeVisible(*m_btnSave);
 }
 
 void YsfxIDEView::Impl::connectUI()
 {
+    m_btnSave->onClick = [this]() { saveCurrentFile(); };
 }
 
 void YsfxIDEView::Impl::relayoutUI()
 {
-    juce::Rectangle<int> bounds = m_self->getLocalBounds();
+    juce::Rectangle<int> temp;
+    const juce::Rectangle<int> bounds = m_self->getLocalBounds();
 
-    //TODO
-    m_editor->setBounds(bounds);
+    temp = bounds;
+    const juce::Rectangle<int> topRow = temp.removeFromTop(50);
+    const juce::Rectangle<int> editArea = temp;
+
+    temp = topRow.reduced(10, 10);
+    m_btnSave->setBounds(temp.removeFromLeft(100));
+    temp.removeFromLeft(10);
+
+    m_editor->setBounds(editArea);
 
     if (m_relayoutTimer)
         m_relayoutTimer->stopTimer();

@@ -275,6 +275,8 @@ void YsfxEditor::Impl::connectUI()
     m_btnSwitchEditor->onClick = [this]() { switchEditor(m_btnSwitchEditor->getToggleState()); };
     m_btnEditCode->onClick = [this]() { openCodeEditor(); };
 
+    m_ideView->onFileSaved = [this](const juce::File &file) { loadFile(file); };
+
     m_infoTimer.reset(FunctionalTimer::create([this]() { grabInfoAndUpdate(); }));
     m_infoTimer->startTimer(100);
 }
