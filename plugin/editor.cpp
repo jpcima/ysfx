@@ -22,6 +22,7 @@
 #include "info.h"
 #include "components/parameters_panel.h"
 #include "components/graphics_view.h"
+#include "components/ide_view.h"
 #include "utility/functional_timer.h"
 #include "ysfx.h"
 #include <juce_gui_extra/juce_gui_extra.h>
@@ -44,6 +45,7 @@ struct YsfxEditor::Impl {
     void loadFile(const juce::File &file);
     void popupRecentFiles();
     void switchEditor(bool showGfx);
+    void openCodeEditor();
     static juce::File getAppDataDirectory();
     juce::RecentlyOpenedFilesList loadRecentFiles();
     void saveRecentFiles(const juce::RecentlyOpenedFilesList &recent);
@@ -51,11 +53,14 @@ struct YsfxEditor::Impl {
     //==========================================================================
     std::unique_ptr<juce::TextButton> m_btnLoadFile;
     std::unique_ptr<juce::TextButton> m_btnRecentFiles;
+    std::unique_ptr<juce::TextButton> m_btnEditCode;
     std::unique_ptr<juce::TextButton> m_btnSwitchEditor;
     std::unique_ptr<juce::Label> m_lblFilePath;
     std::unique_ptr<juce::Viewport> m_centerViewPort;
     std::unique_ptr<YsfxParametersPanel> m_parametersPanel;
     std::unique_ptr<YsfxGraphicsView> m_graphicsView;
+    std::unique_ptr<YsfxIDEView> m_ideView;
+    std::unique_ptr<juce::DocumentWindow> m_codeWindow;
 
     //==========================================================================
     void createUI();
@@ -123,6 +128,7 @@ void YsfxEditor::Impl::updateInfo()
 
     ysfx_t *fx = m_info->effect.get();
     m_graphicsView->setEffect(fx);
+    m_ideView->setEffect(fx);
 
     bool hasGfx = ysfx_has_section(fx, ysfx_section_gfx);
     switchEditor(hasGfx);
@@ -191,6 +197,12 @@ void YsfxEditor::Impl::switchEditor(bool showGfx)
     relayoutUILater();
 }
 
+void YsfxEditor::Impl::openCodeEditor()
+{
+    m_codeWindow->setVisible(true);
+    m_codeWindow->toFront(true);
+}
+
 juce::RecentlyOpenedFilesList YsfxEditor::Impl::loadRecentFiles()
 {
     juce::RecentlyOpenedFilesList recent;
@@ -236,6 +248,8 @@ void YsfxEditor::Impl::createUI()
     m_self->addAndMakeVisible(*m_btnLoadFile);
     m_btnRecentFiles.reset(new juce::TextButton(TRANS("Recent")));
     m_self->addAndMakeVisible(*m_btnRecentFiles);
+    m_btnEditCode.reset(new juce::TextButton(TRANS("Edit")));
+    m_self->addAndMakeVisible(*m_btnEditCode);
     m_btnSwitchEditor.reset(new juce::TextButton(TRANS("Sliders")));
     m_btnSwitchEditor->setClickingTogglesState(true);
     m_self->addAndMakeVisible(*m_btnSwitchEditor);
@@ -246,6 +260,12 @@ void YsfxEditor::Impl::createUI()
     m_self->addAndMakeVisible(*m_centerViewPort);
     m_parametersPanel.reset(new YsfxParametersPanel);
     m_graphicsView.reset(new YsfxGraphicsView);
+    m_ideView.reset(new YsfxIDEView);
+    m_codeWindow.reset(new juce::DocumentWindow(TRANS("Edit"), m_self->findColour(juce::DocumentWindow::backgroundColourId), juce::DocumentWindow::allButtons));
+    m_codeWindow->setResizable(true, false);
+    m_codeWindow->setContentNonOwned(m_ideView.get(), true);
+    m_ideView->setVisible(true);
+    m_ideView->setSize(800, 600);
 }
 
 void YsfxEditor::Impl::connectUI()
@@ -253,6 +273,7 @@ void YsfxEditor::Impl::connectUI()
     m_btnLoadFile->onClick = [this]() { chooseFileAndLoad(); };
     m_btnRecentFiles->onClick = [this]() { popupRecentFiles(); };
     m_btnSwitchEditor->onClick = [this]() { switchEditor(m_btnSwitchEditor->getToggleState()); };
+    m_btnEditCode->onClick = [this]() { openCodeEditor(); };
 
     m_infoTimer.reset(FunctionalTimer::create([this]() { grabInfoAndUpdate(); }));
     m_infoTimer->startTimer(100);
@@ -280,6 +301,8 @@ void YsfxEditor::Impl::relayoutUI()
     m_btnRecentFiles->setBounds(temp.removeFromLeft(100));
     temp.removeFromLeft(10);
     m_btnSwitchEditor->setBounds(temp.removeFromRight(100));
+    temp.removeFromRight(10);
+    m_btnEditCode->setBounds(temp.removeFromRight(100));
     temp.removeFromRight(10);
     m_lblFilePath->setBounds(temp);
 
