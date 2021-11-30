@@ -51,6 +51,15 @@ struct YsfxEditor::Impl {
     void saveRecentFiles(const juce::RecentlyOpenedFilesList &recent);
 
     //==========================================================================
+    class CodeWindow : public juce::DocumentWindow {
+    public:
+        using juce::DocumentWindow::DocumentWindow;
+
+    protected:
+        void closeButtonPressed() override { setVisible(false); }
+    };
+
+    //==========================================================================
     std::unique_ptr<juce::TextButton> m_btnLoadFile;
     std::unique_ptr<juce::TextButton> m_btnRecentFiles;
     std::unique_ptr<juce::TextButton> m_btnEditCode;
@@ -60,7 +69,7 @@ struct YsfxEditor::Impl {
     std::unique_ptr<YsfxParametersPanel> m_parametersPanel;
     std::unique_ptr<YsfxGraphicsView> m_graphicsView;
     std::unique_ptr<YsfxIDEView> m_ideView;
-    std::unique_ptr<juce::DocumentWindow> m_codeWindow;
+    std::unique_ptr<CodeWindow> m_codeWindow;
     std::unique_ptr<juce::TooltipWindow> m_tooltipWindow;
 
     //==========================================================================
@@ -267,7 +276,7 @@ void YsfxEditor::Impl::createUI()
     m_parametersPanel.reset(new YsfxParametersPanel);
     m_graphicsView.reset(new YsfxGraphicsView);
     m_ideView.reset(new YsfxIDEView);
-    m_codeWindow.reset(new juce::DocumentWindow(TRANS("Edit"), m_self->findColour(juce::DocumentWindow::backgroundColourId), juce::DocumentWindow::allButtons));
+    m_codeWindow.reset(new CodeWindow(TRANS("Edit"), m_self->findColour(juce::DocumentWindow::backgroundColourId), juce::DocumentWindow::allButtons));
     m_codeWindow->setResizable(true, false);
     m_codeWindow->setContentNonOwned(m_ideView.get(), true);
     m_ideView->setVisible(true);
