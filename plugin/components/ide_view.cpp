@@ -26,6 +26,8 @@ struct YsfxIDEView::Impl {
     std::unique_ptr<juce::CodeTokeniser> m_tokenizer;
     std::unique_ptr<juce::CodeEditorComponent> m_editor;
     std::unique_ptr<juce::TextButton> m_btnSave;
+    std::unique_ptr<juce::Label> m_lblVariablesHeading;
+    std::unique_ptr<juce::Viewport> m_vpVariables;
     std::unique_ptr<juce::Timer> m_relayoutTimer;
 
     //==========================================================================
@@ -147,6 +149,10 @@ void YsfxIDEView::Impl::createUI()
     m_btnSave.reset(new juce::TextButton(TRANS("Save")));
     m_btnSave->addShortcut(juce::KeyPress('s', juce::ModifierKeys::ctrlModifier, 0));
     m_self->addAndMakeVisible(*m_btnSave);
+    m_lblVariablesHeading.reset(new juce::Label(juce::String{}, TRANS("Variables")));
+    m_self->addAndMakeVisible(*m_lblVariablesHeading);
+    m_vpVariables.reset(new juce::Viewport);
+    m_self->addAndMakeVisible(*m_vpVariables);
 }
 
 void YsfxIDEView::Impl::connectUI()
@@ -160,12 +166,19 @@ void YsfxIDEView::Impl::relayoutUI()
     const juce::Rectangle<int> bounds = m_self->getLocalBounds();
 
     temp = bounds;
+    const juce::Rectangle<int> debugArea = temp.removeFromRight(200);
     const juce::Rectangle<int> topRow = temp.removeFromTop(50);
     const juce::Rectangle<int> editArea = temp;
 
+    ///
     temp = topRow.reduced(10, 10);
     m_btnSave->setBounds(temp.removeFromLeft(100));
     temp.removeFromLeft(10);
+
+    ///
+    temp = debugArea;
+    m_lblVariablesHeading->setBounds(temp.removeFromTop(50).reduced(10, 10));
+    m_vpVariables->setBounds(temp.reduced(10, 10));
 
     m_editor->setBounds(editArea);
 
