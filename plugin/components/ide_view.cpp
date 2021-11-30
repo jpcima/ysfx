@@ -80,26 +80,30 @@ void YsfxIDEView::Impl::setupNewFx()
 {
     ysfx_t *fx = m_fx.get();
 
-    juce::String oldContent = m_document->getAllContent();
-    m_document->replaceAllContent(juce::String{});
-
     if (!fx) {
         //
+        m_document->replaceAllContent(juce::String{});
         m_editor->setReadOnly(true);
     }
     else {
         juce::File file{juce::CharPointer_UTF8{ysfx_get_file_path(fx)}};
+
         {
             juce::FileInputStream fileStream(file);
-            if (fileStream.openedOk())
-                m_document->loadFromStream(fileStream);
+            juce::String newContent;
+            if (fileStream.openedOk() &&
+                (newContent = fileStream.readEntireStreamAsString(),
+                 fileStream.getStatus().wasOk()))
+            {
+                if (newContent != m_document->getAllContent()) {
+                    m_document->replaceAllContent(newContent);
+                    m_editor->moveCaretToTop(false);
+                }
+            }
         }
 
         m_editor->setReadOnly(false);
     }
-
-    if (m_document->getAllContent() != oldContent)
-        m_editor->moveCaretToTop(false);
 }
 
 void YsfxIDEView::Impl::saveCurrentFile()
