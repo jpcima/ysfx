@@ -126,6 +126,8 @@ void YsfxIDEView::Impl::setupNewFx()
             ui.m_var = var;
             ui.m_name = juce::CharPointer_UTF8{name};
             ui.m_lblName.reset(new juce::Label(juce::String{}, ui.m_name));
+            ui.m_lblName->setTooltip(ui.m_name);
+            ui.m_lblName->setMinimumHorizontalScale(1.0f);
             impl.m_compVariables->addAndMakeVisible(*ui.m_lblName);
             ui.m_lblValue.reset(new juce::Label(juce::String{}, "0"));
             impl.m_compVariables->addAndMakeVisible(*ui.m_lblValue);

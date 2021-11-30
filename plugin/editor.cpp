@@ -61,6 +61,7 @@ struct YsfxEditor::Impl {
     std::unique_ptr<YsfxGraphicsView> m_graphicsView;
     std::unique_ptr<YsfxIDEView> m_ideView;
     std::unique_ptr<juce::DocumentWindow> m_codeWindow;
+    std::unique_ptr<juce::TooltipWindow> m_tooltipWindow;
 
     //==========================================================================
     void createUI();
@@ -113,10 +114,14 @@ void YsfxEditor::Impl::grabInfoAndUpdate()
 
 void YsfxEditor::Impl::updateInfo()
 {
-    if (m_info->path.isNotEmpty())
-        m_lblFilePath->setText(m_info->path, juce::dontSendNotification);
-    else
+    if (m_info->path.isNotEmpty()) {
+        m_lblFilePath->setText(juce::File{m_info->path}.getFileName(), juce::dontSendNotification);
+        m_lblFilePath->setTooltip(m_info->path);
+    }
+    else {
         m_lblFilePath->setText(TRANS("No file"), juce::dontSendNotification);
+        m_lblFilePath->setTooltip(juce::String{});
+    }
 
     juce::Array<YsfxParameter *> params;
     params.ensureStorageAllocated(ysfx_max_sliders);
@@ -254,6 +259,7 @@ void YsfxEditor::Impl::createUI()
     m_btnSwitchEditor->setClickingTogglesState(true);
     m_self->addAndMakeVisible(*m_btnSwitchEditor);
     m_lblFilePath.reset(new juce::Label);
+    m_lblFilePath->setMinimumHorizontalScale(1.0f);
     m_self->addAndMakeVisible(*m_lblFilePath);
     m_centerViewPort.reset(new juce::Viewport);
     m_centerViewPort->setScrollBarsShown(true, false);
@@ -266,6 +272,7 @@ void YsfxEditor::Impl::createUI()
     m_codeWindow->setContentNonOwned(m_ideView.get(), true);
     m_ideView->setVisible(true);
     m_ideView->setSize(1000, 600);
+    m_tooltipWindow.reset(new juce::TooltipWindow);
 }
 
 void YsfxEditor::Impl::connectUI()
