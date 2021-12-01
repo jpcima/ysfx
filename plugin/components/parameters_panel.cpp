@@ -198,7 +198,9 @@ public:
     explicit YsfxChoiceParameterComponent(YsfxParameter &param)
         : YsfxParameterListener(param)
     {
-        box.addItemList(param.getInfo().enumNames, 1);
+        int enumSize = (int)param.getSliderEnumSize();
+        for (int i = 0; i < enumSize; ++i)
+            box.addItem(param.getSliderEnumName(i), i + 1);
 
         // Set the initial value.
         handleNewParameterValue();
@@ -221,13 +223,21 @@ public:
 private:
     void handleNewParameterValue() override
     {
-        auto index = getParameter().getInfo().enumNames.indexOf(getParameter().getCurrentValueAsText());
+        int index = -1;
+
+        juce::String valueText = getParameter().getCurrentValueAsText();
+        int enumSize = getParameter().getSliderEnumSize();
+
+        for (int i = 0; index == -1 && i < enumSize; ++i) {
+            if (valueText == getParameter().getSliderEnumName(i))
+                index = i;
+        }
 
         if (index < 0) {
             // The parameter is producing some unexpected text, so we'll do
             // some linear interpolation.
             index = juce::roundToInt(getParameter().getValue() *
-                               (float)(getParameter().getInfo().enumNames.size() - 1));
+                               (float)(enumSize - 1));
         }
 
         box.setSelectedItemIndex(index);
@@ -259,7 +269,7 @@ public:
     explicit YsfxSliderParameterComponent(YsfxParameter &param)
         : YsfxParameterListener(param)
     {
-        ysfx_slider_range_t range = getParameter().getInfo().range;
+        ysfx_slider_range_t range = getParameter().getSliderRange();
 
         if (range.inc != 0 && range.min != range.max)
             slider.setRange(0.0, 1.0, std::abs(range.inc / (range.max - range.min)));
@@ -354,7 +364,7 @@ public:
     explicit YsfxParameterDisplayComponent(YsfxParameter &param)
         : parameter(param)
     {
-        parameterName.setText(parameter.getInfo().name, juce::dontSendNotification);
+        parameterName.setText(parameter.getSliderName(), juce::dontSendNotification);
         parameterName.setJustificationType(juce::Justification::centredRight);
         addAndMakeVisible(parameterName);
 
@@ -386,8 +396,8 @@ private:
 
     std::unique_ptr<Component> createParameterComp() const
     {
-        ysfx_slider_range_t range = parameter.getInfo().range;
-        bool isEnum = parameter.getInfo().isEnum;
+        ysfx_slider_range_t range = parameter.getSliderRange();
+        bool isEnum = parameter.isEnumSlider();
 
         if (isEnum) {
             jassert(range.min == 0);

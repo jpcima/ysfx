@@ -17,37 +17,75 @@
 
 #include "parameter.h"
 
-YsfxParameter::YsfxParameter(int sliderIndex)
+YsfxParameter::YsfxParameter(ysfx_t *fx, int sliderIndex)
     : RangedAudioParameter(
         "slider" + juce::String(sliderIndex + 1),
         "Slider " + juce::String(sliderIndex + 1)),
       m_sliderIndex(sliderIndex)
 {
+    setEffect(fx);
+}
+
+void YsfxParameter::setEffect(ysfx_t *fx)
+{
+    if (m_fx.get() == fx)
+        return;
+
+    m_fx.reset(fx);
+    if (fx)
+        ysfx_add_ref(fx);
 }
 
 bool YsfxParameter::existsAsSlider() const
 {
-    return m_info.exists;
+    return ysfx_slider_exists(m_fx.get(), (uint32_t)m_sliderIndex);
+}
+
+juce::CharPointer_UTF8 YsfxParameter::getSliderName() const
+{
+    return juce::CharPointer_UTF8{ysfx_slider_get_name(m_fx.get(), (uint32_t)m_sliderIndex)};
+}
+
+ysfx_slider_range_t YsfxParameter::getSliderRange() const
+{
+    ysfx_slider_range_t range{};
+    ysfx_slider_get_range(m_fx.get(), (uint32_t)m_sliderIndex, &range);
+    return range;
+}
+
+bool YsfxParameter::isEnumSlider() const
+{
+    return ysfx_slider_is_enum(m_fx.get(), (uint32_t)m_sliderIndex);
+}
+
+int YsfxParameter::getSliderEnumSize() const
+{
+    return (int)ysfx_slider_get_enum_names(m_fx.get(), (uint32_t)m_sliderIndex, nullptr, 0);
+}
+
+juce::CharPointer_UTF8 YsfxParameter::getSliderEnumName(int index) const
+{
+    return juce::CharPointer_UTF8{ysfx_slider_get_enum_name(m_fx.get(), (uint32_t)m_sliderIndex, (uint32_t)index)};
 }
 
 ysfx_real YsfxParameter::convertToYsfxValue(float normValue) const
 {
-    ysfx_slider_range_t range = m_info.range;
+    ysfx_slider_range_t range = getSliderRange();
     ysfx_real actualValue = (ysfx_real)normValue * (range.max - range.min) + range.min;
     // NOTE: if enumerated, round the value to nearest,
     //    to make sure imprecision does not land us on the wrong index
-    if (m_info.isEnum)
+    if (isEnumSlider())
         actualValue = juce::roundToInt(actualValue);
     return actualValue;
 }
 
 float YsfxParameter::convertFromYsfxValue(ysfx_real actualValue) const
 {
-    ysfx_slider_range_t range = m_info.range;
+    ysfx_slider_range_t range = getSliderRange();
     if (range.min == range.max)
         return 0.0f;
     // NOTE: if enumerated, round value into an index
-    if (m_info.isEnum)
+    if (isEnumSlider())
         actualValue = juce::roundToInt(actualValue);
     float normValue = (float)((actualValue  - range.min) / (range.max - range.min));
     return normValue;
@@ -70,15 +108,15 @@ float YsfxParameter::getDefaultValue() const
 
 juce::String YsfxParameter::getText(float normalisedValue, int) const
 {
-    ysfx_slider_range_t range = m_info.range;
+    ysfx_slider_range_t range = getSliderRange();
     ysfx_real actualValue = (ysfx_real)normalisedValue * (range.max - range.min) + range.min;
-
-    if (m_info.isEnum) {
+    if (isEnumSlider()) {
+        int enumSize = getSliderEnumSize();
         // NOTE: if enumerated, round the value to nearest,
         //    to make sure imprecision does not land us on the wrong index
         int index = juce::roundToInt(actualValue);
-        if (index >= 0 && index < m_info.enumNames.size())
-            return m_info.enumNames[index];
+        if (index >= 0 && index < enumSize)
+            return getSliderEnumName(index);
     }
 
     return juce::String(actualValue);
@@ -86,13 +124,14 @@ juce::String YsfxParameter::getText(float normalisedValue, int) const
 
 float YsfxParameter::getValueForText(const juce::String &text) const
 {
-    ysfx_slider_range_t range = m_info.range;
+    ysfx_slider_range_t range = getSliderRange();
     ysfx_real actualValue{};
 
     bool foundEnum = false;
-    if (m_info.isEnum) {
-        for (int i = 0; !foundEnum && i < m_info.enumNames.size(); ++i) {
-            foundEnum = m_info.enumNames[i] == text;
+    if (isEnumSlider()) {
+        int enumSize = getSliderEnumSize();
+        for (int i = 0; !foundEnum && i < enumSize; ++i) {
+            foundEnum = text == getSliderEnumName(i);
             if (foundEnum)
                 actualValue = i;
         }

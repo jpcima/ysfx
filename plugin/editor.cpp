@@ -124,10 +124,13 @@ void YsfxEditor::Impl::grabInfoAndUpdate()
 void YsfxEditor::Impl::updateInfo()
 {
     YsfxInfo *info = m_info.get();
+    ysfx_t *fx = info->effect.get();
 
-    if (info->path.isNotEmpty()) {
-        m_lblFilePath->setText(juce::File{info->path}.getFileName(), juce::dontSendNotification);
-        m_lblFilePath->setTooltip(info->path);
+    juce::File filePath{juce::CharPointer_UTF8{ysfx_get_file_path(fx)}};
+
+    if (filePath != juce::File{}) {
+        m_lblFilePath->setText(filePath.getFileName(), juce::dontSendNotification);
+        m_lblFilePath->setTooltip(filePath.getFullPathName());
     }
     else {
         m_lblFilePath->setText(TRANS("No file"), juce::dontSendNotification);
@@ -137,12 +140,11 @@ void YsfxEditor::Impl::updateInfo()
     juce::Array<YsfxParameter *> params;
     params.ensureStorageAllocated(ysfx_max_sliders);
     for (uint32_t i = 0; i < ysfx_max_sliders; ++i) {
-        if (info->sliders[i]->exists)
+        if (ysfx_slider_exists(fx, i))
             params.add(m_proc->getYsfxParameter((int)i));
     }
     m_parametersPanel->setParametersDisplayed(params);
 
-    ysfx_t *fx = info->effect.get();
     m_graphicsView->setEffect(fx);
     m_ideView->setEffect(fx);
 
@@ -165,8 +167,11 @@ void YsfxEditor::Impl::chooseFileAndLoad()
     if (m_fileChooserActive)
         return;
 
+    YsfxInfo *info = m_info.get();
+    ysfx_t *fx = info->effect.get();
+
     juce::File initialPath;
-    juce::File prevFilePath{m_info->path};
+    juce::File prevFilePath{juce::CharPointer_UTF8{ysfx_get_file_path(fx)}};
     if (prevFilePath != juce::File{})
         initialPath = prevFilePath.getParentDirectory();
 
@@ -308,9 +313,15 @@ void YsfxEditor::Impl::connectUI()
 
 void YsfxEditor::Impl::relayoutUI()
 {
+    YsfxInfo *info = m_info.get();
+    ysfx_t *fx = info->effect.get();
+
+    uint32_t gfxDim[2] = {};
+    ysfx_get_gfx_dim(fx, gfxDim);
+
     if (m_mustResizeToGfx) {
-        int w = juce::jmax(defaultEditorWidth, m_info->gfxWidth + 10);
-        int h = juce::jmax(defaultEditorHeight, m_info->gfxHeight + 50 + 10);
+        int w = juce::jmax(defaultEditorWidth, (int)gfxDim[0] + 10);
+        int h = juce::jmax(defaultEditorHeight, (int)gfxDim[1] + 50 + 10);
         m_self->setSize(w, h);
         m_mustResizeToGfx = false;
     }

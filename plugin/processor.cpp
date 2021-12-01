@@ -93,7 +93,9 @@ YsfxProcessor::YsfxProcessor()
 
     ysfx_t *fx = ysfx_new(config.get());
     m_impl->m_fx.reset(fx);
-    YsfxInfo::Ptr info{YsfxInfo::extractFrom(fx)};
+    YsfxInfo::Ptr info{new YsfxInfo};
+    info->effect.reset(fx);
+    ysfx_add_ref(fx);
     std::atomic_store(&m_impl->m_info, info);
 
     ///
@@ -108,7 +110,7 @@ YsfxProcessor::YsfxProcessor()
     ///
     m_impl->m_sliderParamOffset = getParameters().size();
     for (int i = 0; i < ysfx_max_sliders; ++i)
-        addParameter(new YsfxParameter(i));
+        addParameter(new YsfxParameter(fx, i));
 
     ///
     m_impl->m_background.reset(new Impl::Background(m_impl.get()));
@@ -495,19 +497,16 @@ void YsfxProcessor::Impl::Background::run()
 
 void YsfxProcessor::Impl::Background::processLoadRequest(LoadRequest &req)
 {
+    YsfxInfo::Ptr info{new YsfxInfo};
+
+    ///
     ysfx_config_u config{ysfx_config_new()};
     ysfx_register_builtin_audio_formats(config.get());
     ysfx_guess_file_roots(config.get(), req.filePath.toRawUTF8());
 
     ///
-    struct ConfigData {
-        juce::StringArray errors;
-        juce::StringArray warnings;
-    };
-
-    ConfigData cdata;
     auto logfn = [](intptr_t userdata, ysfx_log_level level, const char *message) {
-        ConfigData &data = *(ConfigData *)userdata;
+        YsfxInfo &data = *(YsfxInfo *)userdata;
         if (level == ysfx_log_error)
             data.errors.add(juce::CharPointer_UTF8(message));
         else if (level == ysfx_log_warning)
@@ -515,11 +514,11 @@ void YsfxProcessor::Impl::Background::processLoadRequest(LoadRequest &req)
     };
 
     ysfx_set_log_reporter(config.get(), +logfn);
-    ysfx_set_user_data(config.get(), (intptr_t)&cdata);
+    ysfx_set_user_data(config.get(), (intptr_t)info.get());
 
     ///
     ysfx_t *fx = ysfx_new(config.get());
-    ysfx_u fxRef{fx};
+    info->effect.reset(fx);
 
     uint32_t loadopts = 0;
     uint32_t compileopts = 0;
@@ -529,18 +528,17 @@ void YsfxProcessor::Impl::Background::processLoadRequest(LoadRequest &req)
     if (req.initialState)
         ysfx_load_state(fx, req.initialState.get());
 
-    YsfxInfo::Ptr info{YsfxInfo::extractFrom(fx)};
-    info->errors = cdata.errors;
-    info->warnings = cdata.warnings;
-
     {
         AudioProcessorSuspender sus{*m_impl->m_self};
         sus.lockCallbacks();
-        m_impl->m_fx = std::move(fxRef);
+        m_impl->m_fx.reset(fx);
+        ysfx_add_ref(fx);
         std::atomic_store(&m_impl->m_info, info);
 
-        for (uint32_t i = 0; i < ysfx_max_sliders; ++i)
-            m_impl->m_self->getYsfxParameter((int)i)->setInfo(*info->sliders[i]);
+        for (uint32_t i = 0; i < ysfx_max_sliders; ++i) {
+            YsfxParameter *param = m_impl->m_self->getYsfxParameter((int)i);
+            param->setEffect(fx);
+        }
 
         m_impl->syncSlidersToParameters();
     }
