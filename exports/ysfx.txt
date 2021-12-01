@@ -53,6 +53,9 @@ ysfx_send_midi
 ysfx_receive_midi
 ysfx_receive_midi_from_bus
 ysfx_send_trigger
+ysfx_fetch_slider_changes
+ysfx_fetch_slider_automations
+ysfx_get_slider_visiblity
 ysfx_process_float
 ysfx_process_double
 ysfx_load_state
