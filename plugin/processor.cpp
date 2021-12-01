@@ -499,6 +499,25 @@ void YsfxProcessor::Impl::Background::processLoadRequest(LoadRequest &req)
     ysfx_register_builtin_audio_formats(config.get());
     ysfx_guess_file_roots(config.get(), req.filePath.toRawUTF8());
 
+    ///
+    struct ConfigData {
+        juce::StringArray errors;
+        juce::StringArray warnings;
+    };
+
+    ConfigData cdata;
+    auto logfn = [](intptr_t userdata, ysfx_log_level level, const char *message) {
+        ConfigData &data = *(ConfigData *)userdata;
+        if (level == ysfx_log_error)
+            data.errors.add(juce::CharPointer_UTF8(message));
+        else if (level == ysfx_log_warning)
+            data.warnings.add(juce::CharPointer_UTF8(message));
+    };
+
+    ysfx_set_log_reporter(config.get(), +logfn);
+    ysfx_set_user_data(config.get(), (intptr_t)&cdata);
+
+    ///
     ysfx_t *fx = ysfx_new(config.get());
     ysfx_u fxRef{fx};
 
@@ -511,6 +530,8 @@ void YsfxProcessor::Impl::Background::processLoadRequest(LoadRequest &req)
         ysfx_load_state(fx, req.initialState.get());
 
     YsfxInfo::Ptr info{YsfxInfo::extractFrom(fx)};
+    info->errors = cdata.errors;
+    info->warnings = cdata.warnings;
 
     {
         AudioProcessorSuspender sus{*m_impl->m_self};

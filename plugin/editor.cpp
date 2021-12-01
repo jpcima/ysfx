@@ -123,9 +123,11 @@ void YsfxEditor::Impl::grabInfoAndUpdate()
 
 void YsfxEditor::Impl::updateInfo()
 {
-    if (m_info->path.isNotEmpty()) {
-        m_lblFilePath->setText(juce::File{m_info->path}.getFileName(), juce::dontSendNotification);
-        m_lblFilePath->setTooltip(m_info->path);
+    YsfxInfo *info = m_info.get();
+
+    if (info->path.isNotEmpty()) {
+        m_lblFilePath->setText(juce::File{info->path}.getFileName(), juce::dontSendNotification);
+        m_lblFilePath->setTooltip(info->path);
     }
     else {
         m_lblFilePath->setText(TRANS("No file"), juce::dontSendNotification);
@@ -135,14 +137,21 @@ void YsfxEditor::Impl::updateInfo()
     juce::Array<YsfxParameter *> params;
     params.ensureStorageAllocated(ysfx_max_sliders);
     for (uint32_t i = 0; i < ysfx_max_sliders; ++i) {
-        if (m_info->sliders[i]->exists)
+        if (info->sliders[i]->exists)
             params.add(m_proc->getYsfxParameter((int)i));
     }
     m_parametersPanel->setParametersDisplayed(params);
 
-    ysfx_t *fx = m_info->effect.get();
+    ysfx_t *fx = info->effect.get();
     m_graphicsView->setEffect(fx);
     m_ideView->setEffect(fx);
+
+    if (!info->errors.isEmpty())
+        m_ideView->setStatusText(info->errors.getReference(0));
+    else if (!info->warnings.isEmpty())
+        m_ideView->setStatusText(info->warnings.getReference(0));
+    else
+        m_ideView->setStatusText(TRANS("Compiled OK"));
 
     bool hasGfx = ysfx_has_section(fx, ysfx_section_gfx);
     switchEditor(hasGfx);

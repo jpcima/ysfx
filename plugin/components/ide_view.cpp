@@ -30,6 +30,7 @@ struct YsfxIDEView::Impl {
     std::unique_ptr<juce::Label> m_lblVariablesHeading;
     std::unique_ptr<juce::Viewport> m_vpVariables;
     std::unique_ptr<juce::Component> m_compVariables;
+    std::unique_ptr<juce::Label> m_lblStatus;
     std::unique_ptr<juce::Timer> m_relayoutTimer;
 
     struct VariableUI {
@@ -82,6 +83,12 @@ void YsfxIDEView::setEffect(ysfx_t *fx)
         ysfx_add_ref(fx);
 
     m_impl->setupNewFx();
+}
+
+void YsfxIDEView::setStatusText(const juce::String &text)
+{
+    m_impl->m_lblStatus->setText(text, juce::dontSendNotification);
+    m_impl->m_lblStatus->setTooltip(text);
 }
 
 void YsfxIDEView::resized()
@@ -205,6 +212,9 @@ void YsfxIDEView::Impl::createUI()
     m_self->addAndMakeVisible(*m_vpVariables);
     m_compVariables.reset(new juce::Component);
     m_vpVariables->setViewedComponent(m_compVariables.get(), false);
+    m_lblStatus.reset(new juce::Label);
+    m_lblStatus->setMinimumHorizontalScale(1.0f);
+    m_self->addAndMakeVisible(*m_lblStatus);
 }
 
 void YsfxIDEView::Impl::connectUI()
@@ -220,6 +230,7 @@ void YsfxIDEView::Impl::relayoutUI()
     temp = bounds;
     const juce::Rectangle<int> debugArea = temp.removeFromRight(300);
     const juce::Rectangle<int> topRow = temp.removeFromTop(50);
+    const juce::Rectangle<int> statusArea = temp.removeFromBottom(20);
     const juce::Rectangle<int> editArea = temp;
 
     ///
@@ -244,6 +255,8 @@ void YsfxIDEView::Impl::relayoutUI()
         var.m_lblName->setBounds(varTemp);
     }
     m_compVariables->setSize(m_vpVariables->getWidth(), m_vars.size() * varRowHeight);
+
+    m_lblStatus->setBounds(statusArea);
 
     m_editor->setBounds(editArea);
 

@@ -26,6 +26,7 @@ public:
     YsfxIDEView();
     ~YsfxIDEView() override;
     void setEffect(ysfx_t *fx);
+    void setStatusText(const juce::String &text);
 
     std::function<void(const juce::File &)> onFileSaved;
 
