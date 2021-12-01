@@ -26,7 +26,7 @@ struct ysfx_config_s {
     std::string import_root;
     std::string data_root;
     std::vector<ysfx_audio_format_t> audio_formats;
-    ysfx_log_reporter *log_reporter = nullptr;
+    ysfx_log_reporter_t *log_reporter = nullptr;
     intptr_t userdata = 0;
     std::atomic<uint32_t> ref_count{1};
 };

@@ -61,7 +61,7 @@ typedef enum ysfx_log_level_e {
     ysfx_log_error,
 } ysfx_log_level;
 
-typedef void (ysfx_log_reporter)(intptr_t userdata, ysfx_log_level level, const char *message);
+typedef void (ysfx_log_reporter_t)(intptr_t userdata, ysfx_log_level level, const char *message);
 
 //------------------------------------------------------------------------------
 // YSFX configuration
@@ -90,7 +90,7 @@ YSFX_API void ysfx_register_audio_format(ysfx_config_t *config, ysfx_audio_forma
 // register the builtin audio formats (at least WAV file support)
 YSFX_API void ysfx_register_builtin_audio_formats(ysfx_config_t *config);
 // set the log reporting function
-YSFX_API void ysfx_set_log_reporter(ysfx_config_t *config, ysfx_log_reporter *reporter);
+YSFX_API void ysfx_set_log_reporter(ysfx_config_t *config, ysfx_log_reporter_t *reporter);
 // set the callback user data
 YSFX_API void ysfx_set_user_data(ysfx_config_t *config, intptr_t userdata);
 

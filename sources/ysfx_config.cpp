@@ -108,7 +108,7 @@ void ysfx_register_builtin_audio_formats(ysfx_config_t *config)
     config->audio_formats.push_back(ysfx_audio_format_flac);
 }
 
-void ysfx_set_log_reporter(ysfx_config_t *config, ysfx_log_reporter *reporter)
+void ysfx_set_log_reporter(ysfx_config_t *config, ysfx_log_reporter_t *reporter)
 {
     config->log_reporter = reporter;
 }
