@@ -146,7 +146,7 @@ void YsfxEditor::Impl::updateInfo()
     m_parametersPanel->setParametersDisplayed(params);
 
     m_graphicsView->setEffect(fx);
-    m_ideView->setEffect(fx);
+    m_ideView->setEffect(fx, info->timeStamp);
 
     if (!info->errors.isEmpty())
         m_ideView->setStatusText(info->errors.getReference(0));
@@ -306,6 +306,7 @@ void YsfxEditor::Impl::connectUI()
     m_btnEditCode->onClick = [this]() { openCodeEditor(); };
 
     m_ideView->onFileSaved = [this](const juce::File &file) { loadFile(file); };
+    m_ideView->onReloadRequested = [this](const juce::File &file) { loadFile(file); };
 
     m_infoTimer.reset(FunctionalTimer::create([this]() { grabInfoAndUpdate(); }));
     m_infoTimer->startTimer(100);

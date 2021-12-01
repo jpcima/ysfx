@@ -23,6 +23,8 @@
 struct YsfxIDEView::Impl {
     YsfxIDEView *m_self = nullptr;
     ysfx_u m_fx;
+    juce::Time m_changeTime;
+    bool m_reloadDialogGuard = false;
     std::unique_ptr<juce::CodeDocument> m_document;
     std::unique_ptr<juce::CodeTokeniser> m_tokenizer;
     std::unique_ptr<juce::CodeEditorComponent> m_editor;
@@ -32,6 +34,7 @@ struct YsfxIDEView::Impl {
     std::unique_ptr<juce::Component> m_compVariables;
     std::unique_ptr<juce::Label> m_lblStatus;
     std::unique_ptr<juce::Timer> m_relayoutTimer;
+    std::unique_ptr<juce::Timer> m_fileCheckTimer;
 
     struct VariableUI {
         ysfx_real *m_var = nullptr;
@@ -45,6 +48,7 @@ struct YsfxIDEView::Impl {
     //==========================================================================
     void setupNewFx();
     void saveCurrentFile();
+    void checkFileForModifications();
 
     //==========================================================================
     void createUI();
@@ -73,7 +77,7 @@ YsfxIDEView::~YsfxIDEView()
 {
 }
 
-void YsfxIDEView::setEffect(ysfx_t *fx)
+void YsfxIDEView::setEffect(ysfx_t *fx, juce::Time timeStamp)
 {
     if (m_impl->m_fx.get() == fx)
         return;
@@ -82,6 +86,7 @@ void YsfxIDEView::setEffect(ysfx_t *fx)
     if (fx)
         ysfx_add_ref(fx);
 
+    m_impl->m_changeTime = timeStamp;
     m_impl->setupNewFx();
 }
 
@@ -94,6 +99,22 @@ void YsfxIDEView::setStatusText(const juce::String &text)
 void YsfxIDEView::resized()
 {
     m_impl->relayoutUILater();
+}
+
+void YsfxIDEView::focusOfChildComponentChanged(FocusChangeType cause)
+{
+    (void)cause;
+
+    juce::Component *focus = getCurrentlyFocusedComponent();
+
+    if (focus == m_impl->m_editor.get()) {
+        juce::Timer *timer = FunctionalTimer::create([this]() { m_impl->checkFileForModifications(); });
+        m_impl->m_fileCheckTimer.reset(timer);
+        timer->startTimer(100);
+    }
+    else {
+        m_impl->m_fileCheckTimer.reset();
+    }
 }
 
 void YsfxIDEView::Impl::setupNewFx()
@@ -112,12 +133,10 @@ void YsfxIDEView::Impl::setupNewFx()
         juce::File file{juce::CharPointer_UTF8{ysfx_get_file_path(fx)}};
 
         {
-            juce::FileInputStream fileStream(file);
-            juce::String newContent;
-            if (fileStream.openedOk() &&
-                (newContent = fileStream.readEntireStreamAsString(),
-                 fileStream.getStatus().wasOk()))
-            {
+            juce::MemoryBlock memBlock;
+            if (file.loadFileAsData(memBlock)) {
+                juce::String newContent = memBlock.toString();
+                memBlock = {};
                 if (newContent != m_document->getAllContent()) {
                     m_document->replaceAllContent(newContent);
                     m_editor->moveCaretToTop(false);
@@ -170,18 +189,11 @@ void YsfxIDEView::Impl::saveCurrentFile()
     if (!fx)
         return;
 
-    bool success = false;
     juce::File file{juce::CharPointer_UTF8{ysfx_get_file_path(fx)}};
 
     const juce::String content = m_document->getAllContent();
-    {
-        juce::FileOutputStream stream{file};
-        success = stream.openedOk() &&
-            stream.setPosition(0) && stream.truncate().wasOk() &&
-            stream.write(content.toRawUTF8(), content.getNumBytesAsUTF8()) &&
-            (stream.flush(), stream.getStatus().wasOk());
-    }
 
+    bool success = file.replaceWithData(content.toRawUTF8(), content.getNumBytesAsUTF8());
     if (!success) {
         juce::AlertWindow::showAsync(
             juce::MessageBoxOptions{}
@@ -194,8 +206,51 @@ void YsfxIDEView::Impl::saveCurrentFile()
         return;
     }
 
+    m_changeTime = juce::Time::getCurrentTime();
+
     if (m_self->onFileSaved)
         m_self->onFileSaved(file);
+}
+
+void YsfxIDEView::Impl::checkFileForModifications()
+{
+    ysfx_t *fx = m_fx.get();
+    if (!fx)
+        return;
+
+    juce::File file{juce::CharPointer_UTF8{ysfx_get_file_path(fx)}};
+    if (file == juce::File{})
+        return;
+
+    juce::Time newMtime = file.getLastModificationTime();
+    if (newMtime == juce::Time{})
+        return;
+
+    if (m_changeTime == juce::Time{} || newMtime > m_changeTime) {
+        m_changeTime = newMtime;
+
+        if (!m_reloadDialogGuard) {
+            m_reloadDialogGuard = true;
+
+            auto callback = [this, file](int result) {
+                m_reloadDialogGuard = false;
+                if (result != 0) {
+                    if (m_self->onReloadRequested)
+                        m_self->onReloadRequested(file);
+                }
+            };
+
+            juce::AlertWindow::showAsync(
+                juce::MessageBoxOptions{}
+                .withAssociatedComponent(m_self)
+                .withIconType(juce::MessageBoxIconType::QuestionIcon)
+                .withTitle(TRANS("Reload?"))
+                .withButton(TRANS("Yes"))
+                .withButton(TRANS("No"))
+                .withMessage(TRANS("The file has been modified outside this editor. Reload it?")),
+                callback);
+        }
+    }
 }
 
 void YsfxIDEView::Impl::createUI()

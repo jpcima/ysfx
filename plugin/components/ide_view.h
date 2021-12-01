@@ -25,13 +25,16 @@ class YsfxIDEView : public juce::Component {
 public:
     YsfxIDEView();
     ~YsfxIDEView() override;
-    void setEffect(ysfx_t *fx);
+    void setEffect(ysfx_t *fx, juce::Time timeStamp);
     void setStatusText(const juce::String &text);
+    void focusOnCodeEditor();
 
     std::function<void(const juce::File &)> onFileSaved;
+    std::function<void(const juce::File &)> onReloadRequested;
 
 protected:
     void resized() override;
+    void focusOfChildComponentChanged(FocusChangeType cause) override;
 
 private:
     struct Impl;

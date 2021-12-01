@@ -499,6 +499,8 @@ void YsfxProcessor::Impl::Background::processLoadRequest(LoadRequest &req)
 {
     YsfxInfo::Ptr info{new YsfxInfo};
 
+    info->timeStamp = juce::Time::getCurrentTime();
+
     ///
     ysfx_config_u config{ysfx_config_new()};
     ysfx_register_builtin_audio_formats(config.get());

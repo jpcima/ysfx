@@ -22,6 +22,7 @@
 
 struct YsfxInfo : public std::enable_shared_from_this<YsfxInfo> {
     ysfx_u effect;
+    juce::Time timeStamp;
     juce::StringArray errors;
     juce::StringArray warnings;
     using Ptr = std::shared_ptr<YsfxInfo>;
