@@ -20,6 +20,7 @@
 #define YSFX_INCLUDED_YSFX_H
 
 #include <stdio.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
 #if defined(_WIN32)
@@ -129,7 +130,9 @@ YSFX_API const char *ysfx_get_name(ysfx_t *fx);
 YSFX_API const char *ysfx_get_file_path(ysfx_t *fx);
 // get the author of the effect
 YSFX_API const char *ysfx_get_author(ysfx_t *fx);
-// get the null-terminated list of tags of the effect
+// get the number of tags of the effect
+#define ysfx_get_num_tags(fx) ysfx_get_tags((fx), NULL, 0)
+// get the list of tags of the effect
 YSFX_API uint32_t ysfx_get_tags(ysfx_t *fx, const char **dest, uint32_t destsize);
 // get a single tag of the effect
 YSFX_API const char *ysfx_get_tag(ysfx_t *fx, uint32_t index);
@@ -173,6 +176,8 @@ YSFX_API const char *ysfx_slider_get_name(ysfx_t *fx, uint32_t index);
 YSFX_API bool ysfx_slider_get_range(ysfx_t *fx, uint32_t index, ysfx_slider_range_t *range);
 // get whether the slider is an enumeration
 YSFX_API bool ysfx_slider_is_enum(ysfx_t *fx, uint32_t index);
+// get the number of labels for the enumeration slider
+#define ysfx_slider_get_enum_size(fx, index) ysfx_slider_get_enum_names((fx), (index), NULL, 0)
 // get the null-terminated list of labels for the enumeration slider
 YSFX_API uint32_t ysfx_slider_get_enum_names(ysfx_t *fx, uint32_t index, const char **dest, uint32_t destsize);
 // get a single label for the enumeration slider

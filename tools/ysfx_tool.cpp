@@ -93,7 +93,7 @@ void dump_header_info(ysfx_t *fx)
     printf("Name: %s\n", ysfx_get_name(fx));
     printf("Author: %s\n", ysfx_get_author(fx));
 
-    uint32_t tag_count = ysfx_get_tags(fx, nullptr, 0);
+    uint32_t tag_count = ysfx_get_num_tags(fx);
     std::vector<const char *> tags(tag_count);
     ysfx_get_tags(fx, tags.data(), tag_count);
     printf("Tags: %u\n", tag_count);
@@ -152,7 +152,7 @@ void dump_header_info(ysfx_t *fx)
         printf("\t  Enumeration: %s\n", yesno(is_enum));
         printf("\t  Path: %s\n", yesno(is_path));
         if (is_enum) {
-            uint32_t count = ysfx_slider_get_enum_names(fx, i, nullptr, 0);
+            uint32_t count = ysfx_slider_get_enum_size(fx, i);
             std::vector<const char *> names(count);
             ysfx_slider_get_enum_names(fx, i, names.data(), count);
             for (uint32_t j = 0; j < count; ++j)

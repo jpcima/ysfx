@@ -60,7 +60,7 @@ bool YsfxParameter::isEnumSlider() const
 
 int YsfxParameter::getSliderEnumSize() const
 {
-    return (int)ysfx_slider_get_enum_names(m_fx.get(), (uint32_t)m_sliderIndex, nullptr, 0);
+    return (int)ysfx_slider_get_enum_size(m_fx.get(), (uint32_t)m_sliderIndex);
 }
 
 juce::CharPointer_UTF8 YsfxParameter::getSliderEnumName(int index) const
