@@ -184,8 +184,6 @@ YSFX_API bool ysfx_slider_is_path(ysfx_t *fx, uint32_t index);
 YSFX_API ysfx_real ysfx_slider_get_value(ysfx_t *fx, uint32_t index);
 // set the value of the slider, and call @slider later if value has changed
 YSFX_API void ysfx_slider_set_value(ysfx_t *fx, uint32_t index, ysfx_real value);
-// get the whether the slider is currently visible
-YSFX_API bool ysfx_slider_is_visible(ysfx_t *fx, uint32_t index);
 
 typedef enum ysfx_compile_option_e {
     // skip compiling the @serialize section
@@ -259,21 +257,12 @@ YSFX_API bool ysfx_receive_midi_from_bus(ysfx_t *fx, uint32_t bus, ysfx_midi_eve
 // send a trigger, it will be processed during the cycle
 YSFX_API bool ysfx_send_trigger(ysfx_t *fx, uint32_t index);
 
-typedef enum ysfx_slider_change_type_e {
-    // nothing changed
-    ysfx_slider_change_none = 0,
-    // slider should have its display updated
-    ysfx_slider_change_display = 1 << 0,
-    // slider should have its parameter automated, and display updated
-    ysfx_slider_change_automation = 1 << 1,
-    // slider had its visible state modified
-    ysfx_slider_change_visibility = 1 << 2,
-} ysfx_slider_change_type_t;
-
-// check whether any slider changed, after having processing the cycle
-YSFX_API bool ysfx_have_slider_changes(ysfx_t *fx);
-// check what changed about a particular slider, after having processing the cycle
-YSFX_API uint32_t ysfx_get_slider_change_type(ysfx_t *fx, uint32_t index);
+// get a bit mask of sliders whose values must be redisplayed, and clear it to zero
+uint64_t ysfx_fetch_slider_changes(ysfx_t *fx);
+// get a bit mask of sliders whose values must be automated, and clear it to zero
+uint64_t ysfx_fetch_slider_automations(ysfx_t *fx);
+// get a bit mask of sliders currently visible
+uint64_t ysfx_get_slider_visiblity(ysfx_t *fx);
 
 // process a cycle in 32-bit float
 YSFX_API void ysfx_process_float(ysfx_t *fx, const float *const *ins, float *const *outs, uint32_t num_ins, uint32_t num_outs, uint32_t num_frames);

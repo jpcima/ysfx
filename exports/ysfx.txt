@@ -39,7 +39,6 @@ ysfx_slider_get_enum_name
 ysfx_slider_is_path
 ysfx_slider_get_value
 ysfx_slider_set_value
-ysfx_slider_is_visible
 ysfx_compile
 ysfx_is_compiled
 ysfx_get_block_size
@@ -53,8 +52,6 @@ ysfx_send_midi
 ysfx_receive_midi
 ysfx_receive_midi_from_bus
 ysfx_send_trigger
-ysfx_have_slider_changes
-ysfx_get_slider_change_type
 ysfx_process_float
 ysfx_process_double
 ysfx_load_state

@@ -49,7 +49,8 @@ add_library(ysfx-private
         "sources/ysfx_api_gfx_dummy.hpp"
         "sources/ysfx_api_gfx_lice.hpp"
         "sources/ysfx_eel_utils.cpp"
-        "sources/ysfx_eel_utils.hpp")
+        "sources/ysfx_eel_utils.hpp"
+        "sources/utility/sync_bitset.hpp")
 target_compile_definitions(ysfx-private
     PRIVATE
         "_FILE_OFFSET_BITS=64")

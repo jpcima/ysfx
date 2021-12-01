@@ -30,6 +30,8 @@
 
 static EEL_F *NSEEL_CGEN_CALL ysfx_api_spl(void *opaque, EEL_F *n_)
 {
+    //NOTE: callable from @gfx thread
+
     ysfx_t *fx = REAPER_GET_INTERFACE(opaque);
     int32_t n = ysfx_eel_round<int32_t>(*n_);
 
@@ -43,6 +45,8 @@ static EEL_F *NSEEL_CGEN_CALL ysfx_api_spl(void *opaque, EEL_F *n_)
 
 static EEL_F *NSEEL_CGEN_CALL ysfx_api_slider(void *opaque, EEL_F *n_)
 {
+    //NOTE: callable from @gfx thread
+
     ysfx_t *fx = REAPER_GET_INTERFACE(opaque);
     int32_t n = ysfx_eel_round<int32_t>(*n_);
 
@@ -66,6 +70,8 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_slider_next_chg(void *opaque, EEL_F *index
 
 static EEL_F NSEEL_CGEN_CALL ysfx_api_slider_automate(void *opaque, EEL_F *mask_or_slider_)
 {
+    //NOTE: callable from @gfx thread
+
     ysfx_t *fx = REAPER_GET_INTERFACE(opaque);
     uint32_t slider = ysfx_get_slider_of_var(fx, mask_or_slider_);
 
@@ -82,6 +88,8 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_slider_automate(void *opaque, EEL_F *mask_
 
 static EEL_F NSEEL_CGEN_CALL ysfx_api_sliderchange(void *opaque, EEL_F *mask_or_slider_)
 {
+    //NOTE: callable from @gfx thread
+
     ysfx_t *fx = REAPER_GET_INTERFACE(opaque);
     uint32_t slider = ysfx_get_slider_of_var(fx, mask_or_slider_);
 
@@ -97,6 +105,8 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_sliderchange(void *opaque, EEL_F *mask_or_
 
 static EEL_F NSEEL_CGEN_CALL ysfx_api_slider_show(void *opaque, EEL_F *mask_or_slider_, EEL_F *value_)
 {
+    //NOTE: callable from @gfx thread
+
     ysfx_t *fx = REAPER_GET_INTERFACE(opaque);
     uint32_t slider = ysfx_get_slider_of_var(fx, mask_or_slider_);
 
@@ -117,8 +127,7 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_slider_show(void *opaque, EEL_F *mask_or_s
     }
     else {
         // toggle
-        mask ^= fx->slider.visible_mask;
-        fx->slider.visible_mask = mask;
+        mask = fx->slider.visible_mask.fetch_xor(mask) ^ mask;
     }
 
     return (EEL_F)mask;

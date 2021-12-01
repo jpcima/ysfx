@@ -391,16 +391,22 @@ void YsfxProcessor::Impl::processSliderChanges()
 {
     ysfx_t *fx = m_fx.get();
 
-    if (!ysfx_have_slider_changes(fx))
-        return;
+    uint64_t changed = ysfx_fetch_slider_changes(fx);
+    uint64_t automated = ysfx_fetch_slider_automations(fx);
 
-    for (int i = 0; i < ysfx_max_sliders; ++i) {
-        uint32_t type = ysfx_get_slider_change_type(fx, (uint32_t)i);
-        if (type & (ysfx_slider_change_display|ysfx_slider_change_automation))
-            syncSliderToParameter(i);
-        if (type & ysfx_slider_change_visibility)
-            ; //TODO: visibility change
+    if ((changed|automated) != 0) {
+        for (int i = 0; i < ysfx_max_sliders; ++i) {
+            uint64_t mask = (uint64_t)1 << i;
+
+            if ((changed|automated) & mask) {
+                //NOTE: it should avoid recording an automation point in case of
+                //  `changed` only, but I don't know how to implement this
+                syncSliderToParameter(i);
+            }
+        }
     }
+
+    //TODO: visibility changes
 }
 
 void YsfxProcessor::Impl::updateTimeInfo()

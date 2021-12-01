@@ -256,6 +256,9 @@ bool ysfx_load_file(ysfx_t *fx, const char *filepath, uint32_t loadopts)
 
         // find incorrect enums and fix them
         ysfx_fix_invalid_enums(fx);
+
+        // set the initial mask of visible sliders
+        ysfx_update_slider_visibility_mask(fx);
     }
 
     //--------------------------------------------------------------------------
@@ -788,18 +791,6 @@ void ysfx_slider_set_value(ysfx_t *fx, uint32_t index, ysfx_real value)
     }
 }
 
-bool ysfx_slider_is_visible(ysfx_t *fx, uint32_t index)
-{
-    if (index >= ysfx_max_sliders || !fx->source.main)
-        return false;
-
-    ysfx_slider_t &slider = fx->source.main->header.sliders[index];
-    if (!slider.exists)
-        return false;
-
-    return (fx->slider.visible_mask & ((uint64_t)1 << index)) != 0;
-}
-
 std::string ysfx_resolve_import_path(ysfx_t *fx, const std::string &name, const std::string &origin)
 {
     std::vector<std::string> dirs;
@@ -929,12 +920,19 @@ void ysfx_first_init(ysfx_t *fx)
 
     ysfx_clear_files(fx);
 
-    fx->slider.visible_mask = 0;
+    fx->slider.automate_mask.store(0);
+    fx->slider.change_mask.store(0);
+    ysfx_update_slider_visibility_mask(fx);
+}
+
+void ysfx_update_slider_visibility_mask(ysfx_t *fx)
+{
+    uint64_t visible = 0;
     for (uint32_t i = 0; i < ysfx_max_sliders; ++i) {
         ysfx_slider_t &slider = fx->source.main->header.sliders[i];
-        fx->slider.visible_mask |= (uint64_t)slider.initially_visible << i;
+        visible |= (uint64_t)slider.initially_visible << i;
     }
-    fx->slider.old_visible_mask = fx->slider.visible_mask;
+    fx->slider.visible_mask.store(visible);
 }
 
 void ysfx_set_time_info(ysfx_t *fx, const ysfx_time_info_t *info)
@@ -992,28 +990,19 @@ bool ysfx_send_trigger(ysfx_t *fx, uint32_t index)
     return true;
 }
 
-bool ysfx_have_slider_changes(ysfx_t *fx)
+uint64_t ysfx_fetch_slider_changes(ysfx_t *fx)
 {
-    uint64_t mask = 0;
-    mask |= fx->slider.automate_mask;
-    mask |= fx->slider.change_mask;
-    mask |= fx->slider.visible_mask ^ fx->slider.old_visible_mask;
-    return mask != 0;
+    return fx->slider.change_mask.exchange(0);
 }
 
-uint32_t ysfx_get_slider_change_type(ysfx_t *fx, uint32_t index)
+uint64_t ysfx_fetch_slider_automations(ysfx_t *fx)
 {
-    if (index >= ysfx_max_sliders)
-        return 0;
+    return fx->slider.automate_mask.exchange(0);
+}
 
-    uint32_t type = 0;
-    if (fx->slider.automate_mask & ((uint64_t)1 << index))
-        type |= ysfx_slider_change_display|ysfx_slider_change_automation;
-    if (fx->slider.change_mask & ((uint64_t)1 << index))
-        type |= ysfx_slider_change_display;
-    if ((fx->slider.visible_mask ^ fx->slider.old_visible_mask) & ((uint64_t)1 << index))
-        type |= ysfx_slider_change_visibility;
-    return type;
+uint64_t ysfx_get_slider_visiblity(ysfx_t *fx)
+{
+    return fx->slider.visible_mask.load();
 }
 
 template <class Real>
@@ -1024,11 +1013,6 @@ void ysfx_process_generic(ysfx_t *fx, const Real *const *ins, Real *const *outs,
     // prepare MIDI input for reading, output for writing
     assert(fx->midi.in->read_pos == 0);
     ysfx_midi_clear(fx->midi.out.get());
-
-    // prepare slider change masks
-    fx->slider.automate_mask = 0;
-    fx->slider.change_mask = 0;
-    fx->slider.old_visible_mask = fx->slider.visible_mask;
 
     // prepare triggers
     *fx->var.trigger = (EEL_F)fx->triggers;

@@ -24,6 +24,7 @@
 #include "ysfx_api_file.hpp"
 #include "ysfx_api_gfx.hpp"
 #include "ysfx_utils.hpp"
+#include "utility/sync_bitset.hpp"
 #include "WDL/eel2/ns-eel.h"
 #include "WDL/eel2/ns-eel-int.h"
 #include <unordered_map>
@@ -139,10 +140,9 @@ struct ysfx_s {
 
     // Slider
     struct {
-        uint64_t automate_mask = 0;
-        uint64_t change_mask = 0;
-        uint64_t visible_mask = 0;
-        uint64_t old_visible_mask = 0;
+        ysfx::sync_bitset64 automate_mask;
+        ysfx::sync_bitset64 change_mask;
+        ysfx::sync_bitset64 visible_mask;
     } slider;
 
     // Triggers
@@ -173,6 +173,7 @@ void ysfx_set_thread_id(ysfx_thread_id_t id);
 void ysfx_unload_source(ysfx_t *fx);
 void ysfx_unload_code(ysfx_t *fx);
 void ysfx_first_init(ysfx_t *fx);
+void ysfx_update_slider_visibility_mask(ysfx_t *fx);
 void ysfx_fill_file_enums(ysfx_t *fx);
 void ysfx_fix_invalid_enums(ysfx_t *fx);
 ysfx_section_t *ysfx_search_section(ysfx_t *fx, uint32_t type, ysfx_toplevel_t **origin = nullptr);
