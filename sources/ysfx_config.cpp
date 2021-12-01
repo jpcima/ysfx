@@ -28,6 +28,9 @@ ysfx_config_t *ysfx_config_new()
 
 void ysfx_config_free(ysfx_config_t *config)
 {
+    if (!config)
+        return;
+
     if (config->ref_count.fetch_sub(1, std::memory_order_acq_rel) == 1)
         delete config;
 }
