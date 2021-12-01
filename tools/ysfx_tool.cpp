@@ -147,6 +147,7 @@ void dump_header_info(ysfx_t *fx)
         printf("\t  Minimum: %f\n", range.min);
         printf("\t  Maximum: %f\n", range.max);
         printf("\t  Increment: %f\n", range.inc);
+        printf("\t  Visible: %s\n", yesno(ysfx_slider_is_initially_visible(fx, i)));
         bool is_enum = ysfx_slider_is_enum(fx, i);
         bool is_path = ysfx_slider_is_path(fx, i);
         printf("\t  Enumeration: %s\n", yesno(is_enum));

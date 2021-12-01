@@ -774,6 +774,16 @@ bool ysfx_slider_is_path(ysfx_t *fx, uint32_t index)
     return !slider.path.empty();
 }
 
+bool ysfx_slider_is_initially_visible(ysfx_t *fx, uint32_t index)
+{
+    ysfx_source_unit_t *main = fx->source.main.get();
+    if (index >= ysfx_max_sliders || !main)
+        return false;
+
+    ysfx_slider_t &slider = main->header.sliders[index];
+    return slider.initially_visible;
+}
+
 ysfx_real ysfx_slider_get_value(ysfx_t *fx, uint32_t index)
 {
     if (index >= ysfx_max_sliders)

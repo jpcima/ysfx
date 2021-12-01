@@ -184,6 +184,8 @@ YSFX_API uint32_t ysfx_slider_get_enum_names(ysfx_t *fx, uint32_t index, const c
 YSFX_API const char *ysfx_slider_get_enum_name(ysfx_t *fx, uint32_t slider_index, uint32_t enum_index);
 // get whether the slider is a path (implies enumeration)
 YSFX_API bool ysfx_slider_is_path(ysfx_t *fx, uint32_t index);
+// get whether the slider is initially visible
+YSFX_API bool ysfx_slider_is_initially_visible(ysfx_t *fx, uint32_t index);
 
 // get the value of the slider
 YSFX_API ysfx_real ysfx_slider_get_value(ysfx_t *fx, uint32_t index);
