@@ -69,10 +69,16 @@ jobs:
       release_arch: ${{matrix.release-arch}}
       build_type: Release
       num_jobs: 2
+      codesign_identity: Jean Pierre Cimalando
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
+      - uses: apple-actions/import-codesign-certs@v1
+        if: ${{github.event_name != 'pull_request' && matrix.os-type == 'macOS'}}
+        with:
+          p12-file-base64: ${{secrets.CERTIFICATES_P12}}
+          p12-password: ${{secrets.CERTIFICATES_P12_PASSWORD}}
       - name: Install dependencies (Linux)
         if: ${{matrix.os-type == 'Linux'}}
         run: sudo apt-get -y install libsndfile1-dev libfreetype-dev libfontconfig-dev libgl-dev libx11-dev libxext-dev libxrandr-dev libxinerama-dev libxcursor-dev libxss-dev
@@ -115,6 +121,10 @@ jobs:
         if: ${{matrix.os-type == 'Linux' || matrix.os-type == 'macOS' || matrix.os-type == 'MinGW'}}
         working-directory: ${{runner.workspace}}/build
         run: cmake --build . --config "${build_type}" -j "${num_jobs}"
+      - name: Sign
+        if: ${{github.event_name != 'pull_request' && matrix.os-type == 'macOS'}}
+        working-directory: ${{runner.workspace}}/build
+        run: codesign --sign "${codesign_identity}" --keychain signing_temp.keychain --deep --force --verbose *_artefacts/"${build_type}"/VST3/*.vst3
       - uses: actions/upload-artifact@v2
         with:
           name: ${{matrix.display-name}} VST3
