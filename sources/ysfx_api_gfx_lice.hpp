@@ -201,7 +201,6 @@ public:
   int getCurModeForBlit(bool isFBsrc);
 
   // these have to be **parms because of the hack for getting string from parm index
-  EEL_F gfx_showmenu(void* opaque, EEL_F** parms, int nparms);
   EEL_F gfx_setcursor(void* opaque, EEL_F** parms, int nparms);
 };
 
@@ -479,13 +478,6 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_printf(void *opaque, INT_PTR nparms, E
     ctx->gfx_drawstr(opaque,parms,(int)nparms,1);
     return v;
   }
-  return 0.0;
-}
-
-static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_showmenu(void* opaque, INT_PTR nparms, EEL_F **parms)
-{
-  eel_lice_state* ctx=EEL_LICE_GET_CONTEXT(opaque);
-  if (ctx) return ctx->gfx_showmenu(opaque, parms, (int)nparms);
   return 0.0;
 }
 
@@ -1397,12 +1389,6 @@ static int __drawTextWithFont(LICE_IBitmap *dest, const RECT *rect, LICE_IFont *
     }
     return xpos;
   }
-}
-
-EEL_F eel_lice_state::gfx_showmenu(void* opaque, EEL_F** parms, int nparms)
-{
-  //TODO
-  return 0;
 }
 
 EEL_F eel_lice_state::gfx_setcursor(void* opaque, EEL_F** parms, int nparms)

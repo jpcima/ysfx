@@ -27,6 +27,8 @@ YSFX_DEFINE_AUTO_PTR(ysfx_gfx_state_u, ysfx_gfx_state_t, ysfx_gfx_state_free);
 void ysfx_gfx_state_set_thread(ysfx_gfx_state_t *state, std::thread::id id);
 void ysfx_gfx_state_set_bitmap(ysfx_gfx_state_t *state, uint8_t *data, uint32_t w, uint32_t h, uint32_t stride);
 void ysfx_gfx_state_set_scale_factor(ysfx_gfx_state_t *state, ysfx_real scale);
+void ysfx_gfx_state_set_callback_data(ysfx_gfx_state_t *state, void *callback_data);
+void ysfx_gfx_state_set_show_menu_callback(ysfx_gfx_state_t *state, int (*callback)(void *, const char *));
 bool ysfx_gfx_state_is_dirty(ysfx_gfx_state_t *state);
 void ysfx_gfx_state_add_key(ysfx_gfx_state_t *state, uint32_t mods, uint32_t key, bool press);
 void ysfx_gfx_state_update_mouse(ysfx_gfx_state_t *state, uint32_t mods, int xpos, int ypos, uint32_t buttons, int wheel, int hwheel);

@@ -51,6 +51,8 @@ struct ysfx_gfx_state_t {
     std::queue<uint32_t> input_queue;
     std::unordered_set<uint32_t> keys_pressed;
     ysfx_real scale = 0.0;
+    void *callback_data = nullptr;
+    int (*show_menu)(void *, const char *);
 };
 
 //------------------------------------------------------------------------------
@@ -153,6 +155,21 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_getchar(void *opaque, EEL_F *p)
     return 0;
 }
 
+static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_showmenu(void *opaque, INT_PTR nparms, EEL_F **parms)
+{
+    ysfx_gfx_state_t *state = GFX_GET_CONTEXT(opaque);
+    if (!state || !state->show_menu)
+        return 0;
+
+    ysfx_t *fx = (ysfx_t *)state->lice->m_user_ctx;
+
+    std::string desc;
+    if (!ysfx_string_get(fx, *parms[0], desc) || desc.empty())
+        return 0;
+
+    return state->show_menu(state->callback_data, desc.c_str());
+}
+
 #endif
 
 //------------------------------------------------------------------------------
@@ -192,6 +209,16 @@ void ysfx_gfx_state_set_bitmap(ysfx_gfx_state_t *state, uint8_t *data, uint32_t 
 void ysfx_gfx_state_set_scale_factor(ysfx_gfx_state_t *state, ysfx_real scale)
 {
     state->scale = scale;
+}
+
+void ysfx_gfx_state_set_callback_data(ysfx_gfx_state_t *state, void *callback_data)
+{
+    state->callback_data = callback_data;
+}
+
+void ysfx_gfx_state_set_show_menu_callback(ysfx_gfx_state_t *state, int (*callback)(void *, const char *))
+{
+    state->show_menu = callback;
 }
 
 bool ysfx_gfx_state_is_dirty(ysfx_gfx_state_t *state)

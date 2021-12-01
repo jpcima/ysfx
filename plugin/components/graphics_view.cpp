@@ -151,6 +151,8 @@ static void translateKeyPress(const juce::KeyPress &key, uint32_t &ykey, uint32_
 
 bool YsfxGraphicsView::keyPressed(const juce::KeyPress &key)
 {
+    updateYsfxKeyModifiers();
+
     for (const KeyPressed &kp : m_keysPressed) {
         if (kp.jcode == key.getKeyCode())
             return true;
@@ -168,6 +170,8 @@ bool YsfxGraphicsView::keyPressed(const juce::KeyPress &key)
 
 bool YsfxGraphicsView::keyStateChanged(bool isKeyDown)
 {
+    updateYsfxKeyModifiers();
+
     if (!isKeyDown) {
         for (auto it = m_keysPressed.begin(); it != m_keysPressed.end(); ) {
             KeyPressed kp = *it;
@@ -186,27 +190,34 @@ bool YsfxGraphicsView::keyStateChanged(bool isKeyDown)
 
 void YsfxGraphicsView::mouseMove(const juce::MouseEvent &event)
 {
-    updateYsfxMouseStatus(event);
+    updateYsfxKeyModifiers();
+    updateYsfxMousePosition(event);
 }
 
 void YsfxGraphicsView::mouseDown(const juce::MouseEvent &event)
 {
-    updateYsfxMouseStatus(event);
+    updateYsfxKeyModifiers();
+    updateYsfxMousePosition(event);
+    updateYsfxMouseButtons(event);
 }
 
 void YsfxGraphicsView::mouseDrag(const juce::MouseEvent &event)
 {
-    updateYsfxMouseStatus(event);
+    updateYsfxKeyModifiers();
+    updateYsfxMousePosition(event);
 }
 
 void YsfxGraphicsView::mouseUp(const juce::MouseEvent &event)
 {
-    updateYsfxMouseStatus(event);
+    updateYsfxKeyModifiers();
+    updateYsfxMousePosition(event);
+    m_ysfxMouseButtons = 0;
 }
 
 void YsfxGraphicsView::mouseWheelMove(const juce::MouseEvent &event, const juce::MouseWheelDetails &wheel)
 {
-    updateYsfxMouseStatus(event);
+    updateYsfxKeyModifiers();
+    updateYsfxMousePosition(event);
     m_ysfxWheel += wheel.deltaY;
     m_ysfxHWheel += wheel.deltaX;
 }
@@ -246,11 +257,15 @@ void YsfxGraphicsView::updateGfx()
         juce::Image::BitmapData bdata{bitmap, juce::Image::BitmapData::readWrite};
 
         ysfx_gfx_config_t gc{};
+        gc.user_data = this;
         gc.pixel_width = (uint32_t)bdata.width;
         gc.pixel_height = (uint32_t)bdata.height;
         gc.pixel_stride = (uint32_t)bdata.lineStride;
         gc.pixels = bdata.data;
         gc.scale_factor = getBitmapScale();
+        gc.show_menu = +[](void *data, const char *spec) -> int {
+            return ((YsfxGraphicsView *)data)->showYsfxMenu(spec);
+        };
         ysfx_gfx_setup(fx, &gc);
 
         mustRepaint = ysfx_gfx_run(fx);
@@ -285,18 +300,30 @@ void YsfxGraphicsView::updateBitmap()
         m_bitmap = juce::Image(juce::Image::ARGB, w, h, true);
 }
 
-void YsfxGraphicsView::updateYsfxMouseStatus(const juce::MouseEvent &event)
+void YsfxGraphicsView::updateYsfxKeyModifiers()
 {
-    m_ysfxMouseMods = 0;
-    if (event.mods.isShiftDown())
-        m_ysfxMouseMods |= ysfx_mod_shift;
-    if (event.mods.isCtrlDown())
-        m_ysfxMouseMods |= ysfx_mod_ctrl;
-    if (event.mods.isAltDown())
-        m_ysfxMouseMods |= ysfx_mod_alt;
-    if (event.mods.isCommandDown())
-        m_ysfxMouseMods |= ysfx_mod_super;
+    juce::ModifierKeys mods = juce::ModifierKeys::getCurrentModifiers();
 
+    m_ysfxMouseMods = 0;
+    if (mods.isShiftDown())
+        m_ysfxMouseMods |= ysfx_mod_shift;
+    if (mods.isCtrlDown())
+        m_ysfxMouseMods |= ysfx_mod_ctrl;
+    if (mods.isAltDown())
+        m_ysfxMouseMods |= ysfx_mod_alt;
+    if (mods.isCommandDown())
+        m_ysfxMouseMods |= ysfx_mod_super;
+}
+
+void YsfxGraphicsView::updateYsfxMousePosition(const juce::MouseEvent &event)
+{
+    juce::Point<int> off = getDisplayOffset();
+    m_ysfxMouseX = juce::roundToInt((event.x - off.x) * m_bitmapScale);
+    m_ysfxMouseY = juce::roundToInt((event.y - off.y) * m_bitmapScale);
+}
+
+void YsfxGraphicsView::updateYsfxMouseButtons(const juce::MouseEvent &event)
+{
     m_ysfxMouseButtons = 0;
     if (event.mods.isLeftButtonDown())
         m_ysfxMouseButtons |= ysfx_button_left;
@@ -304,10 +331,6 @@ void YsfxGraphicsView::updateYsfxMouseStatus(const juce::MouseEvent &event)
         m_ysfxMouseButtons |= ysfx_button_middle;
     if (event.mods.isRightButtonDown())
         m_ysfxMouseButtons |= ysfx_button_right;
-
-    juce::Point<int> off = getDisplayOffset();
-    m_ysfxMouseX = juce::roundToInt((event.x - off.x) * m_bitmapScale);
-    m_ysfxMouseY = juce::roundToInt((event.y - off.y) * m_bitmapScale);
 }
 
 juce::Point<int> YsfxGraphicsView::getDisplayOffset() const
@@ -321,4 +344,12 @@ juce::Point<int> YsfxGraphicsView::getDisplayOffset() const
     pt.x = (bw < w) ? ((w - bw) / 2) : 0;
     pt.y = (bh < h) ? ((h - bh) / 2) : 0;
     return pt;
+}
+
+int YsfxGraphicsView::showYsfxMenu(const char *desc)
+{
+    //TODO implement me: popup menu
+    
+
+    return 0;
 }

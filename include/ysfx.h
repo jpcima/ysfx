@@ -318,6 +318,8 @@ YSFX_API void ysfx_read_vmem(ysfx_t *fx, uint32_t addr, ysfx_real *dest, uint32_
 // NOTE: all `ysfx_gfx_*` functions must be invoked from a dedicated UI thread
 
 typedef struct ysfx_gfx_config_s {
+    // opaque user data passed to callbacks
+    void *user_data;
     // the width of the frame buffer (having the scale factor applied)
     uint32_t pixel_width;
     // the height of the frame buffer (having the scale factor applied)
@@ -330,6 +332,8 @@ typedef struct ysfx_gfx_config_s {
     uint8_t *pixels;
     // the scale factor of the display; 1.0 or greater, 2.0 for Retina display
     ysfx_real scale_factor;
+    // show a menu and run it synchronouslys; returns an item ID >= 1, or 0 if none
+    int (*show_menu)(void *user_data, const char *menu_spec);
 } ysfx_gfx_config_t;
 
 // set up the graphics rendering

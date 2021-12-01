@@ -45,7 +45,10 @@ private:
 
     void updateGfx();
     void updateBitmap();
-    void updateYsfxMouseStatus(const juce::MouseEvent &event);
+    void updateYsfxKeyModifiers();
+    void updateYsfxMousePosition(const juce::MouseEvent &event);
+    void updateYsfxMouseButtons(const juce::MouseEvent &event);
+    int showYsfxMenu(const char *desc);
 
 private:
     ysfx_u m_fx;

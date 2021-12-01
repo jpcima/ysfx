@@ -1395,6 +1395,9 @@ void ysfx_gfx_setup(ysfx_t *fx, ysfx_gfx_config_t *gc)
     ysfx_gfx_state_set_bitmap(fx->gfx.state.get(), gc->pixels, gc->pixel_width, gc->pixel_height, gc->pixel_stride);
     ysfx_real scale = fx->gfx.wants_retina ? gc->scale_factor : 1;
     ysfx_gfx_state_set_scale_factor(fx->gfx.state.get(), scale);
+
+    ysfx_gfx_state_set_callback_data(fx->gfx.state.get(), gc->user_data);
+    ysfx_gfx_state_set_show_menu_callback(fx->gfx.state.get(), gc->show_menu);
 #else
     (void)fx;
     (void)gc;
