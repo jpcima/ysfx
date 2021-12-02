@@ -60,6 +60,8 @@ target_sources(ysfx_plugin
         "plugin/components/ide_view.h"
         "plugin/utility/audio_processor_suspender.h"
         "plugin/utility/functional_timer.h"
+        "plugin/utility/async_updater.cpp"
+        "plugin/utility/async_updater.h"
         "plugin/utility/rt_semaphore.cpp"
         "plugin/utility/rt_semaphore.h")
 
