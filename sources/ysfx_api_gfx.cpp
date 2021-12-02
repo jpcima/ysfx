@@ -53,6 +53,7 @@ struct ysfx_gfx_state_t {
     ysfx_real scale = 0.0;
     void *callback_data = nullptr;
     int (*show_menu)(void *, const char *, int32_t, int32_t);
+    void (*set_cursor)(void *, int32_t);
 };
 
 //------------------------------------------------------------------------------
@@ -172,6 +173,17 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_showmenu(void *opaque, INT_PTR nparms,
     return state->show_menu(state->callback_data, desc.c_str(), x, y);
 }
 
+static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_setcursor(void *opaque,  INT_PTR nparms, EEL_F **parms)
+{
+    ysfx_gfx_state_t *state = GFX_GET_CONTEXT(opaque);
+    if (!state || !state->set_cursor)
+        return 0;
+
+    int32_t id = (int32_t)*parms[0];
+    state->set_cursor(state->callback_data, id);
+    return 0;
+}
+
 #endif
 
 //------------------------------------------------------------------------------
@@ -221,6 +233,11 @@ void ysfx_gfx_state_set_callback_data(ysfx_gfx_state_t *state, void *callback_da
 void ysfx_gfx_state_set_show_menu_callback(ysfx_gfx_state_t *state, int (*callback)(void *, const char *, int32_t, int32_t))
 {
     state->show_menu = callback;
+}
+
+void ysfx_gfx_state_set_set_cursor_callback(ysfx_gfx_state_t *state, void (*callback)(void *, int32_t))
+{
+    state->set_cursor = callback;
 }
 
 bool ysfx_gfx_state_is_dirty(ysfx_gfx_state_t *state)

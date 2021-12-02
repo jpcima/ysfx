@@ -40,6 +40,7 @@ struct YsfxGraphicsView::Impl {
     void updateYsfxMousePosition(const juce::MouseEvent &event);
     void updateYsfxMouseButtons(const juce::MouseEvent &event);
     static int showYsfxMenu(void *userdata, const char *desc, int32_t xpos, int32_t ypos);
+    static void setYsfxCursor(void *userdata, int32_t cursor);
 
     YsfxGraphicsView *m_self = nullptr;
     ysfx_u m_fx;
@@ -328,13 +329,14 @@ void YsfxGraphicsView::Impl::updateGfx()
         juce::Image::BitmapData bdata{bitmap, juce::Image::BitmapData::readWrite};
 
         ysfx_gfx_config_t gc{};
-        gc.user_data = this;
+        gc.user_data = m_self;
         gc.pixel_width = (uint32_t)bdata.width;
         gc.pixel_height = (uint32_t)bdata.height;
         gc.pixel_stride = (uint32_t)bdata.lineStride;
         gc.pixels = bdata.data;
         gc.scale_factor = getBitmapScale();
         gc.show_menu = &showYsfxMenu;
+        gc.set_cursor = &setYsfxCursor;
         ysfx_gfx_setup(fx, &gc);
 
         mustRepaint = ysfx_gfx_run(fx);
@@ -408,10 +410,76 @@ juce::Point<int> YsfxGraphicsView::Impl::getDisplayOffset() const
 
 int YsfxGraphicsView::Impl::showYsfxMenu(void *userdata, const char *desc, int32_t xpos, int32_t ypos)
 {
+    YsfxGraphicsView *self = (YsfxGraphicsView *)userdata;
     //TODO implement me: popup menu
-    (void)userdata;
+    (void)self;
     (void)desc;
     (void)xpos;
     (void)ypos;
     return 0;
+}
+
+void YsfxGraphicsView::Impl::setYsfxCursor(void *userdata, int32_t cursor)
+{
+    YsfxGraphicsView *self = (YsfxGraphicsView *)userdata;
+
+    enum {
+        ocr_normal = 32512,
+        ocr_ibeam = 32513,
+        ocr_wait = 32514,
+        ocr_cross = 32515,
+        ocr_up = 32516,
+        ocr_size = 32640,
+        ocr_icon = 32641,
+        ocr_sizenwse = 32642,
+        ocr_sizenesw = 32643,
+        ocr_sizewe = 32644,
+        ocr_sizens = 32645,
+        ocr_sizeall = 32646,
+        ocr_icocur = 32647,
+        ocr_no = 32648,
+        ocr_hand = 32649,
+        ocr_appstarting = 32650,
+    };
+
+    using CursorType = juce::MouseCursor::StandardCursorType;
+    CursorType type;
+
+    switch (cursor) {
+    default:
+    case ocr_normal:
+    case ocr_icon:
+        type = CursorType::NormalCursor;
+        break;
+    case ocr_ibeam:
+        type = CursorType::IBeamCursor;
+        break;
+    case ocr_wait:
+        type = CursorType::WaitCursor;
+        break;
+    case ocr_cross:
+        type = CursorType::CrosshairCursor;
+        break;
+    case ocr_size:
+    case ocr_sizeall:
+        type = CursorType::UpDownLeftRightResizeCursor;
+        break;
+    case ocr_sizenwse:
+        type = CursorType::TopLeftCornerResizeCursor;
+        break;
+    case ocr_sizenesw:
+        type = CursorType::TopRightCornerResizeCursor;
+        break;
+    case ocr_sizewe:
+        type = CursorType::LeftRightResizeCursor;
+        break;
+    case ocr_sizens:
+        type = CursorType::UpDownResizeCursor;
+        break;
+    case ocr_hand:
+        type = CursorType::PointingHandCursor;
+        break;
+    }
+
+    self->setMouseCursor(juce::MouseCursor{type});
 }

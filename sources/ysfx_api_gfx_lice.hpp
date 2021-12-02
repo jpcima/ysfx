@@ -481,13 +481,6 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_printf(void *opaque, INT_PTR nparms, E
   return 0.0;
 }
 
-static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_setcursor(void* opaque,  INT_PTR nparms, EEL_F **parms)
-{
-  eel_lice_state* ctx=EEL_LICE_GET_CONTEXT(opaque);
-  if (ctx) return ctx->gfx_setcursor(opaque, parms, (int)nparms);
-  return 0.0;
-}
-
 static EEL_F * NSEEL_CGEN_CALL ysfx_api_gfx_setpixel(void *opaque, EEL_F *r, EEL_F *g, EEL_F *b)
 {
   eel_lice_state *ctx=EEL_LICE_GET_CONTEXT(opaque);
@@ -1389,12 +1382,6 @@ static int __drawTextWithFont(LICE_IBitmap *dest, const RECT *rect, LICE_IFont *
     }
     return xpos;
   }
-}
-
-EEL_F eel_lice_state::gfx_setcursor(void* opaque, EEL_F** parms, int nparms)
-{
-  //TODO
-  return 0;
 }
 
 void eel_lice_state::gfx_drawstr(void *opaque, EEL_F **parms, int nparms, int formatmode)// formatmode=1 for format, 2 for purely measure no format

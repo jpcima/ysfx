@@ -1398,6 +1398,7 @@ void ysfx_gfx_setup(ysfx_t *fx, ysfx_gfx_config_t *gc)
 
     ysfx_gfx_state_set_callback_data(fx->gfx.state.get(), gc->user_data);
     ysfx_gfx_state_set_show_menu_callback(fx->gfx.state.get(), gc->show_menu);
+    ysfx_gfx_state_set_set_cursor_callback(fx->gfx.state.get(), gc->set_cursor);
 #else
     (void)fx;
     (void)gc;
