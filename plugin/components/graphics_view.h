@@ -18,14 +18,12 @@
 #pragma once
 #include "ysfx.h"
 #include <juce_gui_basics/juce_gui_basics.h>
-#include <functional>
-#include <tuple>
-#include <queue>
-#include <list>
+#include <memory>
 
 class YsfxGraphicsView : public juce::Component {
 public:
     YsfxGraphicsView();
+    ~YsfxGraphicsView() override;
     void setEffect(ysfx_t *fx);
 
 protected:
@@ -40,44 +38,6 @@ protected:
     void mouseWheelMove(const juce::MouseEvent &event, const juce::MouseWheelDetails &wheel) override;
 
 private:
-    void configureGfx(int gfxWidth, int gfxHeight, bool gfxWantRetina);
-    juce::Image &getBitmap() { return m_bitmap; }
-    double getBitmapScale() const { return m_bitmapScale; }
-    juce::Point<int> getDisplayOffset() const;
-
-    void updateGfx();
-    void updateBitmap();
-    void updateYsfxKeyModifiers();
-    void updateYsfxMousePosition(const juce::MouseEvent &event);
-    void updateYsfxMouseButtons(const juce::MouseEvent &event);
-    static int showYsfxMenu(void *userdata, const char *desc, int32_t xpos, int32_t ypos);
-
-private:
-    ysfx_u m_fx;
-    std::unique_ptr<juce::Timer> m_gfxTimer;
-
-    int m_gfxWidth = 0;
-    int m_gfxHeight = 0;
-    bool m_wantRetina = false;
-    juce::Image m_bitmap{juce::Image::ARGB, 0, 0, false};
-    double m_bitmapScale = 1;
-    int m_bitmapUnscaledWidth = 0;
-    int m_bitmapUnscaledHeight = 0;
-
-    struct KeyPressed {
-        int jcode = 0;
-        uint32_t ykey = 0;
-        uint32_t ymods = 0;
-    };
-
-    std::list<KeyPressed> m_keysPressed;
-
-    uint32_t m_ysfxMouseMods = 0;
-    uint32_t m_ysfxMouseButtons = 0;
-    int32_t m_ysfxMouseX = 0;
-    int32_t m_ysfxMouseY = 0;
-    double m_ysfxWheel = 0;
-    double m_ysfxHWheel = 0;
-    using YsfxKeyEvent = std::tuple<uint32_t, uint32_t, bool>;
-    std::queue<YsfxKeyEvent> m_ysfxKeys;
+    struct Impl;
+    std::unique_ptr<Impl> m_impl;
 };

@@ -17,50 +17,106 @@
 
 #include "graphics_view.h"
 #include "utility/functional_timer.h"
-#include <ysfx.h>
+#include <list>
 #include <map>
+#include <queue>
+#include <tuple>
 #include <cmath>
 #include <cstdio>
 
+struct YsfxGraphicsView::Impl {
+    static uint32_t translateKeyCode(int code);
+    static uint32_t translateModifiers(juce::ModifierKeys mods);
+    static void translateKeyPress(const juce::KeyPress &key, uint32_t &ykey, uint32_t &ymods);
+
+    void configureGfx(int gfxWidth, int gfxHeight, bool gfxWantRetina);
+    juce::Image &getBitmap() { return m_bitmap; }
+    double getBitmapScale() const { return m_bitmapScale; }
+    juce::Point<int> getDisplayOffset() const;
+
+    void updateGfx();
+    void updateBitmap();
+    void updateYsfxKeyModifiers();
+    void updateYsfxMousePosition(const juce::MouseEvent &event);
+    void updateYsfxMouseButtons(const juce::MouseEvent &event);
+    static int showYsfxMenu(void *userdata, const char *desc, int32_t xpos, int32_t ypos);
+
+    YsfxGraphicsView *m_self = nullptr;
+    ysfx_u m_fx;
+    std::unique_ptr<juce::Timer> m_gfxTimer;
+
+    int m_gfxWidth = 0;
+    int m_gfxHeight = 0;
+    bool m_wantRetina = false;
+    juce::Image m_bitmap{juce::Image::ARGB, 0, 0, false};
+    double m_bitmapScale = 1;
+    int m_bitmapUnscaledWidth = 0;
+    int m_bitmapUnscaledHeight = 0;
+
+    struct KeyPressed {
+        int jcode = 0;
+        uint32_t ykey = 0;
+        uint32_t ymods = 0;
+    };
+
+    std::list<KeyPressed> m_keysPressed;
+
+    uint32_t m_ysfxMouseMods = 0;
+    uint32_t m_ysfxMouseButtons = 0;
+    int32_t m_ysfxMouseX = 0;
+    int32_t m_ysfxMouseY = 0;
+    double m_ysfxWheel = 0;
+    double m_ysfxHWheel = 0;
+    using YsfxKeyEvent = std::tuple<uint32_t, uint32_t, bool>;
+    std::queue<YsfxKeyEvent> m_ysfxKeys;
+};
+
 YsfxGraphicsView::YsfxGraphicsView()
+    : m_impl{new YsfxGraphicsView::Impl}
 {
+    m_impl->m_self = this;
+
     setWantsKeyboardFocus(true);
+}
+
+YsfxGraphicsView::~YsfxGraphicsView()
+{
 }
 
 void YsfxGraphicsView::setEffect(ysfx_t *fx)
 {
-    if (m_fx.get() == fx)
+    if (m_impl->m_fx.get() == fx)
         return;
 
-    m_fx.reset(fx);
+    m_impl->m_fx.reset(fx);
     if (fx)
         ysfx_add_ref(fx);
 
     if (!fx || !ysfx_has_section(fx, ysfx_section_gfx)) {
-        m_gfxTimer.reset();
+        m_impl->m_gfxTimer.reset();
         repaint();
     }
     else {
-        m_gfxTimer.reset(FunctionalTimer::create([this]() { updateGfx(); }));
-        m_gfxTimer->startTimerHz(30);
+        m_impl->m_gfxTimer.reset(FunctionalTimer::create([this]() { m_impl->updateGfx(); }));
+        m_impl->m_gfxTimer->startTimerHz(30);
     }
 
-    while (!m_ysfxKeys.empty())
-        m_ysfxKeys.pop();
+    while (!m_impl->m_ysfxKeys.empty())
+        m_impl->m_ysfxKeys.pop();
 }
 
 void YsfxGraphicsView::paint(juce::Graphics &g)
 {
-    ysfx_t *fx = m_fx.get();
+    ysfx_t *fx = m_impl->m_fx.get();
 
     if (fx && ysfx_has_section(fx, ysfx_section_gfx)) {
-        juce::Point<int> off = getDisplayOffset();
+        juce::Point<int> off = m_impl->getDisplayOffset();
 
-        if (m_bitmapScale == 1)
-            g.drawImageAt(m_bitmap, off.x, off.y);
+        if (m_impl->m_bitmapScale == 1)
+            g.drawImageAt(m_impl->m_bitmap, off.x, off.y);
         else {
-            juce::Rectangle<int> dest{off.x, off.y, m_bitmapUnscaledWidth, m_bitmapUnscaledHeight};
-            g.drawImage(m_bitmap, dest.toFloat());
+            juce::Rectangle<int> dest{off.x, off.y, m_impl->m_bitmapUnscaledWidth, m_impl->m_bitmapUnscaledHeight};
+            g.drawImage(m_impl->m_bitmap, dest.toFloat());
         }
     }
     else {
@@ -80,10 +136,86 @@ void YsfxGraphicsView::paint(juce::Graphics &g)
 void YsfxGraphicsView::resized()
 {
     Component::resized();
-    updateBitmap();
+    m_impl->updateBitmap();
 }
 
-static uint32_t translateKeyCode(int code)
+bool YsfxGraphicsView::keyPressed(const juce::KeyPress &key)
+{
+    m_impl->updateYsfxKeyModifiers();
+
+    for (const Impl::KeyPressed &kp : m_impl->m_keysPressed) {
+        if (kp.jcode == key.getKeyCode())
+            return true;
+    }
+
+    Impl::KeyPressed kp;
+    kp.jcode = key.getKeyCode();
+    Impl::translateKeyPress(key, kp.ykey, kp.ymods);
+
+    m_impl->m_keysPressed.push_back(kp);
+    if (m_impl->m_gfxTimer && m_impl->m_gfxTimer->isTimerRunning())
+        m_impl->m_ysfxKeys.emplace(kp.ymods, kp.ykey, true);
+
+    return true;
+}
+
+bool YsfxGraphicsView::keyStateChanged(bool isKeyDown)
+{
+    m_impl->updateYsfxKeyModifiers();
+
+    if (!isKeyDown) {
+        for (auto it = m_impl->m_keysPressed.begin(); it != m_impl->m_keysPressed.end(); ) {
+            Impl::KeyPressed kp = *it;
+            if (juce::KeyPress::isKeyCurrentlyDown(kp.jcode))
+                ++it;
+            else {
+                m_impl->m_keysPressed.erase(it++);
+                kp.ymods = Impl::translateModifiers(juce::ModifierKeys::getCurrentModifiers());
+                if (m_impl->m_gfxTimer && m_impl->m_gfxTimer->isTimerRunning())
+                    m_impl->m_ysfxKeys.emplace(kp.ymods, kp.ykey, false);
+            }
+        }
+    }
+
+    return true;
+}
+
+void YsfxGraphicsView::mouseMove(const juce::MouseEvent &event)
+{
+    m_impl->updateYsfxKeyModifiers();
+    m_impl->updateYsfxMousePosition(event);
+}
+
+void YsfxGraphicsView::mouseDown(const juce::MouseEvent &event)
+{
+    m_impl->updateYsfxKeyModifiers();
+    m_impl->updateYsfxMousePosition(event);
+    m_impl->updateYsfxMouseButtons(event);
+}
+
+void YsfxGraphicsView::mouseDrag(const juce::MouseEvent &event)
+{
+    m_impl->updateYsfxKeyModifiers();
+    m_impl->updateYsfxMousePosition(event);
+}
+
+void YsfxGraphicsView::mouseUp(const juce::MouseEvent &event)
+{
+    m_impl->updateYsfxKeyModifiers();
+    m_impl->updateYsfxMousePosition(event);
+    m_impl->m_ysfxMouseButtons = 0;
+}
+
+void YsfxGraphicsView::mouseWheelMove(const juce::MouseEvent &event, const juce::MouseWheelDetails &wheel)
+{
+    m_impl->updateYsfxKeyModifiers();
+    m_impl->updateYsfxMousePosition(event);
+    m_impl->m_ysfxWheel += wheel.deltaY;
+    m_impl->m_ysfxHWheel += wheel.deltaX;
+}
+
+//------------------------------------------------------------------------------
+uint32_t YsfxGraphicsView::Impl::translateKeyCode(int code)
 {
     using Map = std::map<int, uint32_t>;
 
@@ -122,7 +254,7 @@ static uint32_t translateKeyCode(int code)
     return it->second;
 }
 
-static uint32_t translateModifiers(juce::ModifierKeys mods)
+uint32_t YsfxGraphicsView::Impl::translateModifiers(juce::ModifierKeys mods)
 {
     uint32_t ymods = 0;
     if (mods.isShiftDown())
@@ -136,7 +268,7 @@ static uint32_t translateModifiers(juce::ModifierKeys mods)
     return ymods;
 }
 
-static void translateKeyPress(const juce::KeyPress &key, uint32_t &ykey, uint32_t &ymods)
+void YsfxGraphicsView::Impl::translateKeyPress(const juce::KeyPress &key, uint32_t &ykey, uint32_t &ymods)
 {
     int code = key.getKeyCode();
     juce::juce_wchar character = key.getTextCharacter();
@@ -152,82 +284,8 @@ static void translateKeyPress(const juce::KeyPress &key, uint32_t &ykey, uint32_
     ymods = translateModifiers(mods);
 }
 
-bool YsfxGraphicsView::keyPressed(const juce::KeyPress &key)
-{
-    updateYsfxKeyModifiers();
-
-    for (const KeyPressed &kp : m_keysPressed) {
-        if (kp.jcode == key.getKeyCode())
-            return true;
-    }
-
-    KeyPressed kp;
-    kp.jcode = key.getKeyCode();
-    translateKeyPress(key, kp.ykey, kp.ymods);
-
-    m_keysPressed.push_back(kp);
-    if (m_gfxTimer && m_gfxTimer->isTimerRunning())
-        m_ysfxKeys.emplace(kp.ymods, kp.ykey, true);
-
-    return true;
-}
-
-bool YsfxGraphicsView::keyStateChanged(bool isKeyDown)
-{
-    updateYsfxKeyModifiers();
-
-    if (!isKeyDown) {
-        for (auto it = m_keysPressed.begin(); it != m_keysPressed.end(); ) {
-            KeyPressed kp = *it;
-            if (juce::KeyPress::isKeyCurrentlyDown(kp.jcode))
-                ++it;
-            else {
-                m_keysPressed.erase(it++);
-                kp.ymods = translateModifiers(juce::ModifierKeys::getCurrentModifiers());
-                if (m_gfxTimer && m_gfxTimer->isTimerRunning())
-                    m_ysfxKeys.emplace(kp.ymods, kp.ykey, false);
-            }
-        }
-    }
-
-    return true;
-}
-
-void YsfxGraphicsView::mouseMove(const juce::MouseEvent &event)
-{
-    updateYsfxKeyModifiers();
-    updateYsfxMousePosition(event);
-}
-
-void YsfxGraphicsView::mouseDown(const juce::MouseEvent &event)
-{
-    updateYsfxKeyModifiers();
-    updateYsfxMousePosition(event);
-    updateYsfxMouseButtons(event);
-}
-
-void YsfxGraphicsView::mouseDrag(const juce::MouseEvent &event)
-{
-    updateYsfxKeyModifiers();
-    updateYsfxMousePosition(event);
-}
-
-void YsfxGraphicsView::mouseUp(const juce::MouseEvent &event)
-{
-    updateYsfxKeyModifiers();
-    updateYsfxMousePosition(event);
-    m_ysfxMouseButtons = 0;
-}
-
-void YsfxGraphicsView::mouseWheelMove(const juce::MouseEvent &event, const juce::MouseWheelDetails &wheel)
-{
-    updateYsfxKeyModifiers();
-    updateYsfxMousePosition(event);
-    m_ysfxWheel += wheel.deltaY;
-    m_ysfxHWheel += wheel.deltaX;
-}
-
-void YsfxGraphicsView::configureGfx(int gfxWidth, int gfxHeight, bool gfxWantRetina)
+//------------------------------------------------------------------------------
+void YsfxGraphicsView::Impl::configureGfx(int gfxWidth, int gfxHeight, bool gfxWantRetina)
 {
     if (m_gfxWidth == gfxWidth && m_gfxHeight == gfxHeight && m_wantRetina == gfxWantRetina)
         return;
@@ -239,7 +297,7 @@ void YsfxGraphicsView::configureGfx(int gfxWidth, int gfxHeight, bool gfxWantRet
     updateBitmap();
 }
 
-void YsfxGraphicsView::updateGfx()
+void YsfxGraphicsView::Impl::updateGfx()
 {
     ysfx_t *fx = m_fx.get();
     jassert(fx);
@@ -283,18 +341,18 @@ void YsfxGraphicsView::updateGfx()
     }
 
     if (mustRepaint)
-        repaint();
+        m_self->repaint();
 }
 
-void YsfxGraphicsView::updateBitmap()
+void YsfxGraphicsView::Impl::updateBitmap()
 {
     int w = m_gfxWidth;
     int h = m_gfxHeight;
 
     if (w <= 0)
-        w = getWidth();
+        w = m_self->getWidth();
     if (h <= 0)
-        h = getHeight();
+        h = m_self->getHeight();
 
     m_bitmapUnscaledWidth = w;
     m_bitmapUnscaledHeight = h;
@@ -311,29 +369,20 @@ void YsfxGraphicsView::updateBitmap()
         m_bitmap = juce::Image(juce::Image::ARGB, w, h, true);
 }
 
-void YsfxGraphicsView::updateYsfxKeyModifiers()
+void YsfxGraphicsView::Impl::updateYsfxKeyModifiers()
 {
     juce::ModifierKeys mods = juce::ModifierKeys::getCurrentModifiers();
-
-    m_ysfxMouseMods = 0;
-    if (mods.isShiftDown())
-        m_ysfxMouseMods |= ysfx_mod_shift;
-    if (mods.isCtrlDown())
-        m_ysfxMouseMods |= ysfx_mod_ctrl;
-    if (mods.isAltDown())
-        m_ysfxMouseMods |= ysfx_mod_alt;
-    if (mods.isCommandDown())
-        m_ysfxMouseMods |= ysfx_mod_super;
+    m_ysfxMouseMods = translateModifiers(mods);
 }
 
-void YsfxGraphicsView::updateYsfxMousePosition(const juce::MouseEvent &event)
+void YsfxGraphicsView::Impl::updateYsfxMousePosition(const juce::MouseEvent &event)
 {
     juce::Point<int> off = getDisplayOffset();
     m_ysfxMouseX = juce::roundToInt((event.x - off.x) * m_bitmapScale);
     m_ysfxMouseY = juce::roundToInt((event.y - off.y) * m_bitmapScale);
 }
 
-void YsfxGraphicsView::updateYsfxMouseButtons(const juce::MouseEvent &event)
+void YsfxGraphicsView::Impl::updateYsfxMouseButtons(const juce::MouseEvent &event)
 {
     m_ysfxMouseButtons = 0;
     if (event.mods.isLeftButtonDown())
@@ -344,10 +393,10 @@ void YsfxGraphicsView::updateYsfxMouseButtons(const juce::MouseEvent &event)
         m_ysfxMouseButtons |= ysfx_button_right;
 }
 
-juce::Point<int> YsfxGraphicsView::getDisplayOffset() const
+juce::Point<int> YsfxGraphicsView::Impl::getDisplayOffset() const
 {
-    int w = getWidth();
-    int h = getHeight();
+    int w = m_self->getWidth();
+    int h = m_self->getHeight();
     int bw = m_bitmapUnscaledWidth;
     int bh = m_bitmapUnscaledHeight;
 
@@ -357,14 +406,12 @@ juce::Point<int> YsfxGraphicsView::getDisplayOffset() const
     return pt;
 }
 
-int YsfxGraphicsView::showYsfxMenu(void *userdata, const char *desc, int32_t xpos, int32_t ypos)
+int YsfxGraphicsView::Impl::showYsfxMenu(void *userdata, const char *desc, int32_t xpos, int32_t ypos)
 {
     //TODO implement me: popup menu
-
     (void)userdata;
     (void)desc;
     (void)xpos;
     (void)ypos;
-
     return 0;
 }
