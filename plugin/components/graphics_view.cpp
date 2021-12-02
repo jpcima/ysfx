@@ -17,25 +17,28 @@
 
 #include "graphics_view.h"
 #include "utility/functional_timer.h"
+#include "utility/async_updater.h"
+#include "utility/rt_semaphore.h"
 #include <list>
 #include <map>
 #include <queue>
 #include <tuple>
+#include <thread>
+#include <atomic>
+#include <mutex>
+#include <condition_variable>
 #include <cmath>
 #include <cstdio>
 
-struct YsfxGraphicsView::Impl {
+struct YsfxGraphicsView::Impl final : public better::AsyncUpdater::Listener {
     static uint32_t translateKeyCode(int code);
     static uint32_t translateModifiers(juce::ModifierKeys mods);
     static void translateKeyPress(const juce::KeyPress &key, uint32_t &ykey, uint32_t &ymods);
 
-    void configureGfx(int gfxWidth, int gfxHeight, bool gfxWantRetina);
-    juce::Image &getBitmap() { return m_bitmap; }
-    double getBitmapScale() const { return m_bitmapScale; }
     juce::Point<int> getDisplayOffset() const;
 
-    void updateGfx();
-    void updateBitmap();
+    void tickGfx();
+    void updateGfxTarget(int newWidth, int newHeight, int newRetina);
     void updateYsfxKeyModifiers();
     void updateYsfxMousePosition(const juce::MouseEvent &event);
     void updateYsfxMouseButtons(const juce::MouseEvent &event);
@@ -46,14 +49,34 @@ struct YsfxGraphicsView::Impl {
     ysfx_u m_fx;
     std::unique_ptr<juce::Timer> m_gfxTimer;
 
-    int m_gfxWidth = 0;
-    int m_gfxHeight = 0;
-    bool m_wantRetina = false;
-    juce::Image m_bitmap{juce::Image::ARGB, 0, 0, false};
-    double m_bitmapScale = 1;
-    int m_bitmapUnscaledWidth = 0;
-    int m_bitmapUnscaledHeight = 0;
+    //--------------------------------------------------------------------------
+    struct GfxTarget : public std::enable_shared_from_this<GfxTarget> {
+        int m_gfxWidth = 0;
+        int m_gfxHeight = 0;
+        bool m_wantRetina = false;
+        juce::Image m_renderBitmap{juce::Image::ARGB, 0, 0, false};
+        double m_bitmapScale = 1;
+        int m_bitmapUnscaledWidth = 0;
+        int m_bitmapUnscaledHeight = 0;
+        using Ptr = std::shared_ptr<GfxTarget>;
+    };
 
+    struct GfxInputState : public std::enable_shared_from_this<GfxInputState> {
+        uint32_t m_ysfxMouseMods = 0;
+        uint32_t m_ysfxMouseButtons = 0;
+        int32_t m_ysfxMouseX = 0;
+        int32_t m_ysfxMouseY = 0;
+        double m_ysfxWheel = 0;
+        double m_ysfxHWheel = 0;
+        using YsfxKeyEvent = std::tuple<uint32_t, uint32_t, bool>;
+        std::queue<YsfxKeyEvent> m_ysfxKeys;
+        using Ptr = std::shared_ptr<GfxInputState>;
+    };
+
+    GfxTarget::Ptr m_gfxTarget;
+    GfxInputState::Ptr m_gfxInputState;
+
+    //--------------------------------------------------------------------------
     struct KeyPressed {
         int jcode = 0;
         uint32_t ykey = 0;
@@ -62,14 +85,88 @@ struct YsfxGraphicsView::Impl {
 
     std::list<KeyPressed> m_keysPressed;
 
-    uint32_t m_ysfxMouseMods = 0;
-    uint32_t m_ysfxMouseButtons = 0;
-    int32_t m_ysfxMouseX = 0;
-    int32_t m_ysfxMouseY = 0;
-    double m_ysfxWheel = 0;
-    double m_ysfxHWheel = 0;
-    using YsfxKeyEvent = std::tuple<uint32_t, uint32_t, bool>;
-    std::queue<YsfxKeyEvent> m_ysfxKeys;
+    //--------------------------------------------------------------------------
+    // Asynchronous popup menu
+
+    static std::unique_ptr<juce::PopupMenu> createPopupMenu(const char **str, int *startid, int menudepth = 0);
+    void endPopupMenu(int menuResult);
+
+    std::unique_ptr<juce::PopupMenu> m_popupMenu;
+
+    //--------------------------------------------------------------------------
+    // The background thread will trigger these async updates.
+
+    // sends a bitmap the component should repaint itself with
+    struct AsyncRepainter : public better::AsyncUpdater {
+        // a double-buffer of the render bitmap, copied after a finished rendering
+        juce::Image m_bitmap{juce::Image::ARGB, 0, 0, false};
+        std::mutex m_mutex;
+    };
+
+    // changes the mouse cursor on the component
+    struct AsyncMouseCursor : public better::AsyncUpdater {
+        std::atomic<juce::MouseCursor::StandardCursorType> m_cursorType;
+    };
+
+    // triggers a menu to redisplay
+    struct AsyncShowMenu : public better::AsyncUpdater {
+        std::string m_menuDesc;
+        int m_menuX = 0;
+        int m_menuY = 0;
+        volatile bool m_completionFlag = false;
+        volatile int m_completionValue = 0;
+        std::condition_variable m_completionVariable;
+        std::mutex m_mutex;
+    };
+
+    std::unique_ptr<AsyncRepainter> m_asyncRepainter;
+    std::unique_ptr<AsyncMouseCursor> m_asyncMouseCursor;
+    std::unique_ptr<AsyncShowMenu> m_asyncShowMenu;
+
+    void handleAsyncUpdate(better::AsyncUpdater *updater) override;
+
+    //--------------------------------------------------------------------------
+    // This background thread runs @gfx.
+    // This is on a separate thread, because it has elements which can block,
+    // which otherwise would require modal loops (eg. `gfx_showmenu`).
+
+    class BackgroundWork {
+    public:
+        void start();
+        void stop();
+
+        struct Message : std::enable_shared_from_this<Message> {
+            explicit Message(int type) : m_type{type} {}
+            int m_type = 0;
+        };
+
+        struct GfxMessage : Message {
+            GfxMessage() : Message{'@gfx'} {}
+            ysfx_u m_fx;
+            GfxTarget::Ptr m_target;
+            GfxInputState m_input;
+            AsyncRepainter *m_asyncRepainter = nullptr;
+            void *m_userData = nullptr;
+        };
+
+        void postMessage(std::shared_ptr<Message> message);
+
+    private:
+        void run();
+        std::shared_ptr<Message> popNextMessage();
+        void processGfxMessage(GfxMessage &msg);
+
+    private:
+        std::thread m_thread;
+        RTSemaphore m_sema;
+        volatile bool m_running = false;
+        std::queue<std::shared_ptr<Message>> m_messages;
+        std::mutex m_messagesMutex;
+    };
+
+    BackgroundWork m_work;
+
+    uint32_t m_numWaitedRepaints = 0;
 };
 
 YsfxGraphicsView::YsfxGraphicsView()
@@ -77,11 +174,28 @@ YsfxGraphicsView::YsfxGraphicsView()
 {
     m_impl->m_self = this;
 
+    m_impl->m_gfxTarget.reset(new Impl::GfxTarget);
+    m_impl->m_gfxInputState.reset(new Impl::GfxInputState);
+
+    m_impl->m_asyncRepainter.reset(new Impl::AsyncRepainter);
+    m_impl->m_asyncMouseCursor.reset(new Impl::AsyncMouseCursor);
+    m_impl->m_asyncShowMenu.reset(new Impl::AsyncShowMenu);
+
+    m_impl->m_asyncRepainter->addListener(m_impl.get());
+    m_impl->m_asyncMouseCursor->addListener(m_impl.get());
+    m_impl->m_asyncShowMenu->addListener(m_impl.get());
+
     setWantsKeyboardFocus(true);
 }
 
 YsfxGraphicsView::~YsfxGraphicsView()
 {
+    m_impl->endPopupMenu(0);
+    m_impl->m_work.stop();
+
+    m_impl->m_asyncRepainter->removeListener(m_impl.get());
+    m_impl->m_asyncMouseCursor->removeListener(m_impl.get());
+    m_impl->m_asyncShowMenu->removeListener(m_impl.get());
 }
 
 void YsfxGraphicsView::setEffect(ysfx_t *fx)
@@ -93,34 +207,37 @@ void YsfxGraphicsView::setEffect(ysfx_t *fx)
     if (fx)
         ysfx_add_ref(fx);
 
+    m_impl->endPopupMenu(0);
+    m_impl->m_work.stop();
+
     if (!fx || !ysfx_has_section(fx, ysfx_section_gfx)) {
         m_impl->m_gfxTimer.reset();
         repaint();
     }
     else {
-        m_impl->m_gfxTimer.reset(FunctionalTimer::create([this]() { m_impl->updateGfx(); }));
+        m_impl->m_work.start();
+        m_impl->m_gfxTimer.reset(FunctionalTimer::create([this]() { m_impl->tickGfx(); }));
         m_impl->m_gfxTimer->startTimerHz(30);
     }
 
-    while (!m_impl->m_ysfxKeys.empty())
-        m_impl->m_ysfxKeys.pop();
+    m_impl->m_gfxInputState.reset(new Impl::GfxInputState);
+
+    m_impl->m_asyncRepainter->cancelPendingUpdate();
+    m_impl->m_asyncMouseCursor->cancelPendingUpdate();
+    m_impl->m_asyncShowMenu->cancelPendingUpdate();
+
+    m_impl->m_popupMenu.reset();
+
+    m_impl->m_numWaitedRepaints = 0;
+
+    setMouseCursor(juce::MouseCursor{juce::MouseCursor::NormalCursor});
 }
 
 void YsfxGraphicsView::paint(juce::Graphics &g)
 {
     ysfx_t *fx = m_impl->m_fx.get();
 
-    if (fx && ysfx_has_section(fx, ysfx_section_gfx)) {
-        juce::Point<int> off = m_impl->getDisplayOffset();
-
-        if (m_impl->m_bitmapScale == 1)
-            g.drawImageAt(m_impl->m_bitmap, off.x, off.y);
-        else {
-            juce::Rectangle<int> dest{off.x, off.y, m_impl->m_bitmapUnscaledWidth, m_impl->m_bitmapUnscaledHeight};
-            g.drawImage(m_impl->m_bitmap, dest.toFloat());
-        }
-    }
-    else {
+    if (!(fx && ysfx_has_section(fx, ysfx_section_gfx))) {
         juce::Rectangle<int> bounds = getLocalBounds();
 
         g.setColour(juce::Colours::white);
@@ -131,13 +248,35 @@ void YsfxGraphicsView::paint(juce::Graphics &g)
 
         g.setFont(font);
         g.drawText(TRANS("No graphics"), bounds, juce::Justification::centred);
+        return;
+    }
+
+    ///
+    juce::Point<int> off = m_impl->getDisplayOffset();
+    Impl::GfxTarget *target = m_impl->m_gfxTarget.get();
+
+    ///
+    std::lock_guard<std::mutex> lock{m_impl->m_asyncRepainter->m_mutex};
+    juce::Image &image = m_impl->m_asyncRepainter->m_bitmap;
+
+    if (image.getWidth() != target->m_renderBitmap.getWidth() ||
+        image.getHeight() != target->m_renderBitmap.getHeight())
+    {
+        g.fillAll(juce::Colours::black);
+    }
+    else if (target->m_bitmapScale == 1) {
+        g.drawImageAt(image, off.x, off.y);
+    }
+    else {
+        juce::Rectangle<int> dest{off.x, off.y, target->m_bitmapUnscaledWidth, target->m_bitmapUnscaledHeight};
+        g.drawImage(image, dest.toFloat());
     }
 }
 
 void YsfxGraphicsView::resized()
 {
     Component::resized();
-    m_impl->updateBitmap();
+    m_impl->updateGfxTarget(-1, -1, -1);
 }
 
 bool YsfxGraphicsView::keyPressed(const juce::KeyPress &key)
@@ -154,8 +293,11 @@ bool YsfxGraphicsView::keyPressed(const juce::KeyPress &key)
     Impl::translateKeyPress(key, kp.ykey, kp.ymods);
 
     m_impl->m_keysPressed.push_back(kp);
-    if (m_impl->m_gfxTimer && m_impl->m_gfxTimer->isTimerRunning())
-        m_impl->m_ysfxKeys.emplace(kp.ymods, kp.ykey, true);
+    ysfx_t *fx = m_impl->m_fx.get();
+    if (fx && ysfx_has_section(fx, ysfx_section_gfx)) {
+        Impl::GfxInputState *inputs = m_impl->m_gfxInputState.get();
+        inputs->m_ysfxKeys.emplace(kp.ymods, kp.ykey, true);
+    }
 
     return true;
 }
@@ -172,8 +314,11 @@ bool YsfxGraphicsView::keyStateChanged(bool isKeyDown)
             else {
                 m_impl->m_keysPressed.erase(it++);
                 kp.ymods = Impl::translateModifiers(juce::ModifierKeys::getCurrentModifiers());
-                if (m_impl->m_gfxTimer && m_impl->m_gfxTimer->isTimerRunning())
-                    m_impl->m_ysfxKeys.emplace(kp.ymods, kp.ykey, false);
+                ysfx_t *fx = m_impl->m_fx.get();
+                if (fx && ysfx_has_section(fx, ysfx_section_gfx)) {
+                    Impl::GfxInputState *inputs = m_impl->m_gfxInputState.get();
+                    inputs->m_ysfxKeys.emplace(kp.ymods, kp.ykey, false);
+                }
             }
         }
     }
@@ -204,15 +349,19 @@ void YsfxGraphicsView::mouseUp(const juce::MouseEvent &event)
 {
     m_impl->updateYsfxKeyModifiers();
     m_impl->updateYsfxMousePosition(event);
-    m_impl->m_ysfxMouseButtons = 0;
+
+    Impl::GfxInputState *gfxInputState = m_impl->m_gfxInputState.get();
+    gfxInputState->m_ysfxMouseButtons = 0;
 }
 
 void YsfxGraphicsView::mouseWheelMove(const juce::MouseEvent &event, const juce::MouseWheelDetails &wheel)
 {
     m_impl->updateYsfxKeyModifiers();
     m_impl->updateYsfxMousePosition(event);
-    m_impl->m_ysfxWheel += wheel.deltaY;
-    m_impl->m_ysfxHWheel += wheel.deltaX;
+
+    Impl::GfxInputState *gfxInputState = m_impl->m_gfxInputState.get();
+    gfxInputState->m_ysfxWheel += wheel.deltaY;
+    gfxInputState->m_ysfxHWheel += wheel.deltaX;
 }
 
 //------------------------------------------------------------------------------
@@ -286,121 +435,130 @@ void YsfxGraphicsView::Impl::translateKeyPress(const juce::KeyPress &key, uint32
 }
 
 //------------------------------------------------------------------------------
-void YsfxGraphicsView::Impl::configureGfx(int gfxWidth, int gfxHeight, bool gfxWantRetina)
+void YsfxGraphicsView::Impl::tickGfx()
 {
-    if (m_gfxWidth == gfxWidth && m_gfxHeight == gfxHeight && m_wantRetina == gfxWantRetina)
+    // don't overload the background with @gfx requests
+    // (remember that @gfx can block)
+    if (m_numWaitedRepaints > 1)
         return;
 
-    m_gfxWidth = gfxWidth;
-    m_gfxHeight = gfxHeight;
-    m_wantRetina = gfxWantRetina;
-
-    updateBitmap();
-}
-
-void YsfxGraphicsView::Impl::updateGfx()
-{
     ysfx_t *fx = m_fx.get();
     jassert(fx);
-
-    ///
-    while (!m_ysfxKeys.empty()) {
-        YsfxKeyEvent event = m_ysfxKeys.front();
-        m_ysfxKeys.pop();
-        ysfx_gfx_add_key(fx, std::get<0>(event), std::get<1>(event), std::get<2>(event));
-    }
-
-    ///
-    ysfx_gfx_update_mouse(fx, m_ysfxMouseMods, m_ysfxMouseX, m_ysfxMouseY, m_ysfxMouseButtons, m_ysfxWheel, m_ysfxHWheel);
-    m_ysfxWheel = 0;
-    m_ysfxHWheel = 0;
 
     ///
     uint32_t gfxDim[2] = {};
     ysfx_get_gfx_dim(fx, gfxDim);
 
     bool gfxWantRetina = ysfx_gfx_wants_retina(fx);
-    configureGfx((int)gfxDim[0], (int)gfxDim[1], gfxWantRetina);
+    updateGfxTarget((int)gfxDim[0], (int)gfxDim[1], gfxWantRetina);
 
-    juce::Image &bitmap = getBitmap();
-    bool mustRepaint;
+    ///
+    std::shared_ptr<BackgroundWork::GfxMessage> msg{new BackgroundWork::GfxMessage};
+    msg->m_fx.reset(fx);
+    ysfx_add_ref(fx);
+    msg->m_target = m_gfxTarget;
+    msg->m_input.m_ysfxMouseMods = m_gfxInputState->m_ysfxMouseMods;
+    msg->m_input.m_ysfxMouseButtons = m_gfxInputState->m_ysfxMouseButtons;
+    msg->m_input.m_ysfxMouseX = m_gfxInputState->m_ysfxMouseX;
+    msg->m_input.m_ysfxMouseY = m_gfxInputState->m_ysfxMouseY;
+    msg->m_input.m_ysfxWheel = m_gfxInputState->m_ysfxWheel;
+    msg->m_input.m_ysfxHWheel = m_gfxInputState->m_ysfxHWheel;
+    msg->m_input.m_ysfxKeys = std::move(m_gfxInputState->m_ysfxKeys);
+    msg->m_asyncRepainter = m_asyncRepainter.get();
+    msg->m_userData = m_self;
 
-    {
-        juce::Image::BitmapData bdata{bitmap, juce::Image::BitmapData::readWrite};
+    m_gfxInputState->m_ysfxWheel = 0;
+    m_gfxInputState->m_ysfxHWheel = 0;
 
-        ysfx_gfx_config_t gc{};
-        gc.user_data = m_self;
-        gc.pixel_width = (uint32_t)bdata.width;
-        gc.pixel_height = (uint32_t)bdata.height;
-        gc.pixel_stride = (uint32_t)bdata.lineStride;
-        gc.pixels = bdata.data;
-        gc.scale_factor = getBitmapScale();
-        gc.show_menu = &showYsfxMenu;
-        gc.set_cursor = &setYsfxCursor;
-        ysfx_gfx_setup(fx, &gc);
-
-        mustRepaint = ysfx_gfx_run(fx);
-    }
-
-    if (mustRepaint)
-        m_self->repaint();
+    ///
+    m_work.postMessage(msg);
+    m_numWaitedRepaints += 1;
 }
 
-void YsfxGraphicsView::Impl::updateBitmap()
+void YsfxGraphicsView::Impl::updateGfxTarget(int newWidth, int newHeight, int newRetina)
 {
-    int w = m_gfxWidth;
-    int h = m_gfxHeight;
+    GfxTarget *target = m_gfxTarget.get();
 
-    if (w <= 0)
-        w = m_self->getWidth();
-    if (h <= 0)
-        h = m_self->getHeight();
+    ///
+    newWidth = (newWidth == -1) ? target->m_gfxWidth : newWidth;
+    newHeight = (newHeight == -1) ? target->m_gfxHeight : newHeight;
+    newRetina = (newRetina == -1) ? target->m_wantRetina : newRetina;
 
-    m_bitmapUnscaledWidth = w;
-    m_bitmapUnscaledHeight = h;
+    ///
+    bool needsUpdate = false;
+    needsUpdate = needsUpdate || (newWidth != target->m_gfxWidth);
+    needsUpdate = needsUpdate || (newHeight != target->m_gfxHeight);
+    needsUpdate = needsUpdate || (newRetina != target->m_wantRetina);
 
-    if (!m_wantRetina)
-        m_bitmapScale = 1;
-    else {
-        m_bitmapScale = 1; // TODO how to get the display scale factor?
-        w = (int)std::ceil(w * m_bitmapScale);
-        h = (int)std::ceil(h * m_bitmapScale);
+    ///
+    int unscaledWidth = newWidth;
+    int unscaledHeight = newHeight;
+
+    if (unscaledWidth <= 0)
+        unscaledWidth = m_self->getWidth();
+    if (unscaledHeight <= 0)
+        unscaledHeight = m_self->getHeight();
+
+    needsUpdate = needsUpdate || (unscaledWidth != target->m_bitmapUnscaledWidth);
+    needsUpdate = needsUpdate || (unscaledHeight != target->m_bitmapUnscaledHeight);
+
+    ///
+    double bitmapScale = 1;
+    int scaledWidth = unscaledWidth;
+    int scaledHeight = unscaledHeight;
+    if (newRetina) {
+        bitmapScale = 1; // TODO how to get the display scale factor?
+        scaledWidth = (int)std::ceil(unscaledWidth * bitmapScale);
+        scaledHeight = (int)std::ceil(unscaledHeight * bitmapScale);
     }
+    needsUpdate = needsUpdate || (target->m_renderBitmap.getWidth() != scaledWidth);
+    needsUpdate = needsUpdate || (target->m_renderBitmap.getHeight() != scaledHeight);
 
-    if (m_bitmap.getWidth() != w || m_bitmap.getHeight() != h)
-        m_bitmap = juce::Image(juce::Image::ARGB, w, h, true);
+    if (needsUpdate) {
+        target = new GfxTarget;
+        m_gfxTarget.reset(target);
+        target->m_gfxWidth = newWidth;
+        target->m_gfxHeight = newHeight;
+        target->m_wantRetina = (bool)newRetina;
+        target->m_renderBitmap = juce::Image(juce::Image::ARGB, scaledWidth, scaledHeight, true);
+        target->m_bitmapScale = bitmapScale;
+        target->m_bitmapUnscaledWidth = unscaledWidth;
+        target->m_bitmapUnscaledHeight = unscaledHeight;
+    }
 }
 
 void YsfxGraphicsView::Impl::updateYsfxKeyModifiers()
 {
     juce::ModifierKeys mods = juce::ModifierKeys::getCurrentModifiers();
-    m_ysfxMouseMods = translateModifiers(mods);
+    m_gfxInputState->m_ysfxMouseMods = translateModifiers(mods);
 }
 
 void YsfxGraphicsView::Impl::updateYsfxMousePosition(const juce::MouseEvent &event)
 {
     juce::Point<int> off = getDisplayOffset();
-    m_ysfxMouseX = juce::roundToInt((event.x - off.x) * m_bitmapScale);
-    m_ysfxMouseY = juce::roundToInt((event.y - off.y) * m_bitmapScale);
+    double bitmapScale = m_gfxTarget->m_bitmapScale;
+    m_gfxInputState->m_ysfxMouseX = juce::roundToInt((event.x - off.x) * bitmapScale);
+    m_gfxInputState->m_ysfxMouseY = juce::roundToInt((event.y - off.y) * bitmapScale);
 }
 
 void YsfxGraphicsView::Impl::updateYsfxMouseButtons(const juce::MouseEvent &event)
 {
-    m_ysfxMouseButtons = 0;
+    uint32_t buttons = 0;
     if (event.mods.isLeftButtonDown())
-        m_ysfxMouseButtons |= ysfx_button_left;
+        buttons |= ysfx_button_left;
     if (event.mods.isMiddleButtonDown())
-        m_ysfxMouseButtons |= ysfx_button_middle;
+        buttons |= ysfx_button_middle;
     if (event.mods.isRightButtonDown())
-        m_ysfxMouseButtons |= ysfx_button_right;
+        buttons |= ysfx_button_right;
+    m_gfxInputState->m_ysfxMouseButtons = buttons;
 }
 
 juce::Point<int> YsfxGraphicsView::Impl::getDisplayOffset() const
 {
     int w = m_self->getWidth();
     int h = m_self->getHeight();
-    int bw = m_bitmapUnscaledWidth;
-    int bh = m_bitmapUnscaledHeight;
+    int bw = m_gfxTarget->m_bitmapUnscaledWidth;
+    int bh = m_gfxTarget->m_bitmapUnscaledHeight;
 
     juce::Point<int> pt;
     pt.x = (bw < w) ? ((w - bw) / 2) : 0;
@@ -411,12 +569,20 @@ juce::Point<int> YsfxGraphicsView::Impl::getDisplayOffset() const
 int YsfxGraphicsView::Impl::showYsfxMenu(void *userdata, const char *desc, int32_t xpos, int32_t ypos)
 {
     YsfxGraphicsView *self = (YsfxGraphicsView *)userdata;
-    //TODO implement me: popup menu
-    (void)self;
-    (void)desc;
-    (void)xpos;
-    (void)ypos;
-    return 0;
+    AsyncShowMenu *updater = self->m_impl->m_asyncShowMenu.get();
+
+    std::unique_lock<std::mutex> lock{updater->m_mutex};
+    updater->m_menuDesc.assign(desc);
+    updater->m_menuX = xpos;
+    updater->m_menuY = ypos;
+    updater->m_completionFlag = false;
+    updater->m_completionValue = 0;
+    updater->triggerAsyncUpdate();
+
+    do updater->m_completionVariable.wait(lock);
+    while (!updater->m_completionFlag);
+
+    return updater->m_completionValue;
 }
 
 void YsfxGraphicsView::Impl::setYsfxCursor(void *userdata, int32_t cursor)
@@ -481,5 +647,232 @@ void YsfxGraphicsView::Impl::setYsfxCursor(void *userdata, int32_t cursor)
         break;
     }
 
-    self->setMouseCursor(juce::MouseCursor{type});
+    AsyncMouseCursor *async = self->m_impl->m_asyncMouseCursor.get();
+    async->m_cursorType.store(type, std::memory_order_relaxed);
+    async->triggerAsyncUpdate();
+}
+
+//------------------------------------------------------------------------------
+void YsfxGraphicsView::Impl::BackgroundWork::start()
+{
+    if (m_running)
+        return;
+
+    m_running = true;
+    m_thread = std::thread([this]() { run(); });
+}
+
+void YsfxGraphicsView::Impl::BackgroundWork::stop()
+{
+    if (!m_running)
+        return;
+
+    m_running = false;
+    m_sema.post();
+
+    m_thread.join();
+
+    std::lock_guard<std::mutex> lock{m_messagesMutex};
+    while (!m_messages.empty())
+        m_messages.pop();
+}
+
+void YsfxGraphicsView::Impl::BackgroundWork::postMessage(std::shared_ptr<Message> message)
+{
+    if (!m_running)
+        return;
+
+    {
+        std::lock_guard<std::mutex> lock{m_messagesMutex};
+        m_messages.emplace(message);
+    }
+    m_sema.post();
+}
+
+void YsfxGraphicsView::Impl::BackgroundWork::run()
+{
+    while (m_sema.wait(), m_running) {
+        std::shared_ptr<Message> msg = popNextMessage();
+        jassert(msg);
+
+        switch (msg->m_type) {
+        case '@gfx':
+            processGfxMessage(static_cast<GfxMessage &>(*msg));
+            break;
+        }
+    }
+}
+
+std::shared_ptr<YsfxGraphicsView::Impl::BackgroundWork::Message> YsfxGraphicsView::Impl::BackgroundWork::popNextMessage()
+{
+    std::lock_guard<std::mutex> lock{m_messagesMutex};
+    if (m_messages.empty())
+        return nullptr;
+
+    std::shared_ptr<Message> msg = m_messages.front();
+    m_messages.pop();
+    return msg;
+}
+
+void YsfxGraphicsView::Impl::BackgroundWork::processGfxMessage(GfxMessage &msg)
+{
+    ysfx_t *fx = msg.m_fx.get();
+    GfxInputState &input = msg.m_input;
+
+    while (!input.m_ysfxKeys.empty()) {
+        GfxInputState::YsfxKeyEvent event = input.m_ysfxKeys.front();
+        input.m_ysfxKeys.pop();
+        ysfx_gfx_add_key(fx, std::get<0>(event), std::get<1>(event), std::get<2>(event));
+    }
+
+    ysfx_gfx_update_mouse(fx, input.m_ysfxMouseMods, input.m_ysfxMouseX, input.m_ysfxMouseY, input.m_ysfxMouseButtons, input.m_ysfxWheel, input.m_ysfxHWheel);
+
+    ///
+    GfxTarget *target = msg.m_target.get();
+    bool mustRepaint;
+
+    {
+        juce::Image::BitmapData bdata{target->m_renderBitmap, juce::Image::BitmapData::readWrite};
+
+        ysfx_gfx_config_t gc{};
+        gc.user_data = msg.m_userData;
+        gc.pixel_width = (uint32_t)bdata.width;
+        gc.pixel_height = (uint32_t)bdata.height;
+        gc.pixel_stride = (uint32_t)bdata.lineStride;
+        gc.pixels = bdata.data;
+        gc.scale_factor = target->m_bitmapScale;
+        gc.show_menu = &showYsfxMenu;
+        gc.set_cursor = &setYsfxCursor;
+        ysfx_gfx_setup(fx, &gc);
+
+        mustRepaint = ysfx_gfx_run(fx);
+    }
+
+    if (mustRepaint) {
+        std::lock_guard<std::mutex> lock{msg.m_asyncRepainter->m_mutex};
+
+        juce::Image &imgsrc = target->m_renderBitmap;
+        juce::Image &imgdst = msg.m_asyncRepainter->m_bitmap;
+
+        int w = imgsrc.getWidth();
+        int h = imgsrc.getHeight();
+
+        if (w != imgdst.getWidth() || h != imgdst.getHeight())
+            imgdst = juce::Image{juce::Image::ARGB, w, h, false};
+
+        juce::Image::BitmapData src{imgsrc, juce::Image::BitmapData::readOnly};
+        juce::Image::BitmapData dst{imgdst, juce::Image::BitmapData::writeOnly};
+
+        if (src.lineStride == dst.lineStride) {
+            memcpy(dst.data, src.data, (size_t)(h * src.lineStride));
+        }
+        else {
+            for (int row = 0; row < h; ++row)
+                memcpy(dst.getLinePointer(row), src.getLinePointer(row), (size_t)(w * src.pixelStride));
+        }
+    }
+
+    if (mustRepaint)
+        msg.m_asyncRepainter->triggerAsyncUpdate();
+}
+
+//------------------------------------------------------------------------------
+std::unique_ptr<juce::PopupMenu> YsfxGraphicsView::Impl::createPopupMenu(const char **str, int *startid, int menudepth)
+{
+    if (menudepth >= 8)
+        return nullptr;
+
+    std::unique_ptr<juce::PopupMenu> hm{new juce::PopupMenu};
+    size_t pos = 0;
+    int id = *startid;
+
+    const char *p = *str;
+    const char *sep = strchr(p, '|');
+    while (sep || *p) {
+        size_t len = sep ? (size_t)(sep - p) : strlen(p);
+        std::string buf(p, len);
+        p += len;
+        if (sep)
+            sep = strchr(++p, '|');
+
+        const char *q = buf.c_str();
+        std::unique_ptr<juce::PopupMenu> subm;
+        bool done = false;
+        bool enabled = true;
+        bool checked = false;
+        while (strspn(q, ">#!<")) {
+            if (*q == '>' && !subm) {
+                subm = createPopupMenu(&p, &id, menudepth + 1);
+                sep = strchr(p, '|');
+            }
+            if (*q == '#')
+                enabled = false;
+            if (*q == '!')
+                checked = true;
+            if (*q == '<')
+                done = true;
+            ++q;
+        }
+        if (*q) {
+            juce::String name{juce::CharPointer_UTF8{q}};
+            if (subm)
+                hm->addSubMenu(name, std::move(*subm), enabled, nullptr, checked, 0);
+            else
+                hm->addItem(id++, name, enabled, checked);
+        }
+        else if (!done)
+            hm->addSeparator();
+        ++pos;
+        if (done)
+            break;
+    }
+
+    *str = p;
+    *startid = id;
+
+    if (!pos)
+        return nullptr;
+
+    return hm;
+}
+
+void YsfxGraphicsView::Impl::endPopupMenu(int menuResult)
+{
+    AsyncShowMenu *updater = m_asyncShowMenu.get();
+
+    std::lock_guard<std::mutex> lock{updater->m_mutex};
+    updater->m_completionFlag = true;
+    updater->m_completionValue = menuResult;
+    updater->m_completionVariable.notify_one();
+}
+
+//------------------------------------------------------------------------------
+void YsfxGraphicsView::Impl::handleAsyncUpdate(better::AsyncUpdater *updater)
+{
+    if (updater == m_asyncRepainter.get()) {
+        m_self->repaint();
+        m_numWaitedRepaints -= 1;
+    }
+    else if (updater == m_asyncMouseCursor.get()) {
+        AsyncMouseCursor &cursorUpdater = static_cast<AsyncMouseCursor &>(*updater);
+        m_self->setMouseCursor(juce::MouseCursor{cursorUpdater.m_cursorType.load(std::memory_order_relaxed)});
+    }
+    else if (updater == m_asyncShowMenu.get()) {
+        AsyncShowMenu &menuShower = static_cast<AsyncShowMenu &>(*updater);
+        std::lock_guard<std::mutex> lock{menuShower.m_mutex};
+        int menuId = 1;
+        const char *menuDesc = menuShower.m_menuDesc.c_str();
+        m_popupMenu = createPopupMenu(&menuDesc, &menuId);
+
+        juce::Point<int> off = getDisplayOffset();
+        juce::Point<int> position;
+        position.x = juce::roundToInt(menuShower.m_menuX / m_gfxTarget->m_bitmapScale + off.x);
+        position.y = juce::roundToInt(menuShower.m_menuY / m_gfxTarget->m_bitmapScale + off.y);
+        juce::Point<int> screenPosition = m_self->localPointToGlobal(position);
+
+        m_popupMenu->showMenuAsync(juce::PopupMenu::Options{}
+            .withParentComponent(m_self)
+            .withTargetScreenArea(juce::Rectangle<int>{screenPosition.x, screenPosition.y, 0, 0}),
+            [this](int result) { endPopupMenu(result); });
+    }
 }
