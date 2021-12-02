@@ -52,7 +52,7 @@ struct ysfx_gfx_state_t {
     std::unordered_set<uint32_t> keys_pressed;
     ysfx_real scale = 0.0;
     void *callback_data = nullptr;
-    int (*show_menu)(void *, const char *);
+    int (*show_menu)(void *, const char *, int32_t, int32_t);
 };
 
 //------------------------------------------------------------------------------
@@ -167,7 +167,9 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_showmenu(void *opaque, INT_PTR nparms,
     if (!ysfx_string_get(fx, *parms[0], desc) || desc.empty())
         return 0;
 
-    return state->show_menu(state->callback_data, desc.c_str());
+    int32_t x = (int32_t)*fx->var.gfx_x;
+    int32_t y = (int32_t)*fx->var.gfx_y;
+    return state->show_menu(state->callback_data, desc.c_str(), x, y);
 }
 
 #endif
@@ -216,7 +218,7 @@ void ysfx_gfx_state_set_callback_data(ysfx_gfx_state_t *state, void *callback_da
     state->callback_data = callback_data;
 }
 
-void ysfx_gfx_state_set_show_menu_callback(ysfx_gfx_state_t *state, int (*callback)(void *, const char *))
+void ysfx_gfx_state_set_show_menu_callback(ysfx_gfx_state_t *state, int (*callback)(void *, const char *, int32_t, int32_t))
 {
     state->show_menu = callback;
 }

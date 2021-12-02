@@ -333,7 +333,7 @@ typedef struct ysfx_gfx_config_s {
     // the scale factor of the display; 1.0 or greater, 2.0 for Retina display
     ysfx_real scale_factor;
     // show a menu and run it synchronouslys; returns an item ID >= 1, or 0 if none
-    int (*show_menu)(void *user_data, const char *menu_spec);
+    int (*show_menu)(void *user_data, const char *menu_spec, int32_t xpos, int32_t ypos);
 } ysfx_gfx_config_t;
 
 // set up the graphics rendering

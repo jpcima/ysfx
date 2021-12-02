@@ -19,6 +19,8 @@
 #include "ysfx.h"
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <functional>
+#include <tuple>
+#include <queue>
 #include <list>
 
 class YsfxGraphicsView : public juce::Component {
@@ -48,7 +50,7 @@ private:
     void updateYsfxKeyModifiers();
     void updateYsfxMousePosition(const juce::MouseEvent &event);
     void updateYsfxMouseButtons(const juce::MouseEvent &event);
-    int showYsfxMenu(const char *desc);
+    static int showYsfxMenu(void *userdata, const char *desc, int32_t xpos, int32_t ypos);
 
 private:
     ysfx_u m_fx;
@@ -76,4 +78,6 @@ private:
     int32_t m_ysfxMouseY = 0;
     double m_ysfxWheel = 0;
     double m_ysfxHWheel = 0;
+    using YsfxKeyEvent = std::tuple<uint32_t, uint32_t, bool>;
+    std::queue<YsfxKeyEvent> m_ysfxKeys;
 };

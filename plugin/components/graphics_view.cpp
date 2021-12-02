@@ -44,6 +44,9 @@ void YsfxGraphicsView::setEffect(ysfx_t *fx)
         m_gfxTimer.reset(FunctionalTimer::create([this]() { updateGfx(); }));
         m_gfxTimer->startTimerHz(30);
     }
+
+    while (!m_ysfxKeys.empty())
+        m_ysfxKeys.pop();
 }
 
 void YsfxGraphicsView::paint(juce::Graphics &g)
@@ -163,7 +166,8 @@ bool YsfxGraphicsView::keyPressed(const juce::KeyPress &key)
     translateKeyPress(key, kp.ykey, kp.ymods);
 
     m_keysPressed.push_back(kp);
-    ysfx_gfx_add_key(m_fx.get(), kp.ymods, kp.ykey, true);
+    if (m_gfxTimer && m_gfxTimer->isTimerRunning())
+        m_ysfxKeys.emplace(kp.ymods, kp.ykey, true);
 
     return true;
 }
@@ -180,7 +184,8 @@ bool YsfxGraphicsView::keyStateChanged(bool isKeyDown)
             else {
                 m_keysPressed.erase(it++);
                 kp.ymods = translateModifiers(juce::ModifierKeys::getCurrentModifiers());
-                ysfx_gfx_add_key(m_fx.get(), kp.ymods, kp.ykey, false);
+                if (m_gfxTimer && m_gfxTimer->isTimerRunning())
+                    m_ysfxKeys.emplace(kp.ymods, kp.ykey, false);
             }
         }
     }
@@ -237,6 +242,14 @@ void YsfxGraphicsView::configureGfx(int gfxWidth, int gfxHeight, bool gfxWantRet
 void YsfxGraphicsView::updateGfx()
 {
     ysfx_t *fx = m_fx.get();
+    jassert(fx);
+
+    ///
+    while (!m_ysfxKeys.empty()) {
+        YsfxKeyEvent event = m_ysfxKeys.front();
+        m_ysfxKeys.pop();
+        ysfx_gfx_add_key(fx, std::get<0>(event), std::get<1>(event), std::get<2>(event));
+    }
 
     ///
     ysfx_gfx_update_mouse(fx, m_ysfxMouseMods, m_ysfxMouseX, m_ysfxMouseY, m_ysfxMouseButtons, m_ysfxWheel, m_ysfxHWheel);
@@ -263,9 +276,7 @@ void YsfxGraphicsView::updateGfx()
         gc.pixel_stride = (uint32_t)bdata.lineStride;
         gc.pixels = bdata.data;
         gc.scale_factor = getBitmapScale();
-        gc.show_menu = +[](void *data, const char *spec) -> int {
-            return ((YsfxGraphicsView *)data)->showYsfxMenu(spec);
-        };
+        gc.show_menu = &showYsfxMenu;
         ysfx_gfx_setup(fx, &gc);
 
         mustRepaint = ysfx_gfx_run(fx);
@@ -346,10 +357,14 @@ juce::Point<int> YsfxGraphicsView::getDisplayOffset() const
     return pt;
 }
 
-int YsfxGraphicsView::showYsfxMenu(const char *desc)
+int YsfxGraphicsView::showYsfxMenu(void *userdata, const char *desc, int32_t xpos, int32_t ypos)
 {
     //TODO implement me: popup menu
-    
+
+    (void)userdata;
+    (void)desc;
+    (void)xpos;
+    (void)ypos;
 
     return 0;
 }
