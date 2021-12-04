@@ -19,6 +19,14 @@ based on several free and open source components from the WDL. Originally, this
 project was based on jsusfx by Pascal Gauthier, but then it became an entire
 rewrite made from scratch.
 
+## Download development builds
+
+- [32-bit Windows VST3](https://nightly.link/jpcima/ysfx/workflows/build/master/Windows%2032-bit%20VST3.zip)
+- [64-bit Windows VST3](https://nightly.link/jpcima/ysfx/workflows/build/master/Windows%2064-bit%20VST3.zip)
+- [64-bit GNU/Linux VST3](https://nightly.link/jpcima/ysfx/workflows/build/master/Linux%2064-bit%20VST3.zip)
+- [macOS Universal AU (**self-signed**)](https://nightly.link/jpcima/ysfx/workflows/build/master/macOS%20AU.zip)
+- [macOS Universal VST3 (**self-signed**)](https://nightly.link/jpcima/ysfx/workflows/build/master/macOS%20VST3.zip)
+
 ## Building
 
 To build the project, one must first set up a C++ development environment
