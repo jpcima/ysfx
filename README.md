@@ -1,6 +1,6 @@
 # ysfx
 
-Hosting library for JSFX
+Hosting library and audio plugin for JSFX
 
 ![capture](docs/capture.png)
 
