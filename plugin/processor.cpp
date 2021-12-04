@@ -377,6 +377,18 @@ void YsfxProcessor::setStateInformation(const void *data, int sizeInBytes)
 }
 
 //==============================================================================
+bool YsfxProcessor::isBusesLayoutSupported(const BusesLayout &layout) const
+{
+    int numInputs = layout.getMainInputChannels();
+    int numOutputs = layout.getMainOutputChannels();
+
+    if (numInputs > ysfx_max_channels || numOutputs > ysfx_max_channels)
+        return false;
+
+    return true;
+}
+
+//==============================================================================
 void YsfxProcessor::Impl::processMidiInput(juce::MidiBuffer &midi)
 {
     ysfx_t *fx = m_fx.get();

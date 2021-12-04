@@ -61,6 +61,9 @@ public:
     void getStateInformation(juce::MemoryBlock &destData) override;
     void setStateInformation(const void *data, int sizeInBytes) override;
 
+    //==========================================================================
+    bool isBusesLayoutSupported(const BusesLayout &layout) const override;
+
 private:
     struct Impl;
     std::unique_ptr<Impl> m_impl;
