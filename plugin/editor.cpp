@@ -65,6 +65,7 @@ struct YsfxEditor::Impl {
     std::unique_ptr<juce::TextButton> m_btnEditCode;
     std::unique_ptr<juce::TextButton> m_btnSwitchEditor;
     std::unique_ptr<juce::Label> m_lblFilePath;
+    std::unique_ptr<juce::Label> m_lblIO;
     std::unique_ptr<juce::Viewport> m_centerViewPort;
     std::unique_ptr<YsfxParametersPanel> m_parametersPanel;
     std::unique_ptr<YsfxGraphicsView> m_graphicsView;
@@ -136,6 +137,19 @@ void YsfxEditor::Impl::updateInfo()
         m_lblFilePath->setText(TRANS("No file"), juce::dontSendNotification);
         m_lblFilePath->setTooltip(juce::String{});
     }
+
+    juce::String ioText;
+    uint32_t numInputs = ysfx_get_num_inputs(fx);
+    uint32_t numOutputs = ysfx_get_num_inputs(fx);
+    if (numInputs != 0 && numOutputs != 0)
+        ioText = juce::String(numInputs) + " in " + juce::String(numOutputs) + " out";
+    else if (numInputs != 0)
+        ioText = juce::String(numInputs) + " in";
+    else if (numOutputs != 0)
+        ioText = juce::String(numOutputs) + " out";
+    else
+        ioText = "MIDI";
+    m_lblIO->setText(ioText, juce::dontSendNotification);
 
     juce::Array<YsfxParameter *> params;
     params.ensureStorageAllocated(ysfx_max_sliders);
@@ -284,6 +298,9 @@ void YsfxEditor::Impl::createUI()
     m_lblFilePath.reset(new juce::Label);
     m_lblFilePath->setMinimumHorizontalScale(1.0f);
     m_self->addAndMakeVisible(*m_lblFilePath);
+    m_lblIO.reset(new juce::Label);
+    m_lblIO->setMinimumHorizontalScale(1.0f);
+    m_self->addAndMakeVisible(*m_lblIO);
     m_centerViewPort.reset(new juce::Viewport);
     m_centerViewPort->setScrollBarsShown(true, false);
     m_self->addAndMakeVisible(*m_centerViewPort);
@@ -342,6 +359,8 @@ void YsfxEditor::Impl::relayoutUI()
     m_btnSwitchEditor->setBounds(temp.removeFromRight(100));
     temp.removeFromRight(10);
     m_btnEditCode->setBounds(temp.removeFromRight(100));
+    temp.removeFromRight(10);
+    m_lblIO->setBounds(temp.removeFromRight(100));
     temp.removeFromRight(10);
     m_lblFilePath->setBounds(temp);
 
