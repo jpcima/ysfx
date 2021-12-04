@@ -50,6 +50,7 @@ struct YsfxEditor::Impl {
     static juce::File getDefaultEffectsDirectory();
     juce::RecentlyOpenedFilesList loadRecentFiles();
     void saveRecentFiles(const juce::RecentlyOpenedFilesList &recent);
+    void clearRecentFiles();
 
     //==========================================================================
     class CodeWindow : public juce::DocumentWindow {
@@ -218,6 +219,9 @@ void YsfxEditor::Impl::popupRecentFiles()
 {
     m_recentFilesPopup.reset(new juce::PopupMenu);
 
+    m_recentFilesPopup->addItem(1000, TRANS("Clear items"));
+    m_recentFilesPopup->addSeparator();
+
     juce::RecentlyOpenedFilesList recent = loadRecentFiles();
     recent.createPopupMenuItems(*m_recentFilesPopup, 100, false, true);
 
@@ -228,7 +232,9 @@ void YsfxEditor::Impl::popupRecentFiles()
         .withParentComponent(m_self)
         .withTargetComponent(*m_btnRecentFiles);
     m_recentFilesPopup->showMenuAsync(popupOptions, [this, recent](int index) {
-        if (index != 0)
+        if (index == 1000)
+            clearRecentFiles();
+        else if (index != 0)
             loadFile(recent.getFile(index - 100));
     });
 }
@@ -276,6 +282,16 @@ void YsfxEditor::Impl::saveRecentFiles(const juce::RecentlyOpenedFilesList &rece
     stream.truncate();
     juce::String text = recent.toString();
     stream.write(text.toRawUTF8(), text.getNumBytesAsUTF8());
+}
+
+void YsfxEditor::Impl::clearRecentFiles()
+{
+    juce::File dir = getAppDataDirectory();
+    if (dir == juce::File{})
+        return;
+
+    juce::File file = dir.getChildFile("PluginRecentFiles.dat");
+    file.deleteFile();
 }
 
 juce::File YsfxEditor::Impl::getAppDataDirectory()
