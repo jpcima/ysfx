@@ -17,7 +17,22 @@
 #
 
 include(CTest)
+find_package(PkgConfig)
+
+# sndfile
+# ------------------------------------------------------------------------------
+
 find_package(SndFile)
+if(TARGET SndFile::sndfile)
+    add_library(sndfile INTERFACE)
+    target_link_libraries(sndfile INTERFACE SndFile::sndfile)
+else()
+    pkg_check_modules(SndFileViaPkgConfig "sndfile" IMPORTED_TARGET)
+    if(TARGET PkgConfig::SndFileViaPkgConfig)
+        add_library(sndfile INTERFACE)
+        target_link_libraries(sndfile INTERFACE PkgConfig::SndFileViaPkgConfig)
+    endif()
+endif()
 
 # catch
 # ------------------------------------------------------------------------------
@@ -64,12 +79,8 @@ target_link_libraries(ysfx_tests
 if(YSFX_GFX)
     target_link_libraries(ysfx_tests PUBLIC lice)
 endif()
-if(TARGET SndFile::sndfile)
-    target_compile_definitions(ysfx_tests
-        PRIVATE
-            "YSFX_TESTS_HAVE_SNDFILE")
-    target_link_libraries(ysfx_tests
-        PRIVATE
-            SndFile::sndfile)
+if(TARGET sndfile)
+    target_compile_definitions(ysfx_tests PRIVATE "YSFX_TESTS_HAVE_SNDFILE")
+    target_link_libraries(ysfx_tests PRIVATE sndfile)
 endif()
 catch_discover_tests(ysfx_tests)
