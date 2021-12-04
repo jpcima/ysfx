@@ -1333,7 +1333,7 @@ bool ysfx_find_data_file(ysfx_t *fx, EEL_F *file, std::string &result)
     if (slider && !slider->path.empty()) {
         int32_t value = ysfx_eel_round<int32_t>(*fx->var.slider[slideridx]);
         if (value < 0 || (uint32_t)value >= slider->enum_names.size())
-            return -1;
+            return false;
 
         filepart = slider->path + '/' + slider->enum_names[(uint32_t)value];
         accept_relative = true;
@@ -1347,7 +1347,7 @@ bool ysfx_find_data_file(ysfx_t *fx, EEL_F *file, std::string &result)
         accept_relative = true;
     }
     else
-        return -1;
+        return false;
 
     std::vector<std::string> filecandidates;
     filecandidates.reserve(2);
