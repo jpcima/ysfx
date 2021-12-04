@@ -47,6 +47,7 @@ struct YsfxEditor::Impl {
     void switchEditor(bool showGfx);
     void openCodeEditor();
     static juce::File getAppDataDirectory();
+    static juce::File getDefaultEffectsDirectory();
     juce::RecentlyOpenedFilesList loadRecentFiles();
     void saveRecentFiles(const juce::RecentlyOpenedFilesList &recent);
 
@@ -188,6 +189,8 @@ void YsfxEditor::Impl::chooseFileAndLoad()
     juce::File prevFilePath{juce::CharPointer_UTF8{ysfx_get_file_path(fx)}};
     if (prevFilePath != juce::File{})
         initialPath = prevFilePath.getParentDirectory();
+    else
+        initialPath = getDefaultEffectsDirectory();
 
     m_fileChooser.reset(new juce::FileChooser(TRANS("Open jsfx..."), initialPath));
     m_fileChooserActive = true;
@@ -282,6 +285,17 @@ juce::File YsfxEditor::Impl::getAppDataDirectory()
         return juce::File{};
 
     return dir.getChildFile("ysfx");
+}
+
+juce::File YsfxEditor::Impl::getDefaultEffectsDirectory()
+{
+#if !JUCE_MAC
+    return juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+        .getChildFile("REAPER/Effects");
+#else
+    return juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+        .getChildFile("Application Support/REAPER/Effects");
+#endif
 }
 
 void YsfxEditor::Impl::createUI()
