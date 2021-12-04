@@ -501,7 +501,7 @@ void YsfxGraphicsView::Impl::updateGfxTarget(int newWidth, int newHeight, int ne
     bool needsUpdate = false;
     needsUpdate = needsUpdate || (newWidth != target->m_gfxWidth);
     needsUpdate = needsUpdate || (newHeight != target->m_gfxHeight);
-    needsUpdate = needsUpdate || (newRetina != target->m_wantRetina);
+    needsUpdate = needsUpdate || ((bool)newRetina != target->m_wantRetina);
 
     ///
     int unscaledWidth = newWidth;
