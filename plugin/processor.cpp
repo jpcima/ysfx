@@ -21,6 +21,7 @@
 #include "info.h"
 #include "utility/audio_processor_suspender.h"
 #include "utility/rt_semaphore.h"
+#include "utility/sync_bitset.hpp"
 #include "ysfx.h"
 #include <atomic>
 #include <thread>
@@ -32,7 +33,7 @@ struct YsfxProcessor::Impl : public juce::AudioProcessorListener {
     ysfx_u m_fx;
     ysfx_time_info_t m_timeInfo{};
     int m_sliderParamOffset = 0;
-    std::atomic<bool> m_sliderParametersChanged{false};
+    ysfx::sync_bitset64 m_sliderParametersChanged;
     YsfxInfo::Ptr m_info{new YsfxInfo};
 
     //==========================================================================
@@ -175,8 +176,13 @@ void YsfxProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::MidiBuf
 {
     ysfx_t *fx = m_impl->m_fx.get();
 
-    if (m_impl->m_sliderParametersChanged.exchange(false))
-        m_impl->syncParametersToSliders();
+    uint64_t sliderParametersChanged = m_impl->m_sliderParametersChanged.exchange(0);
+    if (sliderParametersChanged) {
+        for (int i = 0; i < ysfx_max_sliders; ++i) {
+            if (sliderParametersChanged & ((uint64_t)1 << i))
+                m_impl->syncParameterToSlider(i);
+        }
+    }
 
     m_impl->updateTimeInfo();
     ysfx_set_time_info(fx, &m_impl->m_timeInfo);
@@ -196,8 +202,13 @@ void YsfxProcessor::processBlock(juce::AudioBuffer<double> &buffer, juce::MidiBu
 {
     ysfx_t *fx = m_impl->m_fx.get();
 
-    if (m_impl->m_sliderParametersChanged.exchange(false))
-        m_impl->syncParametersToSliders();
+    uint64_t sliderParametersChanged = m_impl->m_sliderParametersChanged.exchange(0);
+    if (sliderParametersChanged) {
+        for (int i = 0; i < ysfx_max_sliders; ++i) {
+            if (sliderParametersChanged & ((uint64_t)1 << i))
+                m_impl->syncParameterToSlider(i);
+        }
+    }
 
     m_impl->updateTimeInfo();
     ysfx_set_time_info(fx, &m_impl->m_timeInfo);
@@ -554,9 +565,11 @@ void YsfxProcessor::Impl::Background::processLoadRequest(LoadRequest &req)
 void YsfxProcessor::Impl::audioProcessorParameterChanged(AudioProcessor *processor, int parameterIndex, float newValue)
 {
     (void)processor;
-    (void)parameterIndex;
     (void)newValue;
-    m_sliderParametersChanged.store(true);
+
+    int sliderIndex = parameterIndex - m_sliderParamOffset;
+    if (sliderIndex >= 0 && sliderIndex < ysfx_max_sliders)
+        m_sliderParametersChanged.fetch_or((uint64_t)1 << sliderIndex);
 }
 
 void YsfxProcessor::Impl::audioProcessorChanged(AudioProcessor *processor, const ChangeDetails &details)

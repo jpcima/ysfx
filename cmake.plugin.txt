@@ -63,7 +63,8 @@ target_sources(ysfx_plugin
         "plugin/utility/async_updater.cpp"
         "plugin/utility/async_updater.h"
         "plugin/utility/rt_semaphore.cpp"
-        "plugin/utility/rt_semaphore.h")
+        "plugin/utility/rt_semaphore.h"
+        "plugin/utility/sync_bitset.hpp")
 
 target_compile_definitions(ysfx_plugin
   PUBLIC
