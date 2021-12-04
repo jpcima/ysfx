@@ -2,6 +2,8 @@
 
 Hosting library for JSFX
 
+![capture](docs/capture.png)
+
 ## Description
 
 This package provides support for audio and MIDI effects developed with the JSFX
