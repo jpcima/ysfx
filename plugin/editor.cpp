@@ -297,6 +297,7 @@ void YsfxEditor::Impl::createUI()
     m_self->addAndMakeVisible(*m_btnSwitchEditor);
     m_lblFilePath.reset(new juce::Label);
     m_lblFilePath->setMinimumHorizontalScale(1.0f);
+    m_lblFilePath->setJustificationType(juce::Justification::horizontallyCentred);
     m_self->addAndMakeVisible(*m_lblFilePath);
     m_lblIO.reset(new juce::Label);
     m_lblIO->setMinimumHorizontalScale(1.0f);
