@@ -17,6 +17,7 @@
 #
 
 include(CTest)
+include(CheckCSourceCompiles)
 find_package(PkgConfig)
 
 # sndfile
@@ -33,6 +34,18 @@ else()
         target_link_libraries(sndfile INTERFACE PkgConfig::SndFileViaPkgConfig)
     endif()
 endif()
+
+# extra check for macOS, which can fail if build is universal but library is not
+function(ysfx_check_sndfile_works VAR)
+    if(NOT TARGET sndfile)
+        set("${VAR}" FALSE)
+    endif()
+    set(CMAKE_REQUIRED_LIBRARIES sndfile)
+    check_c_source_compiles("#include <sndfile.h>
+int main() { sf_close((SNDFILE *)0); }" "${VAR}")
+endfunction()
+
+ysfx_check_sndfile_works(YSFX_TESTS_HAVE_SNDFILE)
 
 # catch
 # ------------------------------------------------------------------------------
@@ -79,7 +92,7 @@ target_link_libraries(ysfx_tests
 if(YSFX_GFX)
     target_link_libraries(ysfx_tests PUBLIC lice)
 endif()
-if(TARGET sndfile)
+if(YSFX_TESTS_HAVE_SNDFILE)
     target_compile_definitions(ysfx_tests PRIVATE "YSFX_TESTS_HAVE_SNDFILE")
     target_link_libraries(ysfx_tests PRIVATE sndfile)
 endif()
