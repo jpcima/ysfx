@@ -300,6 +300,8 @@ void YsfxEditor::Impl::createUI()
     m_self->addAndMakeVisible(*m_lblFilePath);
     m_lblIO.reset(new juce::Label);
     m_lblIO->setMinimumHorizontalScale(1.0f);
+    m_lblIO->setJustificationType(juce::Justification::horizontallyCentred);
+    m_lblIO->setColour(juce::Label::outlineColourId, m_self->findColour(juce::ComboBox::outlineColourId));
     m_self->addAndMakeVisible(*m_lblIO);
     m_centerViewPort.reset(new juce::Viewport);
     m_centerViewPort->setScrollBarsShown(true, false);
