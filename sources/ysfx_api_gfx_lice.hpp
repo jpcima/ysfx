@@ -194,7 +194,6 @@ public:
   EEL_F gfx_loadimg(void *opaque, int img, EEL_F loadFrom);
   EEL_F gfx_setfont(void *opaque, int np, EEL_F **parms);
   EEL_F gfx_getfont(void *opaque, int np, EEL_F **parms);
-  EEL_F gfx_getdropfile(void *opaque, int np, EEL_F **parms);
 
   LICE_pixel getCurColor();
   int getCurMode();
@@ -600,12 +599,6 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_loadimg(void *opaque, EEL_F *img, EEL_
   return 0.0;
 }
 
-static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_getdropfile(void *opaque, INT_PTR np, EEL_F **parms)
-{
-  eel_lice_state *ctx=EEL_LICE_GET_CONTEXT(opaque);
-  if (ctx) return ctx->gfx_getdropfile(opaque,(int) np, parms);
-  return 0.0;
-}
 static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_setimgdim(void *opaque, EEL_F *img, EEL_F *w, EEL_F *h)
 {
   eel_lice_state *ctx=EEL_LICE_GET_CONTEXT(opaque);
@@ -823,12 +816,6 @@ void eel_lice_state::gfx_getimgdim(EEL_F img, EEL_F *w, EEL_F *h)
     *w=LICE__GetWidth(bm);
     *h=LICE__GetHeight(bm);
   }
-}
-
-EEL_F eel_lice_state::gfx_getdropfile(void *opaque, int np, EEL_F **parms)
-{
-  //TODO
-  return 0;
 }
 
 EEL_F eel_lice_state::gfx_loadimg(void *opaque, int img, EEL_F loadFrom)

@@ -30,6 +30,7 @@ void ysfx_gfx_state_set_scale_factor(ysfx_gfx_state_t *state, ysfx_real scale);
 void ysfx_gfx_state_set_callback_data(ysfx_gfx_state_t *state, void *callback_data);
 void ysfx_gfx_state_set_show_menu_callback(ysfx_gfx_state_t *state, int (*callback)(void *, const char *, int32_t, int32_t));
 void ysfx_gfx_state_set_set_cursor_callback(ysfx_gfx_state_t *state, void (*callback)(void *, int32_t));
+void ysfx_gfx_state_set_get_drop_file_callback(ysfx_gfx_state_t *state, const char *(*callback)(void *, int32_t));
 bool ysfx_gfx_state_is_dirty(ysfx_gfx_state_t *state);
 void ysfx_gfx_state_add_key(ysfx_gfx_state_t *state, uint32_t mods, uint32_t key, bool press);
 void ysfx_gfx_state_update_mouse(ysfx_gfx_state_t *state, uint32_t mods, int xpos, int ypos, uint32_t buttons, int wheel, int hwheel);

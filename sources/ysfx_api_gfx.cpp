@@ -52,8 +52,9 @@ struct ysfx_gfx_state_t {
     std::unordered_set<uint32_t> keys_pressed;
     ysfx_real scale = 0.0;
     void *callback_data = nullptr;
-    int (*show_menu)(void *, const char *, int32_t, int32_t);
-    void (*set_cursor)(void *, int32_t);
+    int (*show_menu)(void *, const char *, int32_t, int32_t) = nullptr;
+    void (*set_cursor)(void *, int32_t) = nullptr;
+    const char *(*get_drop_file)(void *user_data, int32_t index) = nullptr;
 };
 
 //------------------------------------------------------------------------------
@@ -184,6 +185,30 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_setcursor(void *opaque,  INT_PTR nparm
     return 0;
 }
 
+static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_getdropfile(void *opaque, INT_PTR np, EEL_F **parms)
+{
+    ysfx_gfx_state_t *state = GFX_GET_CONTEXT(opaque);
+    if (!state || !state->get_drop_file)
+        return 0;
+
+    const int32_t idx = (int)*parms[0];
+    if (idx < 0) {
+        state->get_drop_file(state->callback_data, -1);
+        return 0;
+    }
+
+    const char *file = state->get_drop_file(state->callback_data, idx);
+    if (!file)
+        return 0;
+
+    if (np > 1) {
+        ysfx_t *fx = (ysfx_t *)state->lice->m_user_ctx;
+        ysfx_string_set(fx, *parms[1], file);
+    }
+
+    return 1;
+}
+
 #endif
 
 //------------------------------------------------------------------------------
@@ -238,6 +263,11 @@ void ysfx_gfx_state_set_show_menu_callback(ysfx_gfx_state_t *state, int (*callba
 void ysfx_gfx_state_set_set_cursor_callback(ysfx_gfx_state_t *state, void (*callback)(void *, int32_t))
 {
     state->set_cursor = callback;
+}
+
+void ysfx_gfx_state_set_get_drop_file_callback(ysfx_gfx_state_t *state, const char *(*callback)(void *, int32_t))
+{
+    state->get_drop_file = callback;
 }
 
 bool ysfx_gfx_state_is_dirty(ysfx_gfx_state_t *state)

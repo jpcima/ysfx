@@ -336,6 +336,9 @@ typedef struct ysfx_gfx_config_s {
     int32_t (*show_menu)(void *user_data, const char *menu_spec, int32_t xpos, int32_t ypos);
     // change the cursor
     void (*set_cursor)(void *user_data, int32_t cursor);
+    // if index is not -1, get the dropped file at this index (otherwise null)
+    // if index is -1, clear the list of dropped files, and return null
+    const char *(*get_drop_file)(void *user_data, int32_t index);
 } ysfx_gfx_config_t;
 
 // set up the graphics rendering
