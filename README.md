@@ -62,3 +62,11 @@ cd build
 cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
 cmake --build .
 ```
+
+## JSFX resources
+
+Great free and open-source effects:
+
+- Saike: https://github.com/JoepVanlier/JSFX
+- Geraint Luff: https://github.com/geraintluff/jsfx
+- Justin Johnson: https://github.com/Justin-Johnson/ReJJ
