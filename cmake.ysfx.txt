@@ -105,7 +105,8 @@ add_custom_command(
     COMMAND "${CMAKE_COMMAND}" "-P" "${PROJECT_SOURCE_DIR}/cmake/ExtractYsfxExports.cmake"
     DEPENDS "${PROJECT_SOURCE_DIR}/cmake/ExtractYsfxExports.cmake"
     DEPENDS "include/ysfx.h"
-    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    VERBATIM)
 add_custom_target(ysfx-api DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/exports/ysfx.txt")
 add_dependencies(ysfx ysfx-api)
 
