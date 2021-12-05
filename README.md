@@ -19,6 +19,26 @@ based on several free and open source components from the WDL. Originally, this
 project was based on jsusfx by Pascal Gauthier, but then it became an entire
 rewrite made from scratch.
 
+# Usage notes
+
+The audio plugin will initially present the JSFX effects available in the REAPER
+user folders, if these exist.
+
+The effects are source code files which end with the extension `.jsfx`, or with
+no extension at all.
+
+Note that, unlike REAPER, ysfx will let you install JSFX wherever you want.
+If you use effects from a custom folder, ysfx will usually figure things out, but
+not always.
+
+The ideal hierarchy is one where there exists at least a pair of folders named
+"Effects" and "Data" side-by-side, which receive the code files and resource files
+respectively.
+
+Example:
+- `My JSFX/Effects/guitar/amp-model`
+- `My JSFX/Data/amp_models/Marshall JCM800 - Marshall Stock 70.wav`
+
 ## Download development builds
 
 - [32-bit Windows VST3](https://nightly.link/jpcima/ysfx/workflows/build/master/Windows%2032-bit%20VST3.zip)
