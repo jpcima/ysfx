@@ -111,7 +111,8 @@ add_custom_target(ysfx-api DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/exports/ysfx.txt
 add_dependencies(ysfx ysfx-api)
 
 # strip the static library, to keep API symbols only (on supported platforms)
-if(YSFX_DEEP_STRIP OR CMAKE_BUILD_TYPE STREQUAL "Release")
+if(YSFX_DEEP_STRIP)
+    # TODO currently broken, don't use
     if(NOT APPLE AND NOT WIN32)
         if(OBJCOPY_PROGRAM AND RANLIB_PROGRAM)
             add_custom_command(
