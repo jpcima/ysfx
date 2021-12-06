@@ -23,6 +23,7 @@ jobs:
             release-arch: Win32
             os-type: Windows
             shell: pwsh
+            artifacts: yes
           - name: win64
             display-name: Windows 64-bit
             runs-on: windows-2019
@@ -30,6 +31,7 @@ jobs:
             release-arch: x64
             os-type: Windows
             shell: pwsh
+            artifacts: yes
           - name: linux64
             display-name: Linux 64-bit
             runs-on: ubuntu-20.04
@@ -37,11 +39,13 @@ jobs:
             release-arch: Linux64
             os-type: Linux
             shell: bash
+            artifacts: yes
           - name: macos
             display-name: macOS
             runs-on: macos-11
             os-type: macOS
             shell: bash
+            artifacts: yes
           - name: mingw32
             display-name: MSYS MinGW 32-bit
             runs-on: windows-2019
@@ -49,6 +53,7 @@ jobs:
             msystem: MINGW32
             os-type: MinGW
             shell: msys2 {0}
+            artifacts: yes
           - name: mingw64
             display-name: MSYS MinGW 64-bit
             runs-on: windows-2019
@@ -56,6 +61,7 @@ jobs:
             msystem: MINGW64
             os-type: MinGW
             shell: msys2 {0}
+            artifacts: yes
       fail-fast: false
     name: Compile for ${{matrix.display-name}}
     runs-on: ${{matrix.runs-on}}
@@ -126,11 +132,12 @@ jobs:
         working-directory: ${{runner.workspace}}/build
         run: codesign --sign "${codesign_identity}" --keychain signing_temp.keychain --deep --force --verbose *_artefacts/"${build_type}"/VST3/*.vst3 *_artefacts/"${build_type}"/AU/*.component
       - uses: actions/upload-artifact@v2
+        if: ${{matrix.artifacts == 'yes'}}
         with:
           name: ${{matrix.display-name}} VST3
           path: "${{runner.workspace}}/build/*_artefacts/${{env.build_type}}/VST3/*.vst3"
       - uses: actions/upload-artifact@v2
-        if: ${{matrix.os-type == 'macOS'}}
+        if: ${{matrix.os-type == 'macOS' && matrix.artifacts == 'yes'}}
         with:
           name: ${{matrix.display-name}} AU
           path: "${{runner.workspace}}/build/*_artefacts/${{env.build_type}}/AU/*.component"
