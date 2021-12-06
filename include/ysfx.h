@@ -434,7 +434,7 @@ typedef struct ysfx_audio_format_s {
 //------------------------------------------------------------------------------
 // YSFX RAII helpers
 
-#if defined(__cplusplus) && (__cplusplus >= 201103L || defined(_MSC_VER) && _MSVC_LANG >= 201103L)
+#if defined(__cplusplus) && (__cplusplus >= 201103L || (defined(_MSC_VER) && _MSVC_LANG >= 201103L))
 #include <memory>
 
 #define YSFX_DEFINE_AUTO_PTR(aptr, styp, freefn)                \
@@ -446,7 +446,7 @@ typedef struct ysfx_audio_format_s {
 YSFX_DEFINE_AUTO_PTR(ysfx_config_u, ysfx_config_t, ysfx_config_free);
 YSFX_DEFINE_AUTO_PTR(ysfx_u, ysfx_t, ysfx_free);
 YSFX_DEFINE_AUTO_PTR(ysfx_state_u, ysfx_state_t, ysfx_state_free);
-#endif // defined(__cplusplus) && (__cplusplus >= 201103L || defined(_MSC_VER) && _MSVC_LANG >= 201103L)
+#endif // defined(__cplusplus) && (__cplusplus >= 201103L || (defined(_MSC_VER) && _MSVC_LANG >= 201103L))
 
 //------------------------------------------------------------------------------
 

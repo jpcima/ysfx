@@ -1252,7 +1252,7 @@ ysfx_state_t *ysfx_state_dup(ysfx_state_t *state_in)
     ysfx_state_u state_out{new ysfx_state_t};
 
     uint32_t slider_count = state_out->slider_count = state_in->slider_count;
-    uint32_t data_size = state_out->data_size = state_in->data_size;
+    size_t data_size = state_out->data_size = state_in->data_size;
 
     state_out->sliders = new ysfx_state_slider_t[slider_count];
     memcpy(state_out->sliders, state_in->sliders, slider_count * sizeof(ysfx_state_slider_t));
