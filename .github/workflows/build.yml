@@ -21,6 +21,7 @@ jobs:
             runs-on: windows-2019
             platform: x86
             release-arch: Win32
+            cmake-generator: Visual Studio 16 2019
             os-type: Windows
             shell: pwsh
             artifacts: yes
@@ -29,9 +30,28 @@ jobs:
             runs-on: windows-2019
             platform: x64
             release-arch: x64
+            cmake-generator: Visual Studio 16 2019
             os-type: Windows
             shell: pwsh
             artifacts: yes
+          - name: win32
+            display-name: Windows 32-bit (2016 older)
+            runs-on: windows-2016
+            platform: x86
+            release-arch: Win32
+            cmake-generator: Visual Studio 15 2017
+            os-type: Windows
+            shell: pwsh
+            artifacts: no
+          - name: win64
+            display-name: Windows 64-bit (2016 older)
+            runs-on: windows-2016
+            platform: x64
+            release-arch: x64
+            cmake-generator: Visual Studio 15 2017
+            os-type: Windows
+            shell: pwsh
+            artifacts: no
           - name: linux64
             display-name: Linux 64-bit
             runs-on: ubuntu-20.04
@@ -73,6 +93,7 @@ jobs:
       display_name: ${{matrix.display-name}}
       platform: ${{matrix.platform}}
       release_arch: ${{matrix.release-arch}}
+      cmake_generator: ${{matrix.cmake-generator}}
       build_type: Release
       num_jobs: 2
       codesign_identity: Jean Pierre Cimalando
@@ -107,15 +128,15 @@ jobs:
       - name: Configure CMake (Windows)
         if: ${{matrix.os-type == 'Windows'}}
         working-directory: ${{runner.workspace}}/build
-        run: cmake "${Env:GITHUB_WORKSPACE}" -G"Visual Studio 16 2019" -A"${Env:release_arch}" -DCMAKE_BUILD_TYPE="${Env:build_type}" -DYSFX_TESTS=ON
+        run: cmake "${Env:GITHUB_WORKSPACE}" -G"${Env:cmake_generator}" -A"${Env:release_arch}" -DCMAKE_BUILD_TYPE="${Env:build_type}" -DYSFX_TESTS=ON
       - name: Configure CMake (Linux, macOS and MinGW)
         if: ${{matrix.os-type == 'Linux' || matrix.os-type == 'macOS' || matrix.os-type == 'MinGW'}}
         working-directory: ${{runner.workspace}}/build
         run: cmake "${GITHUB_WORKSPACE}" -DCMAKE_BUILD_TYPE="${build_type}" -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" -DYSFX_TESTS=ON
-      - name: Build (Windows)
+      - name: Build tests (Windows)
         if: ${{matrix.os-type == 'Windows'}}
         working-directory: ${{runner.workspace}}/build
-        run: cmake --build . --config "${Env:build_type}" -j "${Env:num_jobs}"
+        run: cmake --build . --config "${Env:build_type}" --target ysfx_tests -j "${Env:num_jobs}"
       - name: Build tests (Linux, macOS and MinGW)
         if: ${{matrix.os-type == 'Linux' || matrix.os-type == 'macOS' || matrix.os-type == 'MinGW'}}
         working-directory: ${{runner.workspace}}/build
@@ -123,6 +144,10 @@ jobs:
       - name: Test
         working-directory: ${{runner.workspace}}/build
         run: ctest --output-on-failure
+      - name: Build all (Windows)
+        if: ${{matrix.os-type == 'Windows'}}
+        working-directory: ${{runner.workspace}}/build
+        run: cmake --build . --config "${Env:build_type}" -j "${Env:num_jobs}"
       - name: Build all (Linux, macOS and MinGW)
         if: ${{matrix.os-type == 'Linux' || matrix.os-type == 'macOS' || matrix.os-type == 'MinGW'}}
         working-directory: ${{runner.workspace}}/build
