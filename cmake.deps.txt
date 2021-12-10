@@ -65,16 +65,6 @@ if(NOT WIN32 AND NOT APPLE)
     endif()
 endif()
 
-# dl
-# ------------------------------------------------------------------------------
-add_library(dl INTERFACE)
-if(NOT WIN32)
-    find_library(DL_LIBRARY "dl")
-    if (DL_LIBRARY)
-        target_link_libraries(dl INTERFACE "${DL_LIBRARY}")
-    endif()
-endif()
-
 # dr_libs
 # ------------------------------------------------------------------------------
 add_library(dr_libs INTERFACE)

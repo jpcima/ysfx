@@ -55,7 +55,7 @@ if(YSFX_GFX)
         PUBLIC
             wdl-base
         PRIVATE
-            dl
+            ${CMAKE_DL_LIBS}
             Threads::Threads)
 
     # custom image loaders
