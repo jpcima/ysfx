@@ -332,7 +332,7 @@ typedef struct ysfx_gfx_config_s {
     uint8_t *pixels;
     // the scale factor of the display; 1.0 or greater, 2.0 for Retina display
     ysfx_real scale_factor;
-    // show a menu and run it synchronouslys; returns an item ID >= 1, or 0 if none
+    // show a menu and run it synchronously; returns an item ID >= 1, or 0 if none
     int32_t (*show_menu)(void *user_data, const char *menu_spec, int32_t xpos, int32_t ypos);
     // change the cursor
     void (*set_cursor)(void *user_data, int32_t cursor);
