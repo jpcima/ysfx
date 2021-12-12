@@ -51,6 +51,7 @@ if(YSFX_GFX)
             "thirdparty/WDL/source/WDL/lice/lice_texgen.cpp"
             "thirdparty/WDL/source/WDL/lice/lice_text.cpp"
             "thirdparty/WDL/source/WDL/lice/lice_textnew.cpp")
+    target_compile_definitions(lice PRIVATE "_FILE_OFFSET_BITS=64")
     target_link_libraries(lice
         PUBLIC
             wdl-base
