@@ -38,6 +38,8 @@ juce_add_plugin(ysfx_plugin
   NEEDS_MIDI_OUTPUT TRUE
   NEEDS_CURL FALSE
   NEEDS_WEB_BROWSER FALSE
+  VST3_CATEGORIES "Fx"
+  AU_MAIN_TYPE "kAudioUnitType_Effect"
   COPY_PLUGIN_AFTER_BUILD "${YSFX_PLUGIN_COPY}")
 
 target_sources(ysfx_plugin
