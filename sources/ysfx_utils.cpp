@@ -28,7 +28,6 @@
 #   include <unistd.h>
 #   include <dirent.h>
 #   include <fcntl.h>
-#   include <fts.h>
 #else
 #   include <windows.h>
 #   include <io.h>
@@ -510,31 +509,8 @@ string_list list_directory(const char *path)
     return list;
 }
 
-void visit_directories(const char *rootpath, bool (*visit)(const std::string &, void *), void *data)
-{
-    char *argv[] = {(char *)rootpath, nullptr};
-
-    auto compar = [](const FTSENT **a, const FTSENT **b) -> int {
-        return strcmp((*a)->fts_name, (*b)->fts_name);
-    };
-
-    FTS *fts = fts_open(argv, FTS_NOCHDIR|FTS_PHYSICAL, +compar);
-    if (!fts)
-        return;
-    auto fts_cleanup = defer([fts]() { fts_close(fts); });
-
-    std::string pathbuf;
-    pathbuf.reserve(1024);
-
-    while (FTSENT *ent = fts_read(fts)) {
-        if (ent->fts_info == FTS_D) {
-            pathbuf.assign(ent->fts_path);
-            pathbuf.push_back('/');
-            if (!visit(pathbuf, data))
-                return;
-        }
-    }
-}
+// void visit_directories(const char *rootpath, bool (*visit)(const std::string &, void *), void *data);
+// NOTE: implemented in separate file `ysfx_utils_fts.cpp`
 #else
 bool exists(const char *path)
 {

@@ -38,6 +38,7 @@ add_library(ysfx-private
         "sources/ysfx_audio_flac.hpp"
         "sources/ysfx_utils.cpp"
         "sources/ysfx_utils.hpp"
+        "sources/ysfx_utils_fts.cpp"
         "sources/ysfx_api_eel.cpp"
         "sources/ysfx_api_eel.hpp"
         "sources/ysfx_api_reaper.cpp"
@@ -63,6 +64,11 @@ if(WIN32)
     target_compile_definitions(ysfx-private
         PRIVATE
             "NOMINMAX")
+endif()
+if(NOT WIN32 AND NOT YSFX_FTS_HAS_LFS_SUPPORT)
+    target_compile_definitions(ysfx-private
+        PRIVATE
+            "YSFX_FTS_LACKS_LFS_SUPPORT")
 endif()
 target_include_directories(ysfx-private
     PUBLIC
