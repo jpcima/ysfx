@@ -37,6 +37,7 @@ struct YsfxProcessor::Impl : public juce::AudioProcessorListener {
     YsfxInfo::Ptr m_info{new YsfxInfo};
 
     //==========================================================================
+    void processBlockGenerically(const void *inputs[], void *outputs[], uint32_t numIns, uint32_t numOuts, uint32_t numFrames, uint32_t processBits, juce::MidiBuffer &midiMessages);
     void processMidiInput(juce::MidiBuffer &midi);
     void processMidiOutput(juce::MidiBuffer &midi);
     void processSliderChanges();
@@ -175,58 +176,61 @@ void YsfxProcessor::releaseResources()
 {
 }
 
-void YsfxProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::MidiBuffer &midiMessages)
+void YsfxProcessor::Impl::processBlockGenerically(const void *inputs[], void *outputs[], uint32_t numIns, uint32_t numOuts, uint32_t numFrames, uint32_t processBits, juce::MidiBuffer &midiMessages)
 {
-    ysfx_t *fx = m_impl->m_fx.get();
+    ysfx_t *fx = m_fx.get();
 
-    uint64_t sliderParametersChanged = m_impl->m_sliderParametersChanged.exchange(0);
+    uint64_t sliderParametersChanged = m_sliderParametersChanged.exchange(0);
     if (sliderParametersChanged) {
         for (int i = 0; i < ysfx_max_sliders; ++i) {
             if (sliderParametersChanged & ((uint64_t)1 << i))
-                m_impl->syncParameterToSlider(i);
+                syncParameterToSlider(i);
         }
     }
 
-    m_impl->updateTimeInfo();
-    ysfx_set_time_info(fx, &m_impl->m_timeInfo);
+    updateTimeInfo();
+    ysfx_set_time_info(fx, &m_timeInfo);
 
-    m_impl->processMidiInput(midiMessages);
+    processMidiInput(midiMessages);
 
-    uint32_t numIns = (uint32_t)getTotalNumInputChannels();
-    uint32_t numOuts = (uint32_t)getTotalNumOutputChannels();
-    uint32_t numFrames = (uint32_t)buffer.getNumSamples();
-    ysfx_process_float(fx, buffer.getArrayOfReadPointers(), buffer.getArrayOfWritePointers(), numIns, numOuts, numFrames);
+    switch (processBits) {
+    case 32:
+        ysfx_process_float(fx, (const float **)inputs, (float **)outputs, numIns, numOuts, numFrames);
+        break;
+    case 64:
+        ysfx_process_double(fx, (const double **)inputs, (double **)outputs, numIns, numOuts, numFrames);
+        break;
+    default:
+        jassertfalse;
+    }
 
-    m_impl->processMidiOutput(midiMessages);
-    m_impl->processSliderChanges();
-    m_impl->processLatency();
+    processMidiOutput(midiMessages);
+    processSliderChanges();
+    processLatency();
+}
+
+void YsfxProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::MidiBuffer &midiMessages)
+{
+    m_impl->processBlockGenerically(
+        (const void **)buffer.getArrayOfReadPointers(),
+        (void **)buffer.getArrayOfWritePointers(),
+        (uint32_t)getTotalNumInputChannels(),
+        (uint32_t)getTotalNumOutputChannels(),
+        (uint32_t)buffer.getNumSamples(),
+        8 * sizeof(buffer.getSample(0, 0)),
+        midiMessages);
 }
 
 void YsfxProcessor::processBlock(juce::AudioBuffer<double> &buffer, juce::MidiBuffer &midiMessages)
 {
-    ysfx_t *fx = m_impl->m_fx.get();
-
-    uint64_t sliderParametersChanged = m_impl->m_sliderParametersChanged.exchange(0);
-    if (sliderParametersChanged) {
-        for (int i = 0; i < ysfx_max_sliders; ++i) {
-            if (sliderParametersChanged & ((uint64_t)1 << i))
-                m_impl->syncParameterToSlider(i);
-        }
-    }
-
-    m_impl->updateTimeInfo();
-    ysfx_set_time_info(fx, &m_impl->m_timeInfo);
-
-    m_impl->processMidiInput(midiMessages);
-
-    uint32_t numIns = (uint32_t)getTotalNumInputChannels();
-    uint32_t numOuts = (uint32_t)getTotalNumOutputChannels();
-    uint32_t numFrames = (uint32_t)buffer.getNumSamples();
-    ysfx_process_double(fx, buffer.getArrayOfReadPointers(), buffer.getArrayOfWritePointers(), numIns, numOuts, numFrames);
-
-    m_impl->processMidiOutput(midiMessages);
-    m_impl->processSliderChanges();
-    m_impl->processLatency();
+    m_impl->processBlockGenerically(
+        (const void **)buffer.getArrayOfReadPointers(),
+        (void **)buffer.getArrayOfWritePointers(),
+        (uint32_t)getTotalNumInputChannels(),
+        (uint32_t)getTotalNumOutputChannels(),
+        (uint32_t)buffer.getNumSamples(),
+        8 * sizeof(buffer.getSample(0, 0)),
+        midiMessages);
 }
 
 bool YsfxProcessor::supportsDoublePrecisionProcessing() const
