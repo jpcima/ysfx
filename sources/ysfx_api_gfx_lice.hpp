@@ -164,7 +164,6 @@ public:
   EEL_F *m_gfx_r, *m_gfx_g, *m_gfx_b, *m_gfx_w, *m_gfx_h, *m_gfx_a, *m_gfx_x, *m_gfx_y, *m_gfx_mode, *m_gfx_clear, *m_gfx_texth,*m_gfx_dest, *m_gfx_a2;
   EEL_F *m_mouse_x, *m_mouse_y, *m_mouse_cap, *m_mouse_wheel, *m_mouse_hwheel;
   EEL_F *m_gfx_ext_retina;
-  EEL_F *m_gfx_ext_flags;
 
   NSEEL_VMCTX m_vmref;
   void *m_user_ctx;
@@ -231,7 +230,6 @@ eel_lice_state::eel_lice_state(NSEEL_VMCTX vm, void *ctx, int image_slots, int f
   m_gfx_texth = NSEEL_VM_regvar(vm,"gfx_texth");
   m_gfx_dest = NSEEL_VM_regvar(vm,"gfx_dest");
   m_gfx_ext_retina = NSEEL_VM_regvar(vm,"gfx_ext_retina");
-  m_gfx_ext_flags=NSEEL_VM_regvar(vm,"gfx_ext_flags");
 
   m_mouse_x = NSEEL_VM_regvar(vm,"mouse_x");
   m_mouse_y = NSEEL_VM_regvar(vm,"mouse_y");
