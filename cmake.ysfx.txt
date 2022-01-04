@@ -32,6 +32,8 @@ add_library(ysfx-private
         "sources/ysfx_reader.hpp"
         "sources/ysfx_parse.cpp"
         "sources/ysfx_parse.hpp"
+        "sources/ysfx_preset.cpp"
+        "sources/ysfx_preset.hpp"
         "sources/ysfx_audio_wav.cpp"
         "sources/ysfx_audio_wav.hpp"
         "sources/ysfx_audio_flac.cpp"
@@ -51,7 +53,8 @@ add_library(ysfx-private
         "sources/ysfx_api_gfx_lice.hpp"
         "sources/ysfx_eel_utils.cpp"
         "sources/ysfx_eel_utils.hpp"
-        "sources/utility/sync_bitset.hpp")
+        "sources/utility/sync_bitset.hpp"
+        "sources/base64/Base64.hpp")
 target_compile_definitions(ysfx-private
     PRIVATE
         "_FILE_OFFSET_BITS=64")

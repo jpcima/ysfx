@@ -15,17 +15,4 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-#include "ysfx_test_utils.hpp"
-#define CATCH_CONFIG_RUNNER
-#include <catch.hpp>
-#include <clocale>
-
-int main (int argc, char *argv[])
-{
-    setlocale(LC_ALL, "");
-
-    scoped_new_dir root_dir(tests_root_path);
-
-    Catch::Session session;
-    return session.run(argc, argv);
-}
+#pragma once
