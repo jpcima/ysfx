@@ -276,7 +276,7 @@ YSFX_API uint64_t ysfx_fetch_slider_changes(ysfx_t *fx);
 // get a bit mask of sliders whose values must be automated, and clear it to zero
 YSFX_API uint64_t ysfx_fetch_slider_automations(ysfx_t *fx);
 // get a bit mask of sliders currently visible
-YSFX_API uint64_t ysfx_get_slider_visiblity(ysfx_t *fx);
+YSFX_API uint64_t ysfx_get_slider_visibility(ysfx_t *fx);
 
 // process a cycle in 32-bit float
 YSFX_API void ysfx_process_float(ysfx_t *fx, const float *const *ins, float *const *outs, uint32_t num_ins, uint32_t num_outs, uint32_t num_frames);

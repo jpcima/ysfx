@@ -92,7 +92,7 @@ TEST_CASE("slider manipulation", "[sliders]")
         uint64_t visible = 0;
         auto slider_is_visible = [&visible](uint32_t i) -> bool { return visible & ((uint64_t)1 << i); };
 
-        visible = ysfx_get_slider_visiblity(fx.get());
+        visible = ysfx_get_slider_visibility(fx.get());
         REQUIRE(slider_is_visible(0));
         REQUIRE(slider_is_visible(1));
         REQUIRE(slider_is_visible(2));
@@ -102,7 +102,7 @@ TEST_CASE("slider manipulation", "[sliders]")
 
         ysfx_process_float(fx.get(), nullptr, nullptr, 0, 0, 1);
 
-        visible = ysfx_get_slider_visiblity(fx.get());
+        visible = ysfx_get_slider_visibility(fx.get());
         REQUIRE(!slider_is_visible(0));
         REQUIRE(slider_is_visible(1));
         REQUIRE(!slider_is_visible(2));

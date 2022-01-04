@@ -1045,7 +1045,7 @@ uint64_t ysfx_fetch_slider_automations(ysfx_t *fx)
     return fx->slider.automate_mask.exchange(0);
 }
 
-uint64_t ysfx_get_slider_visiblity(ysfx_t *fx)
+uint64_t ysfx_get_slider_visibility(ysfx_t *fx)
 {
     return fx->slider.visible_mask.load();
 }
