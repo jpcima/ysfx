@@ -107,6 +107,10 @@ struct ysfx_s {
         EEL_F *ext_nodenorm = nullptr;
         EEL_F *ext_midi_bus = nullptr;
         EEL_F *midi_bus = nullptr;
+        EEL_F *pdc_delay = nullptr;
+        EEL_F *pdc_bot_ch = nullptr;
+        EEL_F *pdc_top_ch = nullptr;
+        EEL_F *pdc_midi = nullptr;
         // gfx variables
         EEL_F *gfx_r = nullptr;
         EEL_F *gfx_g = nullptr;

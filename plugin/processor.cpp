@@ -40,6 +40,7 @@ struct YsfxProcessor::Impl : public juce::AudioProcessorListener {
     void processMidiInput(juce::MidiBuffer &midi);
     void processMidiOutput(juce::MidiBuffer &midi);
     void processSliderChanges();
+    void processLatency();
     void updateTimeInfo();
     void syncParametersToSliders();
     void syncSlidersToParameters();
@@ -166,6 +167,8 @@ void YsfxProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
     ysfx_set_block_size(fx, (uint32_t)samplesPerBlock);
 
     ysfx_init(fx);
+
+    m_impl->processLatency();
 }
 
 void YsfxProcessor::releaseResources()
@@ -196,6 +199,7 @@ void YsfxProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce::MidiBuf
 
     m_impl->processMidiOutput(midiMessages);
     m_impl->processSliderChanges();
+    m_impl->processLatency();
 }
 
 void YsfxProcessor::processBlock(juce::AudioBuffer<double> &buffer, juce::MidiBuffer &midiMessages)
@@ -222,6 +226,7 @@ void YsfxProcessor::processBlock(juce::AudioBuffer<double> &buffer, juce::MidiBu
 
     m_impl->processMidiOutput(midiMessages);
     m_impl->processSliderChanges();
+    m_impl->processLatency();
 }
 
 bool YsfxProcessor::supportsDoublePrecisionProcessing() const
@@ -432,6 +437,17 @@ void YsfxProcessor::Impl::processSliderChanges()
     }
 
     //TODO: visibility changes
+}
+
+void YsfxProcessor::Impl::processLatency()
+{
+    ysfx_t *fx = m_fx.get();
+    ysfx_real latency = ysfx_get_pdc_delay(fx);
+
+    // NOTE: ignore pdc_bot_ch and pdc_top_ch
+
+    int samples = juce::roundToInt(latency * m_self->getSampleRate());
+    m_self->setLatencySamples(samples);
 }
 
 void YsfxProcessor::Impl::updateTimeInfo()

@@ -48,6 +48,9 @@ ysfx_set_block_size
 ysfx_set_sample_rate
 ysfx_set_midi_capacity
 ysfx_init
+ysfx_get_pdc_delay
+ysfx_get_pdc_channels
+ysfx_get_pdc_midi
 ysfx_set_time_info
 ysfx_send_midi
 ysfx_receive_midi

@@ -139,6 +139,10 @@ ysfx_t *ysfx_new(ysfx_config_t *config)
     AUTOVAR(ext_nodenorm, 0);
     AUTOVAR(ext_midi_bus, 0);
     AUTOVAR(midi_bus, 0);
+    AUTOVAR(pdc_delay, 0);
+    AUTOVAR(pdc_bot_ch, 0);
+    AUTOVAR(pdc_top_ch, 0);
+    AUTOVAR(pdc_midi, 0);
     // gfx variables
     AUTOVAR(gfx_r, 0);
     AUTOVAR(gfx_g, 0);
@@ -932,6 +936,38 @@ void ysfx_first_init(ysfx_t *fx)
     fx->slider.automate_mask.store(0);
     fx->slider.change_mask.store(0);
     ysfx_update_slider_visibility_mask(fx);
+
+    *fx->var.pdc_delay = 0;
+    *fx->var.pdc_bot_ch = 0;
+    *fx->var.pdc_top_ch = 0;
+    *fx->var.pdc_midi = 0;
+}
+
+ysfx_real ysfx_get_pdc_delay(ysfx_t *fx)
+{
+    ysfx_real value = *fx->var.pdc_delay;
+    return (value > 0) ? value : 0;
+}
+
+void ysfx_get_pdc_channels(ysfx_t *fx, uint32_t channels[2])
+{
+    if (!channels)
+        return;
+
+    int64_t bot = (int64_t)*fx->var.pdc_bot_ch;
+    bot = (bot > 0) ? bot : 0;
+    bot = (bot < ysfx_max_channels) ? bot : ysfx_max_channels;
+    channels[0] = (uint32_t)bot;
+
+    int64_t top = (int64_t)*fx->var.pdc_top_ch;
+    top = (top > bot) ? top : bot;
+    top = (top < ysfx_max_channels) ? top : ysfx_max_channels;
+    channels[1] = (uint32_t)top;
+}
+
+bool ysfx_get_pdc_midi(ysfx_t *fx)
+{
+    return (bool)*fx->var.pdc_midi;
 }
 
 void ysfx_update_slider_visibility_mask(ysfx_t *fx)

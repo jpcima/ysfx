@@ -219,6 +219,13 @@ YSFX_API void ysfx_set_midi_capacity(ysfx_t *fx, uint32_t capacity, bool extensi
 // activate and invoke @init
 YSFX_API void ysfx_init(ysfx_t *fx);
 
+// get the output latency
+YSFX_API ysfx_real ysfx_get_pdc_delay(ysfx_t *fx);
+// get the range of channels where output latency applies (end not included)
+YSFX_API void ysfx_get_pdc_channels(ysfx_t *fx, uint32_t channels[2]);
+// get whether the output latency applies to MIDI as well
+YSFX_API bool ysfx_get_pdc_midi(ysfx_t *fx);
+
 typedef enum ysfx_playback_state_e {
     ysfx_playback_error = 0,
     ysfx_playback_playing = 1,
