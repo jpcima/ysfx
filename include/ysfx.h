@@ -310,6 +310,27 @@ YSFX_API void ysfx_state_free(ysfx_state_t *state);
 // duplicate a state object
 YSFX_API ysfx_state_t *ysfx_state_dup(ysfx_state_t *state);
 
+typedef struct ysfx_preset_s {
+    // name of the preset
+    char *name;
+    // state of the preset
+    ysfx_state_t *state;
+} ysfx_preset_t;
+
+typedef struct ysfx_bank_s {
+    // name of the bank
+    char *name;
+    // list of presets
+    ysfx_preset_t *presets;
+    // number of programs
+    uint32_t preset_count;
+} ysfx_bank_t;
+
+// read a preset bank from RPL file
+ysfx_bank_t *ysfx_load_bank_from_rpl(const char *path);
+// free a preset bank
+void ysfx_bank_free(ysfx_bank_t *bank);
+
 // type of a function which can enumerate VM variables; returning 0 ends the search
 typedef int (ysfx_enum_vars_callback_t)(const char *name, ysfx_real *var, void *userdata);
 // enumerate all variables currently in the VM
@@ -453,6 +474,7 @@ typedef struct ysfx_audio_format_s {
 YSFX_DEFINE_AUTO_PTR(ysfx_config_u, ysfx_config_t, ysfx_config_free);
 YSFX_DEFINE_AUTO_PTR(ysfx_u, ysfx_t, ysfx_free);
 YSFX_DEFINE_AUTO_PTR(ysfx_state_u, ysfx_state_t, ysfx_state_free);
+YSFX_DEFINE_AUTO_PTR(ysfx_bank_u, ysfx_bank_t, ysfx_bank_free);
 #endif // defined(__cplusplus) && (__cplusplus >= 201103L || (defined(_MSC_VER) && _MSVC_LANG >= 201103L))
 
 //------------------------------------------------------------------------------

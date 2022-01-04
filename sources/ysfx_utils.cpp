@@ -16,6 +16,7 @@
 //
 
 #include "ysfx_utils.hpp"
+#include "base64/Base64.hpp"
 #include <system_error>
 #include <algorithm>
 #include <deque>
@@ -250,6 +251,14 @@ uint32_t latin1_tolower(uint32_t c)
     return c;
 }
 
+char *strdup_using_new(const char *src)
+{
+    size_t len = strlen(src);
+    char *dst = new char[len + 1];
+    memcpy(dst, src, len + 1);
+    return dst;
+}
+
 string_list split_strings_noempty(const char *input, bool(*pred)(char))
 {
     string_list list;
@@ -317,6 +326,13 @@ float unpack_f32le(const uint8_t data[4])
     uint32_t u = unpack_u32le(data);
     memcpy(&value, &u, 4);
     return value;
+}
+
+//------------------------------------------------------------------------------
+
+std::vector<uint8_t> decode_base64(const char *text, size_t len)
+{
+    return d_getChunkFromBase64String(text, len);
 }
 
 //------------------------------------------------------------------------------

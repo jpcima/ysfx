@@ -93,6 +93,7 @@ char ascii_toupper(char c);
 int ascii_casecmp(const char *a, const char *b);
 uint32_t latin1_toupper(uint32_t c);
 uint32_t latin1_tolower(uint32_t c);
+char *strdup_using_new(const char *src);
 string_list split_strings_noempty(const char *input, bool(*pred)(char));
 std::string trim(const char *input, bool(*pred)(char));
 
@@ -102,6 +103,10 @@ void pack_u32le(uint32_t value, uint8_t data[4]);
 void pack_f32le(float value, uint8_t data[4]);
 uint32_t unpack_u32le(const uint8_t data[4]);
 float unpack_f32le(const uint8_t data[4]);
+
+//------------------------------------------------------------------------------
+
+std::vector<uint8_t> decode_base64(const char *text, size_t len = ~(size_t)0);
 
 //------------------------------------------------------------------------------
 
