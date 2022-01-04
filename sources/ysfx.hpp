@@ -161,7 +161,7 @@ struct ysfx_s {
     // Graphics
     struct {
         ysfx_gfx_state_u state;
-        std::mutex mutex;
+        ysfx::mutex mutex;
         volatile bool ready = false;
         volatile bool wants_retina = false;
         std::atomic<bool> must_init{false};

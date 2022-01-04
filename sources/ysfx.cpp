@@ -457,7 +457,7 @@ void ysfx_unload_code(ysfx_t *fx)
     // get rid of gfx first, to prevent a UI thread from trying
     // to access VM and invoke code
     {
-        std::lock_guard<std::mutex> lock{fx->gfx.mutex};
+        std::lock_guard<ysfx::mutex> lock{fx->gfx.mutex};
         fx->gfx.ready = false;
         fx->gfx.wants_retina = false;
         fx->gfx.must_init.store(false);
