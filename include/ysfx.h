@@ -178,7 +178,7 @@ YSFX_API bool ysfx_slider_get_range(ysfx_t *fx, uint32_t index, ysfx_slider_rang
 YSFX_API bool ysfx_slider_is_enum(ysfx_t *fx, uint32_t index);
 // get the number of labels for the enumeration slider
 #define ysfx_slider_get_enum_size(fx, index) ysfx_slider_get_enum_names((fx), (index), NULL, 0)
-// get the null-terminated list of labels for the enumeration slider
+// get the list of labels for the enumeration slider
 YSFX_API uint32_t ysfx_slider_get_enum_names(ysfx_t *fx, uint32_t index, const char **dest, uint32_t destsize);
 // get a single label for the enumeration slider
 YSFX_API const char *ysfx_slider_get_enum_name(ysfx_t *fx, uint32_t slider_index, uint32_t enum_index);
