@@ -122,7 +122,6 @@ struct ysfx_s {
         EEL_F *gfx_texth = nullptr;
         EEL_F *gfx_dest = nullptr;
         EEL_F *gfx_ext_retina = nullptr;
-        EEL_F *gfx_ext_flags = nullptr;
         EEL_F *mouse_x = nullptr;
         EEL_F *mouse_y = nullptr;
         EEL_F *mouse_cap = nullptr;

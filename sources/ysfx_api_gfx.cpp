@@ -22,6 +22,7 @@
 #if !defined(YSFX_NO_GFX)
 #   include "lice_stb/lice_stb_loaders.hpp"
 #   define WDL_NO_DEFINE_MINMAX
+#   include "WDL/swell/swell.h"
 #   include "WDL/lice/lice.h"
 #   include "WDL/lice/lice_text.h"
 #   include "WDL/wdlstring.h"
@@ -441,3 +442,29 @@ void ysfx_api_init_gfx()
     NSEEL_addfunc_varparm("gfx_getsyscol", 0, NSEEL_PProc_THIS, &ysfx_api_gfx_getsyscol);
     NSEEL_addfunc_retval("gfx_getchar", 1, NSEEL_PProc_THIS, &ysfx_api_gfx_getchar);
 }
+
+//------------------------------------------------------------------------------
+// SWELL helpers
+
+#if !defined(YSFX_NO_GFX)
+
+// implement these GL functions on SWELL targets where they are missing
+
+#if !defined(SWELL_TARGET_GDK) && !defined(SWELL_TARGET_OSX)
+void SWELL_SetViewGL(HWND h, char wantGL)
+{
+}
+
+bool SWELL_GetViewGL(HWND h)
+{
+  return false;
+}
+
+bool SWELL_SetGLContextToView(HWND h)
+{
+  return false;
+}
+
+#endif // !defined(SWELL_TARGET_GDK) && !defined(SWELL_TARGET_OSX)
+
+#endif

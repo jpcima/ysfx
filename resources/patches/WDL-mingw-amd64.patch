@@ -1,0 +1,13 @@
+diff --git a/thirdparty/WDL/source/WDL/eel2/nseel-cfunc.c b/thirdparty/WDL/source/WDL/eel2/nseel-cfunc.c
+index 470d842..6650b39 100644
+--- a/thirdparty/WDL/source/WDL/eel2/nseel-cfunc.c
++++ b/thirdparty/WDL/source/WDL/eel2/nseel-cfunc.c
+@@ -135,7 +135,7 @@ EEL_F NSEEL_CGEN_CALL nseel_int_rand(EEL_F f)
+     #else
+       #include "asm-nseel-x86-msvc.c"
+     #endif
+-  #elif !defined(__LP64__)
++  #elif !(defined(_WIN64) || defined(__LP64__))
+     #define EEL_F_SUFFIX "l"
+     #define FUNCTION_MARKER "\n.byte 0x89,0x90,0x90,0x90,0x90,0x90,0x90,0x90,0x90,0x90,0x90,0x90\n"
+     #include "asm-nseel-x86-gcc.c"

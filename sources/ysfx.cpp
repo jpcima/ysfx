@@ -154,7 +154,6 @@ ysfx_t *ysfx_new(ysfx_config_t *config)
     AUTOVAR(gfx_texth, 0);
     AUTOVAR(gfx_dest, 0);
     AUTOVAR(gfx_ext_retina, 0);
-    AUTOVAR(gfx_ext_flags, 0);
     AUTOVAR(mouse_x, 0);
     AUTOVAR(mouse_y, 0);
     AUTOVAR(mouse_cap, 0);
