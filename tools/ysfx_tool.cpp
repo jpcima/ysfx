@@ -93,6 +93,8 @@ void dump_header_info(ysfx_t *fx)
     printf("Name: %s\n", ysfx_get_name(fx));
     printf("Author: %s\n", ysfx_get_author(fx));
 
+    printf("Presets: %s\n", ysfx_get_bank_path(fx));
+
     uint32_t tag_count = ysfx_get_num_tags(fx);
     std::vector<const char *> tags(tag_count);
     ysfx_get_tags(fx, tags.data(), tag_count);

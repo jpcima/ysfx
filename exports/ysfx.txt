@@ -65,6 +65,7 @@ ysfx_load_state
 ysfx_save_state
 ysfx_state_free
 ysfx_state_dup
+ysfx_get_bank_path
 ysfx_load_bank_from_rpl
 ysfx_bank_free
 ysfx_enum_vars

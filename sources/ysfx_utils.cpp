@@ -619,9 +619,15 @@ int case_resolve(const char *root_, const char *fragment, std::string &result)
 
     std::string root = path_ensure_final_separator(root_);
 
-    result = root + fragment;
-    if (exists(result.c_str()))
+    std::string pathbuf;
+    pathbuf.reserve(1024);
+
+    pathbuf.assign(root);
+    pathbuf.append(fragment);
+    if (exists(pathbuf.c_str())) {
+        result = std::move(pathbuf);
         return 1;
+    }
 
     struct Item {
         std::string root;
@@ -652,9 +658,12 @@ int case_resolve(const char *root_, const char *fragment, std::string &result)
                 continue;
 
             if (item.components.size() == 1) {
-                result = item.root + entry;
-                if (exists(result.c_str()))
+                pathbuf.assign(item.root);
+                pathbuf.append(entry);
+                if (exists(pathbuf.c_str())) {
+                    result = std::move(pathbuf);
                     return 2;
+                }
             }
             else {
                 assert(item.components.size() > 1);

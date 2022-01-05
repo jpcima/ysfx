@@ -73,6 +73,7 @@ struct ysfx_s {
     // source
     struct {
         std::string main_file_path;
+        std::string bank_path;
         ysfx_source_unit_u main;
         std::vector<ysfx_source_unit_u> imports;
         std::unordered_map<std::string, uint32_t> slider_alias;

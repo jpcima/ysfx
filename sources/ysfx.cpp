@@ -254,6 +254,12 @@ bool ysfx_load_file(ysfx_t *fx, const char *filepath, uint32_t loadopts)
         fx->source.main = std::move(main);
         fx->source.main_file_path.assign(filepath);
 
+        // find the bank file, if present
+        ysfx::case_resolve(
+            ysfx::path_directory(filepath).c_str(),
+            (ysfx::path_file_name(filepath) + ".rpl").c_str(),
+            fx->source.bank_path);
+
         // fill the file enums with the contents of directories
         ysfx_fill_file_enums(fx);
 
@@ -1313,6 +1319,11 @@ uint32_t ysfx_get_slider_of_var(ysfx_t *fx, EEL_F *var)
     if (it == fx->slider_of_var.end())
         return ~(uint32_t)0;
     return it->second;
+}
+
+const char *ysfx_get_bank_path(ysfx_t *fx)
+{
+    return fx->source.bank_path.c_str();
 }
 
 void ysfx_enum_vars(ysfx_t *fx, ysfx_enum_vars_callback_t *callback, void *userdata)

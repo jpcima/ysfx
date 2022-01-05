@@ -130,4 +130,36 @@ TEST_CASE("preset handling", "[preset]")
         REQUIRE(ysfx::unpack_f32le(&state->data[1 * sizeof(float)]) == Approx(0.9));
         REQUIRE(ysfx::unpack_f32le(&state->data[2 * sizeof(float)]) == Approx(1.0));
     }
+
+    SECTION("Locate preset bank")
+    {
+        const char *text =
+            "desc:example" "\n"
+            "out_pin:output" "\n"
+            "@sample" "\n"
+            "spl0=0.0;" "\n";
+
+        scoped_new_dir dir_fx("${root}/Effects");
+        scoped_new_txt file_main("${root}/Effects/example.jsfx", text);
+
+        ysfx_config_u config{ysfx_config_new()};
+        ysfx_u fx{ysfx_new(config.get())};
+
+        {
+            REQUIRE(ysfx_load_file(fx.get(), file_main.m_path.c_str(), 0));
+            REQUIRE(ysfx_get_bank_path(fx.get()) == std::string());
+        }
+
+        {
+            scoped_new_txt file_rpl("${root}/Effects/example.jsfx.rpl", "");
+            REQUIRE(ysfx_load_file(fx.get(), file_main.m_path.c_str(), 0));
+            REQUIRE(ysfx_get_bank_path(fx.get()) == file_rpl.m_path);
+        }
+
+        {
+            scoped_new_txt file_rpl("${root}/Effects/example.jsfx.RpL", "");
+            REQUIRE(ysfx_load_file(fx.get(), file_main.m_path.c_str(), 0));
+            REQUIRE(ysfx_get_bank_path(fx.get()) == file_rpl.m_path);
+        }
+    }
 }

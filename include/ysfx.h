@@ -326,6 +326,8 @@ typedef struct ysfx_bank_s {
     uint32_t preset_count;
 } ysfx_bank_t;
 
+// get the path of the RPL preset bank of the loaded JSFX, if present
+YSFX_API const char *ysfx_get_bank_path(ysfx_t *fx);
 // read a preset bank from RPL file
 YSFX_API ysfx_bank_t *ysfx_load_bank_from_rpl(const char *path);
 // free a preset bank

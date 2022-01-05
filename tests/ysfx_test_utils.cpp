@@ -73,7 +73,7 @@ scoped_new_txt::scoped_new_txt(const std::string &path_, const char *text, size_
         throw std::system_error(errno, std::generic_category(), "fopen");
     if (fwrite(text, 1, size, stream) != size) {
         fclose(stream);
-        throw std::system_error(errno, std::generic_category(), "fputs");
+        throw std::system_error(errno, std::generic_category(), "fwrite");
     }
     if (fflush(stream) != 0) {
         fclose(stream);
