@@ -710,3 +710,12 @@ std::string narrow(const wchar_t *wdata, size_t wlen)
 #endif
 
 } // namespace ysfx
+
+//------------------------------------------------------------------------------
+// WDL helpers
+
+// our replacement `atof` for WDL, which is unaffected by current locale
+extern "C" double ysfx_wdl_atof(const char *text)
+{
+    return ysfx::dot_atof(text);
+}
