@@ -28,7 +28,7 @@ static void ysfx_preset_clear(ysfx_preset_t *preset);
 static ysfx_bank_t *ysfx_load_bank_from_rpl_text(const std::string &text);
 static void ysfx_parse_preset_from_rpl_blob(ysfx_preset_t *preset, const char *name, const std::vector<uint8_t> &data);
 
-ysfx_bank_t *ysfx_load_bank_from_rpl(const char *path)
+ysfx_bank_t *ysfx_load_bank(const char *path)
 {
     ysfx::FILE_u stream{fopen(path, "rb")};
     if (!stream)

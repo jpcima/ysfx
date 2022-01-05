@@ -59,7 +59,7 @@ TEST_CASE("preset handling", "[preset]")
         scoped_new_txt file_main("${root}/Effects/example.jsfx", source_text);
         scoped_new_txt file_rpl("${root}/Effects/example.jsfx.rpl", rpl_text);
 
-        ysfx_bank_u bank{ysfx_load_bank_from_rpl(file_rpl.m_path.c_str())};
+        ysfx_bank_u bank{ysfx_load_bank(file_rpl.m_path.c_str())};
         REQUIRE(bank);
 
         REQUIRE(!strcmp(bank->name, "JS: TestCaseRPL"));
