@@ -327,9 +327,9 @@ typedef struct ysfx_bank_s {
 } ysfx_bank_t;
 
 // read a preset bank from RPL file
-ysfx_bank_t *ysfx_load_bank_from_rpl(const char *path);
+YSFX_API ysfx_bank_t *ysfx_load_bank_from_rpl(const char *path);
 // free a preset bank
-void ysfx_bank_free(ysfx_bank_t *bank);
+YSFX_API void ysfx_bank_free(ysfx_bank_t *bank);
 
 // type of a function which can enumerate VM variables; returning 0 ends the search
 typedef int (ysfx_enum_vars_callback_t)(const char *name, ysfx_real *var, void *userdata);
