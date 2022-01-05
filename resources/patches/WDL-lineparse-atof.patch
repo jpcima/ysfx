@@ -1,0 +1,26 @@
+diff --git a/thirdparty/WDL/source/WDL/lineparse.h b/thirdparty/WDL/source/WDL/lineparse.h
+index b0c3cd2..cd91f75 100644
+--- a/thirdparty/WDL/source/WDL/lineparse.h
++++ b/thirdparty/WDL/source/WDL/lineparse.h
+@@ -42,6 +42,12 @@
+ #define WDL_LINEPARSER_HAS_LINEPARSERINT
+ #endif
+ 
++#ifdef WDL_LINEPARSE_ATOF
++  extern "C" double WDL_LINEPARSE_ATOF(const char *);
++#else
++  #define WDL_LINEPARSE_ATOF atof
++#endif
++
+ #ifndef WDL_LINEPARSE_IMPL_ONLY
+ class LineParserInt // version which does not have any temporary space for buffers (requires use of parseDestroyBuffer)
+ {
+@@ -176,7 +182,7 @@ class LineParserInt // version which does not have any temporary space for buffe
+         buf[ot++]=c;
+       }
+       buf[ot] = 0;
+-      return atof(buf);
++      return WDL_LINEPARSE_ATOF(buf);
+     }
+ 
+     int WDL_LINEPARSE_PREFIX gettoken_int(int token, int *success WDL_LINEPARSE_DEFPARM(NULL)) const

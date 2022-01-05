@@ -142,9 +142,3 @@ void NSEEL_HOSTSTUB_EnterMutex()
 void NSEEL_HOSTSTUB_LeaveMutex()
 {
 }
-
-//------------------------------------------------------------------------------
-extern "C" double nseel_atof(const char *text)
-{
-    return ysfx::dot_atof(text);
-}
