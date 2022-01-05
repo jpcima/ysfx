@@ -154,12 +154,16 @@ TEST_CASE("preset handling", "[preset]")
             scoped_new_txt file_rpl("${root}/Effects/example.jsfx.rpl", "");
             REQUIRE(ysfx_load_file(fx.get(), file_main.m_path.c_str(), 0));
             REQUIRE(ysfx_get_bank_path(fx.get()) == file_rpl.m_path);
+            ysfx_unload(fx.get());
+            REQUIRE(ysfx_get_bank_path(fx.get()) == std::string());
         }
 
         {
             scoped_new_txt file_rpl("${root}/Effects/example.jsfx.RpL", "");
             REQUIRE(ysfx_load_file(fx.get(), file_main.m_path.c_str(), 0));
-            REQUIRE(ysfx_get_bank_path(fx.get()) == file_rpl.m_path);
+            REQUIRE(!ysfx::ascii_casecmp(ysfx_get_bank_path(fx.get()), file_rpl.m_path.c_str()));
+            ysfx_unload(fx.get());
+            REQUIRE(ysfx_get_bank_path(fx.get()) == std::string());
         }
     }
 }
