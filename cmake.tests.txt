@@ -98,3 +98,9 @@ if(YSFX_TESTS_HAVE_SNDFILE)
     target_link_libraries(ysfx_tests PRIVATE sndfile)
 endif()
 catch_discover_tests(ysfx_tests)
+
+# test tools
+# ------------------------------------------------------------------------------
+
+add_executable(ysfx_parse_menu "tests/tools/ysfx_parse_menu.cpp")
+target_link_libraries(ysfx_parse_menu PRIVATE ysfx::ysfx)

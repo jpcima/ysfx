@@ -90,7 +90,7 @@ struct YsfxGraphicsView::Impl final : public better::AsyncUpdater::Listener,
     //--------------------------------------------------------------------------
     // Asynchronous popup menu
 
-    static std::unique_ptr<juce::PopupMenu> createPopupMenu(const char **str, int *startid, int menudepth = 0);
+    static std::unique_ptr<juce::PopupMenu> createPopupMenu(const char *str);
     void endPopupMenu(int menuResult);
 
     std::unique_ptr<juce::PopupMenu> m_popupMenu;
@@ -816,63 +816,48 @@ void YsfxGraphicsView::Impl::BackgroundWork::processGfxMessage(GfxMessage &msg)
 }
 
 //------------------------------------------------------------------------------
-std::unique_ptr<juce::PopupMenu> YsfxGraphicsView::Impl::createPopupMenu(const char **str, int *startid, int menudepth)
+std::unique_ptr<juce::PopupMenu> YsfxGraphicsView::Impl::createPopupMenu(const char *str)
 {
-    if (menudepth >= 8)
-        return nullptr;
+    std::vector<std::unique_ptr<juce::PopupMenu>> chain;
+    chain.reserve(8);
+    chain.emplace_back(new juce::PopupMenu);
 
-    std::unique_ptr<juce::PopupMenu> hm{new juce::PopupMenu};
-    size_t pos = 0;
-    int id = *startid;
+    ysfx_menu_u desc{ysfx_parse_menu(str)};
+    if (!desc)
+        return std::move(chain.front());
 
-    const char *p = *str;
-    const char *sep = strchr(p, '|');
-    while (sep || *p) {
-        size_t len = sep ? (size_t)(sep - p) : strlen(p);
-        std::string buf(p, len);
-        p += len;
-        if (sep)
-            sep = strchr(++p, '|');
-
-        const char *q = buf.c_str();
-        std::unique_ptr<juce::PopupMenu> subm;
-        bool done = false;
-        bool enabled = true;
-        bool checked = false;
-        while (strspn(q, ">#!<")) {
-            if (*q == '>' && !subm) {
-                subm = createPopupMenu(&p, &id, menudepth + 1);
-                sep = strchr(p, '|');
-            }
-            if (*q == '#')
-                enabled = false;
-            if (*q == '!')
-                checked = true;
-            if (*q == '<')
-                done = true;
-            ++q;
-        }
-        if (*q) {
-            juce::String name{juce::CharPointer_UTF8{q}};
-            if (subm)
-                hm->addSubMenu(name, std::move(*subm), enabled, nullptr, checked, 0);
-            else
-                hm->addItem(id++, name, enabled, checked);
-        }
-        else if (!done)
-            hm->addSeparator();
-        ++pos;
-        if (done)
+    for (uint32_t i = 0; i < desc->insn_count; ++i) {
+        ysfx_menu_insn_t insn = desc->insns[i];
+        switch (insn.opcode) {
+        case ysfx_menu_item:
+            chain.back()->addItem(
+                (int)insn.id, juce::CharPointer_UTF8(insn.name),
+                (insn.item_flags & ysfx_menu_item_disabled) == 0,
+                (insn.item_flags & ysfx_menu_item_checked) != 0);
             break;
+        case ysfx_menu_separator:
+            chain.back()->addSeparator();
+            break;
+        case ysfx_menu_sub: {
+            chain.emplace_back(new juce::PopupMenu);
+            break;
+        }
+        case ysfx_menu_endsub:
+            if (chain.size() <= 1)
+                jassertfalse;
+            else {
+                std::unique_ptr<juce::PopupMenu> subm = std::move(chain.back());
+                chain.pop_back();
+                chain.back()->addSubMenu(
+                    juce::CharPointer_UTF8(insn.name), std::move(*subm),
+                    (insn.item_flags & ysfx_menu_item_disabled) == 0, nullptr,
+                    (insn.item_flags & ysfx_menu_item_checked) != 0, 0);
+            }
+            break;
+        }
     }
 
-    *str = p;
-    *startid = id;
-
-    if (!pos)
-        return nullptr;
-
-    return hm;
+    return std::move(chain.front());
 }
 
 void YsfxGraphicsView::Impl::endPopupMenu(int menuResult)
@@ -914,9 +899,8 @@ void YsfxGraphicsView::Impl::handleAsyncUpdate(better::AsyncUpdater *updater)
     else if (updater == m_asyncShowMenu.get()) {
         AsyncShowMenu &menuShower = static_cast<AsyncShowMenu &>(*updater);
         std::lock_guard<std::mutex> lock{menuShower.m_mutex};
-        int menuId = 1;
         const char *menuDesc = menuShower.m_menuDesc.c_str();
-        m_popupMenu = createPopupMenu(&menuDesc, &menuId);
+        m_popupMenu = createPopupMenu(menuDesc);
 
         juce::Point<int> off = getDisplayOffset();
         juce::Point<int> position;
