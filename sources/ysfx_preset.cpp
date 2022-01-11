@@ -30,7 +30,13 @@ static void ysfx_parse_preset_from_rpl_blob(ysfx_preset_t *preset, const char *n
 
 ysfx_bank_t *ysfx_load_bank(const char *path)
 {
+#if defined(_WIN32)
+    std::wstring wpath = ysfx::widen(path);
+    ysfx::FILE_u stream{_wfopen(wpath.c_str(), L"rb")};
+#else
     ysfx::FILE_u stream{fopen(path, "rb")};
+#endif
+
     if (!stream)
         return nullptr;
 
