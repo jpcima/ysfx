@@ -19,8 +19,8 @@
 include(FetchContent)
 
 FetchContent_Declare(juce
-    URL "https://github.com/juce-framework/JUCE/archive/refs/tags/6.1.2.tar.gz"
-    URL_HASH "SHA512=0427be40e9cea3b215358f0661e9dabcbc4f1be7aba7d0f44e35f8426dd49ba31da99d0f18a6ee28b3dce50114a1647157802e6231d9b912269f179191ebccc1")
+    URL "https://github.com/juce-framework/JUCE/archive/refs/tags/6.1.4.tar.gz"
+    URL_HASH "SHA512=d956bbb1c8226b03f529332cb285799c732d0d4d564df4a253284219908391ba4b4ce3ea987dbcfbb42bb592336cf7edc14f24a9b2f898bf996afb1416bba062")
 
 FetchContent_GetProperties(juce)
 if(NOT juce_POPULATED)
