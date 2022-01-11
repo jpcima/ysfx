@@ -863,6 +863,8 @@ std::unique_ptr<juce::PopupMenu> YsfxGraphicsView::Impl::createPopupMenu(const c
 void YsfxGraphicsView::Impl::endPopupMenu(int menuResult)
 {
     AsyncShowMenu *updater = m_asyncShowMenu.get();
+    if (!updater)
+        return;
 
     std::lock_guard<std::mutex> lock{updater->m_mutex};
     updater->m_completionFlag = true;
