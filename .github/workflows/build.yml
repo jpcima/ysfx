@@ -130,10 +130,14 @@ jobs:
         if: ${{matrix.os-type == 'Windows'}}
         working-directory: ${{runner.workspace}}/build
         run: cmake "${Env:GITHUB_WORKSPACE}" -G"${Env:cmake_generator}" -A"${Env:release_arch}" -DCMAKE_BUILD_TYPE="${Env:build_type}" -DYSFX_TESTS=ON
-      - name: Configure CMake (Linux, macOS and MinGW)
-        if: ${{matrix.os-type == 'Linux' || matrix.os-type == 'macOS' || matrix.os-type == 'MinGW'}}
+      - name: Configure CMake (Linux and macOS)
+        if: ${{matrix.os-type == 'Linux' || matrix.os-type == 'macOS'}}
         working-directory: ${{runner.workspace}}/build
         run: cmake "${GITHUB_WORKSPACE}" -DCMAKE_BUILD_TYPE="${build_type}" -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" -DYSFX_TESTS=ON
+      - name: Configure CMake (MinGW)
+        if: ${{matrix.os-type == 'MinGW'}}
+        working-directory: ${{runner.workspace}}/build
+        run: cmake "${GITHUB_WORKSPACE}" -DCMAKE_BUILD_TYPE="${build_type}" -DYSFX_TESTS=ON -DYSFX_PLUGIN=OFF
       - name: Build tests (Windows)
         if: ${{matrix.os-type == 'Windows'}}
         working-directory: ${{runner.workspace}}/build
