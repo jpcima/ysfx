@@ -174,12 +174,14 @@ static void ysfx_parse_preset_from_rpl_blob(ysfx_preset_t *preset, const char *n
         sliders.reserve(ysfx_max_sliders);
 
         for (uint32_t i = 0; i < 64; ++i) {
-            int success = false;
-            ysfx_state_slider_t slider{};
-            slider.index = i;
-            slider.value = (ysfx_real)parser.gettoken_float(i, &success);
-            if (success)
+            const char *str = parser.gettoken_str(i);
+            bool skip = str[0] == '-' && str[1] == '\0';
+            if (!skip) {
+                ysfx_state_slider_t slider{};
+                slider.index = i;
+                slider.value = (ysfx_real)ysfx::dot_atof(str);
                 sliders.push_back(slider);
+            }
         }
 
         state.sliders = sliders.data();
