@@ -76,3 +76,5 @@ ysfx_gfx_wants_retina
 ysfx_gfx_add_key
 ysfx_gfx_update_mouse
 ysfx_gfx_run
+ysfx_parse_menu
+ysfx_menu_free
