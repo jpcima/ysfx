@@ -58,7 +58,17 @@ struct YsfxProcessor::Impl : public juce::AudioProcessorListener {
         using Ptr = std::shared_ptr<LoadRequest>;
     };
 
+    struct PresetRequest : public std::enable_shared_from_this<PresetRequest> {
+        YsfxInfo::Ptr info;
+        uint32_t index = 0;
+        volatile bool completion = false;
+        std::mutex completionMutex;
+        std::condition_variable completionVariable;
+        using Ptr = std::shared_ptr<PresetRequest>;
+    };
+
     LoadRequest::Ptr m_loadRequest;
+    PresetRequest::Ptr m_presetRequest;
 
     //==========================================================================
     class Background {
@@ -69,6 +79,7 @@ struct YsfxProcessor::Impl : public juce::AudioProcessorListener {
     private:
         void run();
         void processLoadRequest(LoadRequest &req);
+        void processPresetRequest(PresetRequest &req);
         Impl *m_impl = nullptr;
         RTSemaphore m_sema;
         std::atomic<bool> m_running{};
@@ -149,6 +160,19 @@ void YsfxProcessor::loadJsfxFile(const juce::String &filePath, ysfx_state_t *ini
     if (!async) {
         std::unique_lock<std::mutex> lock(loadRequest->completionMutex);
         loadRequest->completionVariable.wait(lock, [&]() { return loadRequest->completion; });
+    }
+}
+
+void YsfxProcessor::loadJsfxPreset(YsfxInfo::Ptr info, uint32_t index, bool async)
+{
+    Impl::PresetRequest::Ptr presetRequest{new Impl::PresetRequest};
+    presetRequest->info = info;
+    presetRequest->index = index;
+    std::atomic_store(&m_impl->m_presetRequest, presetRequest);
+    m_impl->m_background->wakeUp();
+    if (!async) {
+        std::unique_lock<std::mutex> lock(presetRequest->completionMutex);
+        presetRequest->completionVariable.wait(lock, [&]() { return presetRequest->completion; });
     }
 }
 
@@ -535,6 +559,8 @@ void YsfxProcessor::Impl::Background::run()
     while (m_sema.wait(), m_running.load(std::memory_order_relaxed)) {
         if (LoadRequest::Ptr loadRequest = std::atomic_exchange(&m_impl->m_loadRequest, LoadRequest::Ptr{}))
             processLoadRequest(*loadRequest);
+        if (PresetRequest::Ptr presetRequest = std::atomic_exchange(&m_impl->m_presetRequest, PresetRequest::Ptr{}))
+            processPresetRequest(*presetRequest);
     }
 }
 
@@ -570,6 +596,10 @@ void YsfxProcessor::Impl::Background::processLoadRequest(LoadRequest &req)
     ysfx_load_file(fx, req.filePath.toRawUTF8(), loadopts);
     ysfx_compile(fx, compileopts);
 
+    ///
+    const char *bankpath = ysfx_get_bank_path(fx);
+    info->bank.reset(ysfx_load_bank(bankpath));
+
     if (req.initialState)
         ysfx_load_state(fx, req.initialState.get());
 
@@ -584,6 +614,30 @@ void YsfxProcessor::Impl::Background::processLoadRequest(LoadRequest &req)
             YsfxParameter *param = m_impl->m_self->getYsfxParameter((int)i);
             param->setEffect(fx);
         }
+
+        m_impl->syncSlidersToParameters();
+    }
+
+    std::lock_guard<std::mutex> lock(req.completionMutex);
+    req.completion = true;
+    req.completionVariable.notify_one();
+}
+
+void YsfxProcessor::Impl::Background::processPresetRequest(PresetRequest &req)
+{
+    if (m_impl->m_info != req.info)
+        return;
+
+    ysfx_bank_t *bank = req.info->bank.get();
+    if (!bank || req.index >= bank->preset_count)
+        return;
+
+    {
+        AudioProcessorSuspender sus{*m_impl->m_self};
+        sus.lockCallbacks();
+
+        ysfx_t *fx = m_impl->m_fx.get();
+        ysfx_load_state(fx, bank->presets[req.index].state);
 
         m_impl->syncSlidersToParameters();
     }

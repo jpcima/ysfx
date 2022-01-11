@@ -22,6 +22,7 @@
 
 struct YsfxInfo : public std::enable_shared_from_this<YsfxInfo> {
     ysfx_u effect;
+    ysfx_bank_u bank;
     juce::Time timeStamp;
     juce::StringArray errors;
     juce::StringArray warnings;

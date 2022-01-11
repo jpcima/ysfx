@@ -35,6 +35,7 @@ struct YsfxEditor::Impl {
     std::unique_ptr<juce::Timer> m_relayoutTimer;
     std::unique_ptr<juce::FileChooser> m_fileChooser;
     std::unique_ptr<juce::PopupMenu> m_recentFilesPopup;
+    std::unique_ptr<juce::PopupMenu> m_presetsPopup;
     bool m_fileChooserActive = false;
     bool m_mustResizeToGfx = true;
 
@@ -44,6 +45,7 @@ struct YsfxEditor::Impl {
     void chooseFileAndLoad();
     void loadFile(const juce::File &file);
     void popupRecentFiles();
+    void popupPresets();
     void switchEditor(bool showGfx);
     void openCodeEditor();
     static juce::File getAppDataDirectory();
@@ -65,6 +67,7 @@ struct YsfxEditor::Impl {
     std::unique_ptr<juce::TextButton> m_btnLoadFile;
     std::unique_ptr<juce::TextButton> m_btnRecentFiles;
     std::unique_ptr<juce::TextButton> m_btnEditCode;
+    std::unique_ptr<juce::TextButton> m_btnLoadPreset;
     std::unique_ptr<juce::TextButton> m_btnSwitchEditor;
     std::unique_ptr<juce::Label> m_lblFilePath;
     std::unique_ptr<juce::Label> m_lblIO;
@@ -153,6 +156,8 @@ void YsfxEditor::Impl::updateInfo()
         ioText = "MIDI";
     m_lblIO->setText(ioText, juce::dontSendNotification);
 
+    m_presetsPopup.reset();
+
     juce::Array<YsfxParameter *> params;
     params.ensureStorageAllocated(ysfx_max_sliders);
     for (uint32_t i = 0; i < ysfx_max_sliders; ++i) {
@@ -239,6 +244,28 @@ void YsfxEditor::Impl::popupRecentFiles()
     });
 }
 
+void YsfxEditor::Impl::popupPresets()
+{
+    m_presetsPopup.reset(new juce::PopupMenu);
+
+    YsfxInfo::Ptr info = m_info;
+    ysfx_bank_t *bank = info->bank.get();
+    if (!bank)
+        m_presetsPopup->addItem(0, TRANS("No presets"), false);
+    else {
+        for (uint32_t i = 0; i < bank->preset_count; ++i)
+            m_presetsPopup->addItem((int)(i + 1), bank->presets[i].name);
+    }
+
+    juce::PopupMenu::Options popupOptions = juce::PopupMenu::Options{}
+        .withParentComponent(m_self)
+        .withTargetComponent(*m_btnLoadPreset);
+    m_presetsPopup->showMenuAsync(popupOptions, [this, info](int index) {
+        if (index > 0)
+            m_proc->loadJsfxPreset(info, (uint32_t)(index - 1), true);
+    });
+}
+
 void YsfxEditor::Impl::switchEditor(bool showGfx)
 {
     juce::String text = showGfx ? TRANS("Graphics") : TRANS("Sliders");
@@ -322,6 +349,8 @@ void YsfxEditor::Impl::createUI()
     m_self->addAndMakeVisible(*m_btnRecentFiles);
     m_btnEditCode.reset(new juce::TextButton(TRANS("Edit")));
     m_self->addAndMakeVisible(*m_btnEditCode);
+    m_btnLoadPreset.reset(new juce::TextButton(TRANS("Preset")));
+    m_self->addAndMakeVisible(*m_btnLoadPreset);
     m_btnSwitchEditor.reset(new juce::TextButton(TRANS("Sliders")));
     m_btnSwitchEditor->setClickingTogglesState(true);
     m_self->addAndMakeVisible(*m_btnSwitchEditor);
@@ -354,6 +383,7 @@ void YsfxEditor::Impl::connectUI()
     m_btnRecentFiles->onClick = [this]() { popupRecentFiles(); };
     m_btnSwitchEditor->onClick = [this]() { switchEditor(m_btnSwitchEditor->getToggleState()); };
     m_btnEditCode->onClick = [this]() { openCodeEditor(); };
+    m_btnLoadPreset->onClick = [this]() { popupPresets(); };
 
     m_ideView->onFileSaved = [this](const juce::File &file) { loadFile(file); };
     m_ideView->onReloadRequested = [this](const juce::File &file) { loadFile(file); };
@@ -385,13 +415,15 @@ void YsfxEditor::Impl::relayoutUI()
     const juce::Rectangle<int> centerArea = temp.withTrimmedLeft(10).withTrimmedRight(10).withTrimmedBottom(10);
 
     temp = topRow.reduced(10, 10);
-    m_btnLoadFile->setBounds(temp.removeFromLeft(100));
+    m_btnLoadFile->setBounds(temp.removeFromLeft(80));
     temp.removeFromLeft(10);
-    m_btnRecentFiles->setBounds(temp.removeFromLeft(100));
+    m_btnRecentFiles->setBounds(temp.removeFromLeft(80));
     temp.removeFromLeft(10);
-    m_btnSwitchEditor->setBounds(temp.removeFromRight(100));
+    m_btnSwitchEditor->setBounds(temp.removeFromRight(80));
     temp.removeFromRight(10);
-    m_btnEditCode->setBounds(temp.removeFromRight(100));
+    m_btnLoadPreset->setBounds(temp.removeFromRight(80));
+    temp.removeFromRight(10);
+    m_btnEditCode->setBounds(temp.removeFromRight(80));
     temp.removeFromRight(10);
     m_lblIO->setBounds(temp.removeFromRight(100));
     temp.removeFromRight(10);
