@@ -109,7 +109,18 @@ jobs:
           p12-password: ${{secrets.CERTIFICATES_P12_PASSWORD}}
       - name: Install dependencies (Linux)
         if: ${{matrix.os-type == 'Linux'}}
-        run: sudo apt-get -y install libsndfile1-dev libfreetype-dev libfontconfig-dev libgl-dev libx11-dev libxext-dev libxrandr-dev libxinerama-dev libxcursor-dev libxss-dev
+        run: >-
+            sudo apt-get -y update && sudo apt-get -y install
+            libsndfile1-dev
+            libfreetype-dev
+            libfontconfig-dev
+            libgl-dev
+            libx11-dev
+            libxext-dev
+            libxrandr-dev
+            libxinerama-dev
+            libxcursor-dev
+            libxss-dev
       - uses: ilammy/setup-nasm@v1
         if: ${{matrix.os-type == 'Windows'}}
       - uses: msys2/setup-msys2@v2
