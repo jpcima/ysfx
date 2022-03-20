@@ -35,24 +35,6 @@ jobs:
             os-type: Windows
             shell: pwsh
             artifacts: yes
-          - name: win32
-            display-name: Windows 32-bit (2016 older)
-            runs-on: windows-2016
-            platform: x86
-            release-arch: Win32
-            cmake-generator: Visual Studio 15 2017
-            os-type: Windows
-            shell: pwsh
-            artifacts: no
-          - name: win64
-            display-name: Windows 64-bit (2016 older)
-            runs-on: windows-2016
-            platform: x64
-            release-arch: x64
-            cmake-generator: Visual Studio 15 2017
-            os-type: Windows
-            shell: pwsh
-            artifacts: no
           - name: linux64
             display-name: Linux 64-bit
             runs-on: ubuntu-20.04
