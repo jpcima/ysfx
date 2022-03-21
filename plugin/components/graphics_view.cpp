@@ -56,7 +56,7 @@ struct YsfxGraphicsView::Impl final : public better::AsyncUpdater::Listener,
         int m_gfxWidth = 0;
         int m_gfxHeight = 0;
         bool m_wantRetina = false;
-        juce::Image m_renderBitmap{juce::Image::ARGB, 0, 0, false};
+        juce::Image m_renderBitmap{juce::Image::ARGB, 1, 1, false};
         double m_bitmapScale = 1;
         int m_bitmapUnscaledWidth = 0;
         int m_bitmapUnscaledHeight = 0;
@@ -117,7 +117,7 @@ struct YsfxGraphicsView::Impl final : public better::AsyncUpdater::Listener,
         // whether the bitmap contains changes
         bool m_hasBitmapChanged = false;
         // a double-buffer of the render bitmap, copied after a finished rendering
-        juce::Image m_bitmap{juce::Image::ARGB, 0, 0, false};
+        juce::Image m_bitmap{juce::Image::ARGB, 1, 1, false};
         std::mutex m_mutex;
     };
 
@@ -535,8 +535,8 @@ bool YsfxGraphicsView::Impl::updateGfxTarget(int newWidth, int newHeight, int ne
         scaledWidth = (int)std::ceil(unscaledWidth * bitmapScale);
         scaledHeight = (int)std::ceil(unscaledHeight * bitmapScale);
     }
-    needsUpdate = needsUpdate || (target->m_renderBitmap.getWidth() != scaledWidth);
-    needsUpdate = needsUpdate || (target->m_renderBitmap.getHeight() != scaledHeight);
+    needsUpdate = needsUpdate || (target->m_renderBitmap.getWidth() != juce::jmax(1, scaledWidth));
+    needsUpdate = needsUpdate || (target->m_renderBitmap.getHeight() != juce::jmax(1, scaledHeight));
 
     if (needsUpdate) {
         target = new GfxTarget;
@@ -544,7 +544,7 @@ bool YsfxGraphicsView::Impl::updateGfxTarget(int newWidth, int newHeight, int ne
         target->m_gfxWidth = newWidth;
         target->m_gfxHeight = newHeight;
         target->m_wantRetina = (bool)newRetina;
-        target->m_renderBitmap = juce::Image(juce::Image::ARGB, scaledWidth, scaledHeight, true);
+        target->m_renderBitmap = juce::Image(juce::Image::ARGB, juce::jmax(1, scaledWidth), juce::jmax(1, scaledHeight), true);
         target->m_bitmapScale = bitmapScale;
         target->m_bitmapUnscaledWidth = unscaledWidth;
         target->m_bitmapUnscaledHeight = unscaledHeight;
