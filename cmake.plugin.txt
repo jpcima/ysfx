@@ -92,3 +92,7 @@ target_link_libraries(ysfx_plugin
 if(YSFX_PLUGIN_LTO)
     target_link_libraries(ysfx_plugin PRIVATE juce::juce_recommended_lto_flags)
 endif()
+
+if(YSFX_PLUGIN_FORCE_DEBUG)
+    target_compile_definitions(ysfx_plugin PRIVATE "JUCE_FORCE_DEBUG=1")
+endif()
