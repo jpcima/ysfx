@@ -432,9 +432,8 @@ void ysfx_api_init_gfx()
     NSEEL_addfunc_retptr("gfx_getimgdim", 3, NSEEL_PProc_THIS, &ysfx_api_gfx_getimgdim);
     NSEEL_addfunc_retval("gfx_setimgdim", 3, NSEEL_PProc_THIS, &ysfx_api_gfx_setimgdim);
     NSEEL_addfunc_retval("gfx_loadimg", 2, NSEEL_PProc_THIS, &ysfx_api_gfx_loadimg);
-    NSEEL_addfunc_retptr("gfx_blit", 3, NSEEL_PProc_THIS, &ysfx_api_gfx_blit);
     NSEEL_addfunc_retptr("gfx_blitext", 3, NSEEL_PProc_THIS, &ysfx_api_gfx_blitext);
-    NSEEL_addfunc_varparm("gfx_blit", 4, NSEEL_PProc_THIS, &ysfx_api_gfx_blit2);
+    NSEEL_addfunc_varparm("gfx_blit", 1, NSEEL_PProc_THIS, &ysfx_api_gfx_blit2);
     NSEEL_addfunc_varparm("gfx_setfont", 1, NSEEL_PProc_THIS, &ysfx_api_gfx_setfont);
     NSEEL_addfunc_varparm("gfx_getfont", 1, NSEEL_PProc_THIS, &ysfx_api_gfx_getfont);
     NSEEL_addfunc_varparm("gfx_set", 1, NSEEL_PProc_THIS, &ysfx_api_gfx_set);
