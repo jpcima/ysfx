@@ -15,8 +15,10 @@ make sure to follow these steps.
   Extract a diff to view the list of changed files.
   For example: `git log 862717c..HEAD ; git diff 862717c..HEAD`
 
-- Copy the changed files from WDL over into ysfx's `thirdparty/WDL`.
-  Do not copy new files, unless these are newly introduced dependencies.
+- Apply the diff from WDL over into ysfx's `thirdparty/WDL`.
+  Patching is preferred over copying, because the latter may undo ysfx's
+  custom edits.
+  Do not add new files, unless these are newly introduced dependencies.
 
 - If the specific file `WDL/eel2/asm-nseel-x64-sse.asm` has changed, you must
   review changed assembly code and translate it to GNU-compatible assembly
