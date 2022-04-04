@@ -449,6 +449,16 @@ void YsfxProcessor::Impl::processSliderChanges()
 {
     ysfx_t *fx = m_fx.get();
 
+#if 1
+    for (int i = 0; i < ysfx_max_sliders; ++i) {
+        YsfxParameter *param = m_self->getYsfxParameter(i);
+        if (param->existsAsSlider()) {
+            float normValue = param->convertFromYsfxValue(ysfx_slider_get_value(fx, (uint32_t)i));
+            if (param->getValue() != normValue)
+                param->setValueNotifyingHost(normValue);
+        }
+    }
+#else
     uint64_t changed = ysfx_fetch_slider_changes(fx);
     uint64_t automated = ysfx_fetch_slider_automations(fx);
 
@@ -463,6 +473,7 @@ void YsfxProcessor::Impl::processSliderChanges()
             }
         }
     }
+#endif
 
     //TODO: visibility changes
 }
