@@ -47,6 +47,8 @@ struct YsfxProcessor::Impl : public juce::AudioProcessorListener {
     void syncSlidersToParameters();
     void syncParameterToSlider(int index);
     void syncSliderToParameter(int index);
+    void installNewFx(YsfxInfo::Ptr info);
+    void loadNewPreset(const ysfx_preset_t &preset);
 
     //==========================================================================
     struct LoadRequest : public std::enable_shared_from_this<LoadRequest> {
@@ -534,6 +536,77 @@ void YsfxProcessor::Impl::syncSliderToParameter(int index)
     }
 }
 
+void YsfxProcessor::Impl::installNewFx(YsfxInfo::Ptr info)
+{
+    // run synchronously on message thread
+    // because this notifies parameters
+
+    struct CallbackData {
+        Impl *self{};
+        YsfxInfo::Ptr info{};
+    };
+
+    CallbackData ud;
+    ud.self = this;
+    ud.info = info;
+
+    auto messageThreadCallback = +[](void *userData) -> void * {
+        const CallbackData &ud = *reinterpret_cast<CallbackData *>(userData);
+        Impl *self = ud.self;
+        ysfx_t *fx = ud.info->effect.get();
+
+        AudioProcessorSuspender sus{*self->m_self};
+        sus.lockCallbacks();
+        self->m_fx.reset(fx);
+        ysfx_add_ref(fx);
+        std::atomic_store(&self->m_info, ud.info);
+
+        for (uint32_t i = 0; i < ysfx_max_sliders; ++i) {
+            YsfxParameter *param = self->m_self->getYsfxParameter((int)i);
+            param->setEffect(fx);
+        }
+
+        self->syncSlidersToParameters();
+        return nullptr;
+    };
+
+    juce::MessageManager *mm = juce::MessageManager::getInstance();
+    mm->callFunctionOnMessageThread(messageThreadCallback, &ud);
+}
+
+void YsfxProcessor::Impl::loadNewPreset(const ysfx_preset_t &preset)
+{
+    // run synchronously on message thread
+    // because this notifies parameters
+
+    struct CallbackData {
+        Impl *self{};
+        const ysfx_preset_t *preset{};
+    };
+
+    CallbackData ud;
+    ud.self = this;
+    ud.preset = &preset;
+
+    auto messageThreadCallback = +[](void *userData) -> void * {
+        const CallbackData &ud = *reinterpret_cast<CallbackData *>(userData);
+        Impl *self = ud.self;
+        const ysfx_preset_t *preset = ud.preset;
+
+        AudioProcessorSuspender sus{*self->m_self};
+        sus.lockCallbacks();
+
+        ysfx_t *fx = self->m_fx.get();
+        ysfx_load_state(fx, preset->state);
+
+        self->syncSlidersToParameters();
+        return nullptr;
+    };
+
+    juce::MessageManager *mm = juce::MessageManager::getInstance();
+    mm->callFunctionOnMessageThread(messageThreadCallback, &ud);
+}
+
 //==============================================================================
 YsfxProcessor::Impl::Background::Background(Impl *impl)
     : m_impl(impl)
@@ -603,20 +676,7 @@ void YsfxProcessor::Impl::Background::processLoadRequest(LoadRequest &req)
     if (req.initialState)
         ysfx_load_state(fx, req.initialState.get());
 
-    {
-        AudioProcessorSuspender sus{*m_impl->m_self};
-        sus.lockCallbacks();
-        m_impl->m_fx.reset(fx);
-        ysfx_add_ref(fx);
-        std::atomic_store(&m_impl->m_info, info);
-
-        for (uint32_t i = 0; i < ysfx_max_sliders; ++i) {
-            YsfxParameter *param = m_impl->m_self->getYsfxParameter((int)i);
-            param->setEffect(fx);
-        }
-
-        m_impl->syncSlidersToParameters();
-    }
+    m_impl->installNewFx(info);
 
     std::lock_guard<std::mutex> lock(req.completionMutex);
     req.completion = true;
@@ -632,15 +692,8 @@ void YsfxProcessor::Impl::Background::processPresetRequest(PresetRequest &req)
     if (!bank || req.index >= bank->preset_count)
         return;
 
-    {
-        AudioProcessorSuspender sus{*m_impl->m_self};
-        sus.lockCallbacks();
-
-        ysfx_t *fx = m_impl->m_fx.get();
-        ysfx_load_state(fx, bank->presets[req.index].state);
-
-        m_impl->syncSlidersToParameters();
-    }
+    const ysfx_preset_t &preset = bank->presets[req.index];
+    m_impl->loadNewPreset(preset);
 
     std::lock_guard<std::mutex> lock(req.completionMutex);
     req.completion = true;
