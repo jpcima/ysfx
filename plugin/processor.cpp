@@ -458,16 +458,11 @@ void YsfxProcessor::Impl::processSliderChanges()
         uint64_t changed = ysfx_fetch_slider_changes(fx);
         uint64_t automated = ysfx_fetch_slider_automations(fx);
 
-        if ((changed|automated) != 0) {
-            for (int i = 0; i < ysfx_max_sliders; ++i) {
-                uint64_t mask = (uint64_t)1 << i;
-
-                if ((changed|automated) & mask) {
-                    //NOTE: it should avoid recording an automation point in case of
-                    //  `changed` only, but I don't know how to implement this
-                    syncSliderToParameter(i);
-                }
-            }
+        if (changed|automated) {
+            //NOTE: it should avoid recording an automation point in case of
+            //  `changed` only, but I don't know how to implement this
+            m_sliderParamsToNotify.fetch_or(changed|automated);
+            m_background->wakeUp();
         }
     }
     else {
