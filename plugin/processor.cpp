@@ -71,6 +71,7 @@ struct YsfxProcessor::Impl : public juce::AudioProcessorListener {
 
     LoadRequest::Ptr m_loadRequest;
     PresetRequest::Ptr m_presetRequest;
+    ysfx::sync_bitset64 m_sliderParamsToNotify;
 
     //==========================================================================
     class Background {
@@ -80,6 +81,7 @@ struct YsfxProcessor::Impl : public juce::AudioProcessorListener {
         void wakeUp();
     private:
         void run();
+        void processSliderNotifications(uint64_t sliderMask);
         void processLoadRequest(LoadRequest &req);
         void processPresetRequest(PresetRequest &req);
         Impl *m_impl = nullptr;
@@ -451,18 +453,43 @@ void YsfxProcessor::Impl::processSliderChanges()
 {
     ysfx_t *fx = m_fx.get();
 
-    uint64_t changed = ysfx_fetch_slider_changes(fx);
-    uint64_t automated = ysfx_fetch_slider_automations(fx);
+    if ((0)) {
+        // this automates according to ysfx change bits (eg. sliderchange)
+        uint64_t changed = ysfx_fetch_slider_changes(fx);
+        uint64_t automated = ysfx_fetch_slider_automations(fx);
 
-    if ((changed|automated) != 0) {
-        for (int i = 0; i < ysfx_max_sliders; ++i) {
-            uint64_t mask = (uint64_t)1 << i;
+        if ((changed|automated) != 0) {
+            for (int i = 0; i < ysfx_max_sliders; ++i) {
+                uint64_t mask = (uint64_t)1 << i;
 
-            if ((changed|automated) & mask) {
-                //NOTE: it should avoid recording an automation point in case of
-                //  `changed` only, but I don't know how to implement this
-                syncSliderToParameter(i);
+                if ((changed|automated) & mask) {
+                    //NOTE: it should avoid recording an automation point in case of
+                    //  `changed` only, but I don't know how to implement this
+                    syncSliderToParameter(i);
+                }
             }
+        }
+    }
+    else {
+        // this automates whenever we detect a value change
+        // it seems that Reaper acts like this (?)
+        uint64_t changed = 0;
+
+        for (int i = 0; i < ysfx_max_sliders; ++i) {
+            YsfxParameter *param = m_self->getYsfxParameter(i);
+            if (param->existsAsSlider()) {
+                float normValue = param->convertFromYsfxValue(ysfx_slider_get_value(fx, (uint32_t)i));
+                if (param->getValue() != normValue) {
+                    param->setValue(normValue);
+                    changed |= uint64_t{1} << i;
+                }
+            }
+        }
+
+        // this will sync parameters later (on message thread)
+        if (changed) {
+            m_sliderParamsToNotify.fetch_or(changed);
+            m_background->wakeUp();
         }
     }
 
@@ -634,10 +661,36 @@ void YsfxProcessor::Impl::Background::wakeUp()
 void YsfxProcessor::Impl::Background::run()
 {
     while (m_sema.wait(), m_running.load(std::memory_order_relaxed)) {
+        if (uint64_t sliderMask = m_impl->m_sliderParamsToNotify.exchange(0))
+            processSliderNotifications(sliderMask);
         if (LoadRequest::Ptr loadRequest = std::atomic_exchange(&m_impl->m_loadRequest, LoadRequest::Ptr{}))
             processLoadRequest(*loadRequest);
         if (PresetRequest::Ptr presetRequest = std::atomic_exchange(&m_impl->m_presetRequest, PresetRequest::Ptr{}))
             processPresetRequest(*presetRequest);
+    }
+}
+
+void YsfxProcessor::Impl::Background::processSliderNotifications(uint64_t sliderMask)
+{
+    for (int i = 0; i < ysfx_max_sliders; ++i) {
+        if (sliderMask & (uint64_t{1} << i)) {
+            struct CallbackData {
+                YsfxParameter *param{};
+            };
+
+            CallbackData ud;
+            ud.param = m_impl->m_self->getYsfxParameter(i);
+
+            auto messageThreadCallback = +[](void *userData) -> void * {
+                const CallbackData &ud = *reinterpret_cast<CallbackData *>(userData);
+                YsfxParameter *param = ud.param;
+                param->sendValueChangedMessageToListeners(param->getValue());
+                return nullptr;
+            };
+
+            juce::MessageManager *mm = juce::MessageManager::getInstance();
+            mm->callFunctionOnMessageThread(messageThreadCallback, &ud);
+        }
     }
 }
 
@@ -680,6 +733,7 @@ void YsfxProcessor::Impl::Background::processLoadRequest(LoadRequest &req)
     if (req.initialState)
         ysfx_load_state(fx, req.initialState.get());
 
+    m_impl->m_sliderParamsToNotify.store(0);
     m_impl->installNewFx(info);
 
     std::lock_guard<std::mutex> lock(req.completionMutex);
@@ -697,6 +751,7 @@ void YsfxProcessor::Impl::Background::processPresetRequest(PresetRequest &req)
         return;
 
     const ysfx_preset_t &preset = bank->presets[req.index];
+    m_impl->m_sliderParamsToNotify.store(0);
     m_impl->loadNewPreset(preset);
 
     std::lock_guard<std::mutex> lock(req.completionMutex);
