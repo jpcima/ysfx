@@ -526,6 +526,10 @@ void YsfxProcessor::Impl::syncParameterToSlider(int index)
 
 void YsfxProcessor::Impl::syncSliderToParameter(int index)
 {
+    jassert(
+        juce::MessageManager::getInstanceWithoutCreating() &&
+        juce::MessageManager::getInstanceWithoutCreating()->isThisTheMessageThread());
+
     if (index < 0 || index >= ysfx_max_sliders)
         return;
 
