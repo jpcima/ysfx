@@ -44,9 +44,9 @@ struct YsfxProcessor::Impl : public juce::AudioProcessorListener {
     void processLatency();
     void updateTimeInfo();
     void syncParametersToSliders();
-    void syncSlidersToParameters();
+    void syncSlidersToParameters(bool notify);
     void syncParameterToSlider(int index);
-    void syncSliderToParameter(int index);
+    void syncSliderToParameter(int index, bool notify);
     void installNewFx(YsfxInfo::Ptr info);
     void loadNewPreset(const ysfx_preset_t &preset);
 
@@ -72,6 +72,22 @@ struct YsfxProcessor::Impl : public juce::AudioProcessorListener {
     LoadRequest::Ptr m_loadRequest;
     PresetRequest::Ptr m_presetRequest;
     ysfx::sync_bitset64 m_sliderParamsToNotify;
+
+    //==========================================================================
+    class SliderNotificationUpdater : public juce::AsyncUpdater {
+    public:
+        explicit SliderNotificationUpdater(Impl *impl) : m_impl{impl} {}
+        void addSlidersToNotify(uint64_t mask) { m_sliderMask.fetch_or(mask); }
+
+    protected:
+        void handleAsyncUpdate() override;
+
+    private:
+        Impl *m_impl = nullptr;
+        ysfx::sync_bitset64 m_sliderMask;
+    };
+
+    std::unique_ptr<SliderNotificationUpdater> m_sliderNotificationUpdater;
 
     //==========================================================================
     class Background {
@@ -129,6 +145,9 @@ YsfxProcessor::YsfxProcessor()
     m_impl->m_sliderParamOffset = getParameters().size();
     for (int i = 0; i < ysfx_max_sliders; ++i)
         addParameter(new YsfxParameter(fx, i));
+
+    ///
+    m_impl->m_sliderNotificationUpdater.reset(new Impl::SliderNotificationUpdater{m_impl.get()});
 
     ///
     m_impl->m_background.reset(new Impl::Background(m_impl.get()));
@@ -528,10 +547,10 @@ void YsfxProcessor::Impl::syncParametersToSliders()
         syncParameterToSlider(i);
 }
 
-void YsfxProcessor::Impl::syncSlidersToParameters()
+void YsfxProcessor::Impl::syncSlidersToParameters(bool notify)
 {
     for (int i = 0; i < ysfx_max_sliders; ++i)
-        syncSliderToParameter(i);
+        syncSliderToParameter(i, notify);
 }
 
 void YsfxProcessor::Impl::syncParameterToSlider(int index)
@@ -546,11 +565,13 @@ void YsfxProcessor::Impl::syncParameterToSlider(int index)
     }
 }
 
-void YsfxProcessor::Impl::syncSliderToParameter(int index)
+void YsfxProcessor::Impl::syncSliderToParameter(int index, bool notify)
 {
-    jassert(
-        juce::MessageManager::getInstanceWithoutCreating() &&
-        juce::MessageManager::getInstanceWithoutCreating()->isThisTheMessageThread());
+    if (notify) {
+        jassert(
+            juce::MessageManager::getInstanceWithoutCreating() &&
+            juce::MessageManager::getInstanceWithoutCreating()->isThisTheMessageThread());
+    }
 
     if (index < 0 || index >= ysfx_max_sliders)
         return;
@@ -558,79 +579,65 @@ void YsfxProcessor::Impl::syncSliderToParameter(int index)
     YsfxParameter *param = m_self->getYsfxParameter(index);
     if (param->existsAsSlider()) {
         float normValue = param->convertFromYsfxValue(ysfx_slider_get_value(m_fx.get(), (uint32_t)index));
-        param->setValueNotifyingHost(normValue);
+        if (notify)
+            param->setValueNotifyingHost(normValue);
+        else {
+            param->setValue(normValue);
+            m_sliderParamsToNotify.fetch_or((uint64_t)1 << index);
+        }
     }
 }
 
 void YsfxProcessor::Impl::installNewFx(YsfxInfo::Ptr info)
 {
-    // run synchronously on message thread
-    // because this notifies parameters
+    AudioProcessorSuspender sus{*m_self};
+    sus.lockCallbacks();
 
-    struct CallbackData {
-        Impl *self{};
-        YsfxInfo::Ptr info{};
-    };
+    ysfx_t *fx = info->effect.get();
+    m_fx.reset(fx);
+    ysfx_add_ref(fx);
+    std::atomic_store(&m_info, info);
 
-    CallbackData ud;
-    ud.self = this;
-    ud.info = info;
+    for (uint32_t i = 0; i < ysfx_max_sliders; ++i) {
+        YsfxParameter *param = m_self->getYsfxParameter((int)i);
+        param->setEffect(fx);
+    }
 
-    auto messageThreadCallback = +[](void *userData) -> void * {
-        const CallbackData &ud = *reinterpret_cast<CallbackData *>(userData);
-        Impl *self = ud.self;
-        ysfx_t *fx = ud.info->effect.get();
+    bool notify = false;
+    syncSlidersToParameters(notify);
 
-        AudioProcessorSuspender sus{*self->m_self};
-        sus.lockCallbacks();
-        self->m_fx.reset(fx);
-        ysfx_add_ref(fx);
-        std::atomic_store(&self->m_info, ud.info);
-
-        for (uint32_t i = 0; i < ysfx_max_sliders; ++i) {
-            YsfxParameter *param = self->m_self->getYsfxParameter((int)i);
-            param->setEffect(fx);
-        }
-
-        self->syncSlidersToParameters();
-        return nullptr;
-    };
-
-    juce::MessageManager *mm = juce::MessageManager::getInstance();
-    mm->callFunctionOnMessageThread(messageThreadCallback, &ud);
+    // notify parameters later, on the message thread
+    m_sliderParamsToNotify.store(~(uint64_t)0);
+    m_background->wakeUp();
 }
 
 void YsfxProcessor::Impl::loadNewPreset(const ysfx_preset_t &preset)
 {
-    // run synchronously on message thread
-    // because this notifies parameters
+    AudioProcessorSuspender sus{*m_self};
+    sus.lockCallbacks();
 
-    struct CallbackData {
-        Impl *self{};
-        const ysfx_preset_t *preset{};
-    };
+    ysfx_t *fx = m_fx.get();
+    ysfx_load_state(fx, preset.state);
 
-    CallbackData ud;
-    ud.self = this;
-    ud.preset = &preset;
+    bool notify = false;
+    syncSlidersToParameters(notify);
 
-    auto messageThreadCallback = +[](void *userData) -> void * {
-        const CallbackData &ud = *reinterpret_cast<CallbackData *>(userData);
-        Impl *self = ud.self;
-        const ysfx_preset_t *preset = ud.preset;
+    // notify parameters later, on the message thread
+    m_sliderParamsToNotify.store(~(uint64_t)0);
+    m_background->wakeUp();
+}
 
-        AudioProcessorSuspender sus{*self->m_self};
-        sus.lockCallbacks();
+//==============================================================================
+void YsfxProcessor::Impl::SliderNotificationUpdater::handleAsyncUpdate()
+{
+    uint64_t sliderMask = m_sliderMask.exchange(0);
 
-        ysfx_t *fx = self->m_fx.get();
-        ysfx_load_state(fx, preset->state);
-
-        self->syncSlidersToParameters();
-        return nullptr;
-    };
-
-    juce::MessageManager *mm = juce::MessageManager::getInstance();
-    mm->callFunctionOnMessageThread(messageThreadCallback, &ud);
+    for (int i = 0; i < ysfx_max_sliders; ++i) {
+        if (sliderMask & (uint64_t{1} << i)) {
+            YsfxParameter *param = m_impl->m_self->getYsfxParameter(i);
+            param->sendValueChangedMessageToListeners(param->getValue());
+        }
+    }
 }
 
 //==============================================================================
@@ -667,26 +674,11 @@ void YsfxProcessor::Impl::Background::run()
 
 void YsfxProcessor::Impl::Background::processSliderNotifications(uint64_t sliderMask)
 {
-    for (int i = 0; i < ysfx_max_sliders; ++i) {
-        if (sliderMask & (uint64_t{1} << i)) {
-            struct CallbackData {
-                YsfxParameter *param{};
-            };
+    Impl *impl = this->m_impl;
+    Impl::SliderNotificationUpdater *updater = impl->m_sliderNotificationUpdater.get();
 
-            CallbackData ud;
-            ud.param = m_impl->m_self->getYsfxParameter(i);
-
-            auto messageThreadCallback = +[](void *userData) -> void * {
-                const CallbackData &ud = *reinterpret_cast<CallbackData *>(userData);
-                YsfxParameter *param = ud.param;
-                param->sendValueChangedMessageToListeners(param->getValue());
-                return nullptr;
-            };
-
-            juce::MessageManager *mm = juce::MessageManager::getInstance();
-            mm->callFunctionOnMessageThread(messageThreadCallback, &ud);
-        }
-    }
+    updater->addSlidersToNotify(sliderMask);
+    updater->triggerAsyncUpdate();
 }
 
 void YsfxProcessor::Impl::Background::processLoadRequest(LoadRequest &req)
@@ -728,7 +720,6 @@ void YsfxProcessor::Impl::Background::processLoadRequest(LoadRequest &req)
     if (req.initialState)
         ysfx_load_state(fx, req.initialState.get());
 
-    m_impl->m_sliderParamsToNotify.store(0);
     m_impl->installNewFx(info);
 
     std::lock_guard<std::mutex> lock(req.completionMutex);
@@ -746,7 +737,6 @@ void YsfxProcessor::Impl::Background::processPresetRequest(PresetRequest &req)
         return;
 
     const ysfx_preset_t &preset = bank->presets[req.index];
-    m_impl->m_sliderParamsToNotify.store(0);
     m_impl->loadNewPreset(preset);
 
     std::lock_guard<std::mutex> lock(req.completionMutex);
