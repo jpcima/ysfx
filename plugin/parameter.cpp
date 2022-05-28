@@ -87,7 +87,7 @@ float YsfxParameter::convertFromYsfxValue(ysfx_real actualValue) const
     // NOTE: if enumerated, round value into an index
     if (isEnumSlider())
         actualValue = juce::roundToInt(actualValue);
-    float normValue = (float)((actualValue  - range.min) / (range.max - range.min));
+    float normValue = (float)((actualValue - range.min) / (range.max - range.min));
     return normValue;
 }
 
