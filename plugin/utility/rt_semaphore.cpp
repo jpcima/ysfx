@@ -82,7 +82,7 @@ bool RTSemaphore::timed_wait(uint32_t milliseconds)
 void RTSemaphore::init(std::error_code& ec, unsigned value)
 {
     ec.clear();
-    kern_return_t ret = semaphore_create(mach_task_self(), &sem_, SYNC_POLICY_FIFO, value);
+    kern_return_t ret = semaphore_create(mach_task_self(), &sem_, SYNC_POLICY_FIFO, (int)value);
     if (ret != KERN_SUCCESS)
         ec = std::error_code(ret, mach_category());
 }
