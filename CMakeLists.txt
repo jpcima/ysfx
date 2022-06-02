@@ -48,7 +48,9 @@ set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if(NOT MSVC)
-    add_compile_options("-Wall")
+    add_compile_options(
+        "-Wall"
+        "-Werror=return-type")
 endif()
 if(MSVC)
     add_definitions("-D_CRT_SECURE_NO_WARNINGS")
