@@ -58,6 +58,8 @@ struct ysfx_gfx_state_t {
     const char *(*get_drop_file)(void *user_data, int32_t index) = nullptr;
 };
 
+#endif // !defined(YSFX_NO_GFX)
+
 //------------------------------------------------------------------------------
 #if !defined(YSFX_NO_GFX)
 static bool eel_lice_get_filename_for_string(void *opaque, EEL_F idx, WDL_FastString *fs, int iswrite)
@@ -78,7 +80,7 @@ static bool eel_lice_get_filename_for_string(void *opaque, EEL_F idx, WDL_FastSt
 #define EEL_LICE_GET_FILENAME_FOR_STRING(idx, fs, p)    \
     eel_lice_get_filename_for_string(opaque, (idx), (fs), (p))
 
-#endif
+#endif // !defined(YSFX_NO_GFX)
 
 //------------------------------------------------------------------------------
 #if !defined(YSFX_NO_GFX)
@@ -89,7 +91,6 @@ static bool eel_lice_get_filename_for_string(void *opaque, EEL_F idx, WDL_FastSt
 
 //------------------------------------------------------------------------------
 #if !defined(YSFX_NO_GFX)
-
 static bool translate_special_key(uint32_t uni_key, uint32_t &jsfx_key)
 {
     auto key_c = [](uint8_t a, uint8_t b, uint8_t c, uint8_t d) -> uint32_t {
@@ -210,7 +211,7 @@ static EEL_F NSEEL_CGEN_CALL ysfx_api_gfx_getdropfile(void *opaque, INT_PTR np, 
     return 1;
 }
 
-#endif
+#endif // !defined(YSFX_NO_GFX)
 
 //------------------------------------------------------------------------------
 #if !defined(YSFX_NO_GFX)
@@ -223,7 +224,6 @@ ysfx_gfx_state_t::ysfx_gfx_state_t(ysfx_t *fx)
 ysfx_gfx_state_t::~ysfx_gfx_state_t()
 {
 }
-#endif
 
 ysfx_gfx_state_t *ysfx_gfx_state_new(ysfx_t *fx)
 {
@@ -312,7 +312,10 @@ void ysfx_gfx_state_add_key(ysfx_gfx_state_t *state, uint32_t mods, uint32_t key
         state->keys_pressed.erase(key_id);
 }
 
+#endif // !defined(YSFX_NO_GFX)
+
 //------------------------------------------------------------------------------
+#if !defined(YSFX_NO_GFX)
 void ysfx_gfx_enter(ysfx_t *fx, bool doinit)
 {
     fx->gfx.mutex.lock();
@@ -396,7 +399,8 @@ void ysfx_gfx_prepare(ysfx_t *fx)
     *fx->var.gfx_w = gfx_w;
     *fx->var.gfx_h = gfx_h;
 }
-#endif
+
+#endif // !defined(YSFX_NO_GFX)
 
 //------------------------------------------------------------------------------
 void ysfx_api_init_gfx()
@@ -466,4 +470,4 @@ bool SWELL_SetGLContextToView(HWND h)
 
 #endif // !defined(SWELL_TARGET_GDK) && !defined(SWELL_TARGET_OSX)
 
-#endif
+#endif // !defined(YSFX_NO_GFX)
