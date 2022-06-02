@@ -38,6 +38,11 @@ if(MSVC)
 endif()
 target_include_directories(wdl-base PUBLIC "thirdparty/WDL/source")
 
+if(NOT MSVC)
+    # wdltypes wants char to be signed; ARM has it unsigned by default
+    target_compile_options(wdl-base PUBLIC "-fsigned-char")
+endif()
+
 # lice
 # ------------------------------------------------------------------------------
 if(YSFX_GFX)
