@@ -47,6 +47,7 @@ struct YsfxProcessor::Impl : public juce::AudioProcessorListener {
     void syncSlidersToParameters(bool notify);
     void syncParameterToSlider(int index);
     void syncSliderToParameter(int index, bool notify);
+    static YsfxInfo::Ptr createNewFx(juce::CharPointer_UTF8 filePath, ysfx_state_t *initialState);
     void installNewFx(YsfxInfo::Ptr info);
     void loadNewPreset(const ysfx_preset_t &preset);
 
@@ -595,6 +596,48 @@ void YsfxProcessor::Impl::syncSliderToParameter(int index, bool notify)
     }
 }
 
+YsfxInfo::Ptr YsfxProcessor::Impl::createNewFx(juce::CharPointer_UTF8 filePath, ysfx_state_t *initialState)
+{
+    YsfxInfo::Ptr info{new YsfxInfo};
+
+    info->timeStamp = juce::Time::getCurrentTime();
+
+    ///
+    ysfx_config_u config{ysfx_config_new()};
+    ysfx_register_builtin_audio_formats(config.get());
+    ysfx_guess_file_roots(config.get(), filePath);
+
+    ///
+    auto logfn = [](intptr_t userdata, ysfx_log_level level, const char *message) {
+        YsfxInfo &data = *(YsfxInfo *)userdata;
+        if (level == ysfx_log_error)
+            data.errors.add(juce::CharPointer_UTF8(message));
+        else if (level == ysfx_log_warning)
+            data.warnings.add(juce::CharPointer_UTF8(message));
+    };
+
+    ysfx_set_log_reporter(config.get(), +logfn);
+    ysfx_set_user_data(config.get(), (intptr_t)info.get());
+
+    ///
+    ysfx_t *fx = ysfx_new(config.get());
+    info->effect.reset(fx);
+
+    uint32_t loadopts = 0;
+    uint32_t compileopts = 0;
+    ysfx_load_file(fx, filePath, loadopts);
+    ysfx_compile(fx, compileopts);
+
+    ///
+    const char *bankpath = ysfx_get_bank_path(fx);
+    info->bank.reset(ysfx_load_bank(bankpath));
+
+    if (initialState)
+        ysfx_load_state(fx, initialState);
+
+    return info;
+}
+
 void YsfxProcessor::Impl::installNewFx(YsfxInfo::Ptr info)
 {
     AudioProcessorSuspender sus{*m_self};
@@ -690,43 +733,7 @@ void YsfxProcessor::Impl::Background::processSliderNotifications(uint64_t slider
 
 void YsfxProcessor::Impl::Background::processLoadRequest(LoadRequest &req)
 {
-    YsfxInfo::Ptr info{new YsfxInfo};
-
-    info->timeStamp = juce::Time::getCurrentTime();
-
-    ///
-    ysfx_config_u config{ysfx_config_new()};
-    ysfx_register_builtin_audio_formats(config.get());
-    ysfx_guess_file_roots(config.get(), req.filePath.toRawUTF8());
-
-    ///
-    auto logfn = [](intptr_t userdata, ysfx_log_level level, const char *message) {
-        YsfxInfo &data = *(YsfxInfo *)userdata;
-        if (level == ysfx_log_error)
-            data.errors.add(juce::CharPointer_UTF8(message));
-        else if (level == ysfx_log_warning)
-            data.warnings.add(juce::CharPointer_UTF8(message));
-    };
-
-    ysfx_set_log_reporter(config.get(), +logfn);
-    ysfx_set_user_data(config.get(), (intptr_t)info.get());
-
-    ///
-    ysfx_t *fx = ysfx_new(config.get());
-    info->effect.reset(fx);
-
-    uint32_t loadopts = 0;
-    uint32_t compileopts = 0;
-    ysfx_load_file(fx, req.filePath.toRawUTF8(), loadopts);
-    ysfx_compile(fx, compileopts);
-
-    ///
-    const char *bankpath = ysfx_get_bank_path(fx);
-    info->bank.reset(ysfx_load_bank(bankpath));
-
-    if (req.initialState)
-        ysfx_load_state(fx, req.initialState.get());
-
+    YsfxInfo::Ptr info = createNewFx(req.filePath.toUTF8(), req.initialState.get());
     m_impl->installNewFx(info);
 
     std::lock_guard<std::mutex> lock(req.completionMutex);
