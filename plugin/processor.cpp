@@ -523,22 +523,29 @@ void YsfxProcessor::Impl::processLatency()
 
 void YsfxProcessor::Impl::updateTimeInfo()
 {
-    juce::AudioPlayHead::CurrentPositionInfo cpi;
-    if (!m_self->getPlayHead()->getCurrentPosition(cpi))
+    juce::AudioPlayHead *playHead = m_self->getPlayHead();
+
+    juce::Optional<juce::AudioPlayHead::PositionInfo> cpi = playHead->getPosition();
+    if (!cpi)
         return;
 
-    if (cpi.isRecording)
+    if (cpi->getIsRecording())
         m_timeInfo.playback_state = ysfx_playback_recording;
-    else if (cpi.isPlaying)
+    else if (cpi->getIsPlaying())
         m_timeInfo.playback_state = ysfx_playback_playing;
     else
         m_timeInfo.playback_state = ysfx_playback_paused;
 
-    m_timeInfo.tempo = cpi.bpm;
-    m_timeInfo.time_position = cpi.timeInSeconds;
-    m_timeInfo.beat_position = cpi.ppqPosition;
-    m_timeInfo.time_signature[0] = (uint32_t)cpi.timeSigNumerator;
-    m_timeInfo.time_signature[1] = (uint32_t)cpi.timeSigDenominator;
+    if (juce::Optional<double> bpm = cpi->getBpm())
+        m_timeInfo.tempo = *bpm;
+    if (juce::Optional<double> timeInSeconds = cpi->getTimeInSeconds())
+        m_timeInfo.time_position = *timeInSeconds;
+    if (juce::Optional<double> ppqPosition = cpi->getPpqPosition())
+        m_timeInfo.beat_position = *ppqPosition;
+    if (juce::Optional<juce::AudioPlayHead::TimeSignature> timeSignature = cpi->getTimeSignature()) {
+        m_timeInfo.time_signature[0] = (uint32_t)timeSignature->numerator;
+        m_timeInfo.time_signature[1] = (uint32_t)timeSignature->denominator;
+    }
 }
 
 void YsfxProcessor::Impl::syncParametersToSliders()
