@@ -526,7 +526,7 @@ void SetFocus(HWND hwnd)
 void SWELL_OnNavigationFocus(HWND ch)
 {
   if (ch && ch->m_classname && (
-       !strcmp(ch->m_classname,"Edit") ||
+       (!strcmp(ch->m_classname,"Edit") && !(ch->m_style & ES_READONLY)) ||
        !strcmp(ch->m_classname,"combobox")
      ))
   {
@@ -2888,7 +2888,10 @@ forceMouseMove:
     case WM_SETTEXT:
       if (es) 
       {
-        es->cursor_pos = WDL_utf8_get_charlen(hwnd->m_title.Get());
+        es->cursor_pos =
+          (hwnd->m_style & (ES_READONLY|ES_MULTILINE)) == (ES_READONLY|ES_MULTILINE) ? 0 :
+            WDL_utf8_get_charlen(hwnd->m_title.Get());
+
         es->sel1=es->sel2=-1;
         es->cache_linelen_w=es->cache_linelen_strlen=0;
         if ((hwnd->m_style & (ES_MULTILINE|ES_AUTOHSCROLL))==ES_AUTOHSCROLL &&
@@ -2956,8 +2959,9 @@ forceMouseMove:
         }
       }
     return 0;
-    case WM_SETFOCUS:
     case WM_KILLFOCUS:
+      SendMessage(GetParent(hwnd),WM_COMMAND,(EN_KILLFOCUS<<16) | (hwnd->m_id&0xffff),(LPARAM)hwnd);
+    case WM_SETFOCUS:
       InvalidateRect(hwnd,NULL,FALSE);
     break;
   }
