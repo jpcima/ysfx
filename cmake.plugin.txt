@@ -28,6 +28,10 @@ if(NOT juce_POPULATED)
   add_subdirectory("${juce_SOURCE_DIR}" "${juce_BINARY_DIR}" EXCLUDE_FROM_ALL)
 endif()
 
+if(YSFX_PLUGIN_VST3_SDK_PATH)
+    juce_set_vst3_sdk_path("${YSFX_PLUGIN_VST3_SDK_PATH}")
+endif()
+
 juce_add_plugin(ysfx_plugin
   PLUGIN_CODE "ysfx"
   PLUGIN_MANUFACTURER_CODE "Jpci"
