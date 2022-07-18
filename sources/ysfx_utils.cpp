@@ -530,6 +530,52 @@ string_list list_directory(const char *path)
     return list;
 }
 
+#if defined(YSFX_NO_FTS)
+void visit_directories(const char *rootpath, bool (*visit)(const std::string &, void *), void *data)
+{
+    std::deque<std::string> dirs;
+    dirs.push_back(path_ensure_final_separator(rootpath));
+
+    std::string pathbuf;
+    pathbuf.reserve(1024);
+
+    std::vector<std::string> entries;
+    entries.reserve(256);
+
+    while (!dirs.empty()) {
+        std::string dir = std::move(dirs.front());
+        dirs.pop_front();
+
+        if (!visit(dir, data))
+            return;
+
+        DIR *dh = opendir(dir.c_str());
+        if (!dh)
+            continue;
+        auto dh_cleanup = defer([dh]() { closedir(dh); });
+
+        entries.clear();
+
+        while (dirent *ent = readdir(dh)) {
+            const char *name = ent->d_name;
+            if (!strcmp(name, ".") || !strcmp(name, ".."))
+                continue;
+
+            if (ent->d_type == DT_DIR) {
+                pathbuf.assign(dir);
+                pathbuf.append(name);
+                pathbuf.push_back('/');
+                entries.push_back(pathbuf);
+            }
+        }
+
+        std::sort(entries.begin(), entries.end());
+        for (size_t n = entries.size(); n-- > 0; )
+            dirs.push_front(std::move(entries[n]));
+    }
+}
+#endif
+
 // void visit_directories(const char *rootpath, bool (*visit)(const std::string &, void *), void *data);
 // NOTE: implemented in separate file `ysfx_utils_fts.cpp`
 #else

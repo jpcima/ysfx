@@ -78,12 +78,20 @@ target_include_directories(stb INTERFACE "thirdparty/stb")
 
 # fts
 # ------------------------------------------------------------------------------
-if(NOT WIN32)
+if(WIN32)
+    set(YSFX_FTS_IS_AVAILABLE FALSE)
+else()
+    check_c_source_compiles("
+#include <fts.h>
+int main() { fts_close((FTS *)0); return 0; }"
+        YSFX_FTS_IS_AVAILABLE)
+endif()
+if(YSFX_FTS_IS_AVAILABLE)
     function(ysfx_check_fts_has_lfs_support VAR)
         set(CMAKE_REQUIRED_DEFINITIONS "-D_FILE_OFFSET_BITS=64")
         check_c_source_compiles("
 #include <fts.h>
-int main() { return 0; }"
+int main() { fts_close((FTS *)0); return 0; }"
             "${VAR}")
     endfunction()
     ysfx_check_fts_has_lfs_support(YSFX_FTS_HAS_LFS_SUPPORT)

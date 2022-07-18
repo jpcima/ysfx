@@ -15,7 +15,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-#if !defined(_WIN32)
+#if !defined(_WIN32) && !defined(YSFX_NO_FTS)
 
 // fts lacks large file support in glibc < 2.23
 #if defined(YSFX_FTS_LACKS_LFS_SUPPORT)
@@ -63,4 +63,4 @@ void visit_directories(const char *rootpath, bool (*visit)(const std::string &, 
 
 } // namespace ysfx
 
-#endif // !defined(_WIN32)
+#endif // !defined(_WIN32) && !defined(YSFX_NO_FTS)

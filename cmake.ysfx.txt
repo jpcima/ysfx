@@ -70,7 +70,12 @@ if(WIN32)
         PRIVATE
             "NOMINMAX")
 endif()
-if(NOT WIN32 AND NOT YSFX_FTS_HAS_LFS_SUPPORT)
+if(NOT YSFX_FTS_IS_AVAILABLE)
+    target_compile_definitions(ysfx-private
+        PRIVATE
+            "YSFX_NO_FTS")
+endif()
+if(YSFX_FTS_IS_AVAILABLE AND NOT YSFX_FTS_HAS_LFS_SUPPORT)
     target_compile_definitions(ysfx-private
         PRIVATE
             "YSFX_FTS_LACKS_LFS_SUPPORT")
