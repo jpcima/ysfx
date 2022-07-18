@@ -22,10 +22,14 @@ FetchContent_Declare(juce
     URL "https://github.com/juce-framework/JUCE/archive/refs/tags/7.0.0.tar.gz"
     URL_HASH "SHA512=0347380fce37eae58a2cfd2d14cf3d8025b37e8de87104656cc0699a8de914762199d4e6a214d24afd99cee548ec6aec198a7a04d804a97d0f4ceed49bf9a969")
 
-FetchContent_GetProperties(juce)
-if(NOT juce_POPULATED)
-  FetchContent_Populate(juce)
-  add_subdirectory("${juce_SOURCE_DIR}" "${juce_BINARY_DIR}" EXCLUDE_FROM_ALL)
+if(YSFX_PLUGIN_JUCE_SDK_PATH)
+    add_subdirectory("${YSFX_PLUGIN_JUCE_SDK_PATH}" "JUCE.dir" EXCLUDE_FROM_ALL)
+else()
+    FetchContent_GetProperties(juce)
+    if(NOT juce_POPULATED)
+        FetchContent_Populate(juce)
+        add_subdirectory("${juce_SOURCE_DIR}" "${juce_BINARY_DIR}" EXCLUDE_FROM_ALL)
+    endif()
 endif()
 
 if(YSFX_PLUGIN_VST3_SDK_PATH)
