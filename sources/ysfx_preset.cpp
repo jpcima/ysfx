@@ -165,7 +165,7 @@ static void ysfx_parse_preset_from_rpl_blob(ysfx_preset_t *preset, const char *n
     }
 
     // whatever follows null is the raw serialization
-    state.data = const_cast<uint8_t *>(&data[pos]);
+    state.data = const_cast<uint8_t *>(data.data() + pos);
     state.data_size = len - pos;
 
     // parse a line of 64 slider floats (or '-' if missing)
